@@ -15,3 +15,6 @@
 | FS-011 | 静的生成データの責務を分離できる | `feeds/articles/categories/sources` の生成 | UI が必要データを静的成果物から読める |
 | FS-012 | ルーティングが一覧中心で定義されている | `/`, `/categories/[category]`, `/sources/[source]` | 導線が仕様と一致する |
 | FS-013 | 更新失敗時も前回成功データを破壊しない | workflow / deploy 設計 | 一部失敗時の継続方針が保たれる |
+| FS-014 | フィード定義を `data/feeds.json` に集約できる | hand-authored source / loader | 単一ファイルから全フィードを読める |
+| FS-015 | フィード `id` を安定キーとして扱える | schema / validation | `id` が内部参照キーとして利用できる |
+| FS-016 | フィード定義の必須項目が明示されている | docs / loader contract | 必須フィールド欠落時に検出できる |

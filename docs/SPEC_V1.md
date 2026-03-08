@@ -104,6 +104,18 @@ v1 では必須ではない。
 
 ## 7. フィード定義
 
+### 7.1 配置
+
+v1 のフィード定義は、リポジトリ管理下の hand-authored source として `data/feeds.json` に置く。
+
+- 1ファイルに全フィードを集約する
+- GitHub Actions の取得処理はこのファイルを入力とする
+- v1 では DB や外部管理画面を使わない
+
+### 7.2 形式
+
+`data/feeds.json` は JSON 配列とし、各要素は 1 フィード定義オブジェクトとする。
+
 各フィードには以下の情報を持たせる。
 
 - `id`: 一意な識別子
@@ -114,18 +126,30 @@ v1 では必須ではない。
 - `language`: 言語
 - `enabled`: 有効 / 無効
 
-### 例
+### 7.3 スキーマ制約
+
+- `id` は ASCII の kebab-case を推奨し、URL や生成物キーに再利用できる安定値とする
+- `name` は UI 表示名として使える文字列とする
+- `category` は UI での絞り込み単位として扱う表示ラベルとする
+- `feedUrl` は取得対象の公開 RSS / Atom URL とする
+- `siteUrl` は媒体トップまたはフィードに対応するサイトURLとする
+- `language` は `ja`, `en` などの短い言語コードを想定する
+- `enabled=false` のフィードは取得対象から除外してよい
+
+### 7.4 例
 
 ```json
-{
-  "id": "itmedia-news",
-  "name": "ITmedia NEWS 新着",
-  "category": "日本IT",
-  "feedUrl": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml",
-  "siteUrl": "https://www.itmedia.co.jp/",
-  "language": "ja",
-  "enabled": true
-}
+[
+  {
+    "id": "itmedia-news",
+    "name": "ITmedia NEWS 新着",
+    "category": "日本IT",
+    "feedUrl": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml",
+    "siteUrl": "https://www.itmedia.co.jp/",
+    "language": "ja",
+    "enabled": true
+  }
+]
 ```
 
 ---
