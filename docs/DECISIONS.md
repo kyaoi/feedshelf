@@ -124,3 +124,24 @@
 - 理由: cross-feed provenance を完全に捨てずに残しつつ、canonical article object の複雑化を最小限に抑えるため
 - 影響: `feedId` / `sourceName` / `category` / `language` は primary record の値を採用し、完全 provenance graph は持たない
 - V2 メモ: feed ごとの observedAt や source metadata を含む richer provenance object は後続タスクで再検討する
+
+## D-021: canonical article object と公開 JSON の責務を分離する
+
+- 決定: canonical article object は取得・正規化・dedupe 用の内部中間表現とし、UI が読む公開 JSON は listing-ready shape を別契約で持つ
+- 理由: 後続の dedupe / provenance / pipeline 実装を変えても、UI 契約の揺れを抑えやすくするため
+- 影響: `articles.json` / `categories.json` / `sources.json` / `meta.json` の shape を別途固定する
+- V2 メモ: internal cache と public export のレイヤ分離をさらに強める場合は、保存形式を再設計する
+
+## D-022: v1 の公開 JSON は 4 ファイルを基本単位とする
+
+- 決定: v1 の公開 JSON は `articles.json` / `categories.json` / `sources.json` / `meta.json` を基本単位とし、sharding や pagination は導入しない
+- 理由: UI 導線に必要な情報を過不足なく持たせつつ、初期実装を複雑化しないため
+- 影響: `articles.json` は listing-ready summary object 配列、`categories.json` / `sources.json` は導線用 summary object 配列、`meta.json` は生成時刻と件数を持つ
+- V2 メモ: route 単位 JSON、検索 index、pagination、日付 shard を再検討する
+
+## D-023: `categoryId` は公開 JSON 用の安定 slug とする
+
+- 決定: 公開 JSON の `categoryId` は表示ラベルとは別の安定キーとして扱い、v1 ではカテゴリラベル由来の stable slug を使う
+- 理由: ルーティングや内部参照を表示名変更から切り離すため
+- 影響: slug 衝突は build error とし、`categoryLabel` は表示専用とする
+- V2 メモ: category master data を hand-authored source に昇格させるか再検討する

@@ -28,3 +28,9 @@
 | FS-024 | dedupe を全 feed 横断で conservative に行える | dedupe key selector | `normalizedUrl` と `(feedId, sourceItemId)` だけで判定する |
 | FS-025 | 重複記事を richest-wins で統合できる | duplicate merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
 | FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |
+
+| FS-027 | `articles.json` の一覧用 shape と並び順を固定できる | public articles generator | `sortAt` を含む summary object 配列として生成できる |
+| FS-028 | `categories.json` の shape を固定できる | public categories generator | `id/label/articleCount/latestSortAt` を生成できる |
+| FS-029 | `sources.json` の shape を固定できる | public sources generator | `id/name/siteUrl/language/categoryId/categoryLabel/articleCount/latestSortAt` を生成できる |
+| FS-030 | `meta.json` で生成時刻と件数を公開できる | public meta generator | `generatedAt/articleCount/sourceCount/categoryCount` を生成できる |
+| FS-031 | `categoryId` を安定 slug として扱える | category summary / routing key | 表示ラベルと内部キーが分離され、衝突が build error として扱える |

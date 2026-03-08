@@ -348,58 +348,190 @@ v1 の生成優先順位は以下とする。
 
 ---
 
-## 11. 更新フロー
+## 11. 生成物 JSON 契約
+
+### 11.1 責務分離
+
+- canonical article object は取得・正規化・dedupe 用の内部中間表現とする
+- UI が読む公開 JSON は listing-ready な別契約とする
+
+公開 JSON は、UI が追加の dedupe や join をせずに一覧を表示できる shape を優先する。
+
+### 11.2 v1 の公開 JSON 分割単位
+
+v1 の公開 JSON は次の 4 つを基本とする。
+
+- `articles.json`
+- `categories.json`
+- `sources.json`
+- `meta.json`
+
+補足:
+
+- ここでのファイル名は論理契約であり、実際の build 出力ディレクトリは実装タスクで確定する
+- v1 では route ごとの shard や pagination 用 JSON は作らない
+
+### 11.3 `articles.json`
+
+`articles.json` は dedupe 済み・表示用・ソート済みの記事 summary object 配列とする。
+
+```json
+[
+  {
+    "id": "article-id",
+    "title": "記事タイトル",
+    "url": "https://example.com/article",
+    "summary": "表示用要約",
+    "publishedAt": "2026-03-07T09:00:00+09:00",
+    "sortAt": "2026-03-07T09:00:00+09:00",
+    "sourceId": "itmedia-news",
+    "sourceName": "ITmedia NEWS 新着",
+    "categoryId": "jp-it",
+    "categoryLabel": "日本IT",
+    "imageUrl": null
+  }
+]
+```
+
+ルール:
+
+- `sortAt` は `publishedAt ?? fetchedAt` を公開用に確定した値とする
+- 配列は `sortAt` の降順で並べる
+- `sourceId` は canonical article object の `feedId` を public JSON 向けに写した値とする
+- `sourceItemId`, `seenInFeeds`, `fetchedAt`, `tags`, `author` などの内部寄り情報は v1 の公開 JSON では必須にしない
+
+### 11.4 `categories.json`
+
+`categories.json` はカテゴリ一覧や導線表示に使う summary object 配列とする。
+
+```json
+[
+  {
+    "id": "jp-it",
+    "label": "日本IT",
+    "articleCount": 120,
+    "latestSortAt": "2026-03-08T08:00:00Z"
+  }
+]
+```
+
+ルール:
+
+- `id` は stable slug とする
+- `label` は表示用文字列とする
+- `articleCount` は公開対象の記事数とする
+- `latestSortAt` はカテゴリ内の最新 `sortAt` とする
+
+### 11.5 `sources.json`
+
+`sources.json` は媒体一覧や媒体導線に使う summary object 配列とする。
+
+```json
+[
+  {
+    "id": "itmedia-news",
+    "name": "ITmedia NEWS 新着",
+    "siteUrl": "https://www.itmedia.co.jp/",
+    "language": "ja",
+    "categoryId": "jp-it",
+    "categoryLabel": "日本IT",
+    "articleCount": 42,
+    "latestSortAt": "2026-03-08T08:00:00Z"
+  }
+]
+```
+
+ルール:
+
+- `id` は `data/feeds.json` の feed `id` を使う
+- `articleCount` は公開対象の記事数とする
+- `latestSortAt` はその source に属する最新 `sortAt` とする
+
+### 11.6 `meta.json`
+
+`meta.json` は生成時刻と件数を公開する単一オブジェクトとする。
+
+```json
+{
+  "generatedAt": "2026-03-08T08:00:00Z",
+  "articleCount": 1234,
+  "sourceCount": 18,
+  "categoryCount": 6
+}
+```
+
+### 11.7 `categoryId` の導出
+
+`categoryId` は `categoryLabel` とは別の安定キーとして扱う。v1 ではカテゴリ表示ラベル由来の stable slug を使ってよい。
+
+ルール:
+
+- `categoryLabel` は表示専用とする
+- `categoryId` は route / 内部参照 / 集計キーに使う
+- slug 衝突は build error とする
+
+### 11.8 v2 で再検討する項目
+
+- `categories/<id>.json` / `sources/<id>.json` の個別生成
+- `articles` の sharding / pagination
+- search 向け専用 index
+- public JSON での richer provenance
+- category master data の独立管理
+
+
+## 12. 更新フロー
 
 1. フィード定義を読み込む
 2. 各 RSS / Atom を取得する
-3. 記事を共通形式へ正規化する
-4. 重複を除外する
-5. 一覧用 JSON を生成する
+3. 記事を canonical article object へ正規化する
+4. URL 正規化と dedupe を行う
+5. 公開 JSON (`articles/categories/sources/meta`) を生成する
 6. 静的ページを生成する
 7. GitHub Pages へ公開する
 
 ---
 
-## 12. 非機能要件
+## 13. 非機能要件
 
-### 12.1 配信
+### 13.1 配信
 - GitHub Pages で安定して公開できること
 - 外部バックエンドを必須にしないこと
 
-### 12.2 更新
+### 13.2 更新
 - GitHub Actions で定期更新できること
 - 単一フィードの失敗で全体を停止しないこと
 
-### 12.3 パフォーマンス
+### 13.3 パフォーマンス
 - 初回表示が重くなりすぎないこと
 - 必要に応じて記事JSONを分割できる設計にすること
 
-### 12.4 保守性
+### 13.4 保守性
 - フィード追加・削除が設定ファイル中心で行えること
 - UI と収集処理を分離できること
 
 ---
 
-## 13. 受け入れ条件
+## 14. 受け入れ条件
 
-### 13.1 機能
+### 14.1 機能
 - 複数の RSS / Atom フィードから記事一覧を生成できる
 - 新着順で一覧表示できる
 - カテゴリ別・媒体別の絞り込みができる
 - 各記事から元記事へ遷移できる
 
-### 13.2 運用
+### 14.2 運用
 - GitHub Actions の定期実行で更新できる
 - GitHub Pages 上で公開できる
 - 一部フィードの失敗時も前回公開済みサイトが利用可能である
 
-### 13.3 データ
+### 14.3 データ
 - 同一記事の重複掲載が抑制される
 - 一覧表示に必要な最小項目を保持できる
+- canonical article object と公開 JSON の責務が分離されている
 
 ---
 
-## 14. 将来拡張
+## 15. 将来拡張
 
 v2 以降で追加検討可能な項目:
 
@@ -413,3 +545,4 @@ v2 以降で追加検討可能な項目:
 - host 固有 canonicalization
 - fuzzy dedupe
 - richer provenance 記録
+- public JSON の sharding / pagination
