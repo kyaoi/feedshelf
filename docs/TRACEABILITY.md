@@ -18,3 +18,8 @@
 | FS-014 | フィード定義を `data/feeds.json` に集約できる | hand-authored source / loader | 単一ファイルから全フィードを読める |
 | FS-015 | フィード `id` を安定キーとして扱える | schema / validation | `id` が内部参照キーとして利用できる |
 | FS-016 | フィード定義の必須項目が明示されている | docs / loader contract | 必須フィールド欠落時に検出できる |
+| FS-017 | 記事正規化オブジェクトを共通中間表現として固定できる | canonical article object / docs | 取得処理と生成物 shape の責務が分離されている |
+| FS-018 | 公開日時が無い記事でも `fetchedAt` を持って保持できる | normalization contract | `publishedAt=null` でも記事を表現できる |
+| FS-019 | optional 項目の欠損表現が安定している | schema / JSON contract | 単数値は `null`、配列は `[]` で揃う |
+| FS-020 | 記事側だけで表示に必要な媒体メタデータを読める | `sourceName/category/language` の保持 | 追加 join なしで最低限の表示ができる |
+| FS-021 | `summary` を表示用の正規化済み文字列として扱える | normalization rule | raw HTML 前提にしないことが仕様で確認できる |
