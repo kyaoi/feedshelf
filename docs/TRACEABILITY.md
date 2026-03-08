@@ -29,12 +29,12 @@
 | FS-025 | 重複記事を richest-wins で統合できる | `scripts/pipeline/dedupeArticles.js` merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
 | FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | `scripts/pipeline/dedupeArticles.js` provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |
 
-| FS-027 | `articles.json` の一覧用 shape と並び順を固定できる | public articles generator | `sortAt` を含む summary object 配列として生成できる |
-| FS-028 | `categories.json` の shape を固定できる | public categories generator | `id/label/articleCount/latestSortAt` を生成できる |
-| FS-029 | `sources.json` の shape を固定できる | public sources generator | `id/name/siteUrl/language/categoryId/categoryLabel/articleCount/latestSortAt` を生成できる |
-| FS-030 | `meta.json` で生成時刻と件数を公開できる | public meta generator | `generatedAt/articleCount/sourceCount/categoryCount` を生成できる |
-| FS-031 | `categoryId` を安定 slug として扱える | category summary / routing key | 表示ラベルと内部キーが分離され、衝突が build error として扱える |
+| FS-027 | `articles.json` の一覧用 shape と並び順を固定できる | `scripts/pipeline/buildPublicExports.js` articles generator | `sortAt` を含む summary object 配列として生成できる |
+| FS-028 | `categories.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.js` categories generator | `id/label/articleCount/latestSortAt` を生成できる |
+| FS-029 | `sources.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.js` sources generator | `id/name/siteUrl/language/categoryId/categoryLabel/articleCount/latestSortAt` を生成できる |
+| FS-030 | `meta.json` で生成時刻と件数を公開できる | `scripts/pipeline/buildPublicExports.js` meta generator | `generatedAt/articleCount/sourceCount/categoryCount` を生成できる |
+| FS-031 | `categoryId` を安定 slug として扱える | `scripts/pipeline/buildPublicExports.js` slug builder | 表示ラベルと内部キーが分離され、衝突が build error として扱える |
 | FS-032 | Phase 2 の実行モデルを GitHub Actions-first で固定できる | workflow strategy / docs | 定期実行が標準であり公開向け CLI を必須にしないことが仕様で確認できる |
 | FS-033 | 長期保持する取得 state を cache / artifact 非依存で保存できる | state storage strategy | 永続 state の正本が repository 管理下の保存先に置かれることが仕様で確認できる |
-| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | `package.json` / `scripts/pipeline/run.js` / `justfile` | `runPipeline` から正規化層まで同じ処理系を共有できる |
+| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | `package.json` / `scripts/pipeline/run.js` / `justfile` | `runPipeline` から正規化・dedupe・public export まで同じ処理系を共有できる |
 | FS-035 | 公開生成物と内部 state の責務を分離できる | public export / internal state design | `articles.json` 等を公開契約に限定し、内部履歴と混同しないことが確認できる |

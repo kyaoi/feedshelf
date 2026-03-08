@@ -6,6 +6,7 @@ const FILES_TO_CHECK = [
   'scripts/lint.js',
   'scripts/pipeline/loadFeeds.js',
   'scripts/pipeline/dedupeArticles.js',
+  'scripts/pipeline/buildPublicExports.js',
   'scripts/pipeline/run.js',
   'scripts/pipeline/normalizeFeed.js',
   'tests/load-feeds.test.js',

@@ -194,3 +194,12 @@
 - 理由: `FS-PIPE-02` の正規化責務を崩さず、dedupe key / merge rule / provenance-lite を単体テストしやすい境界として分離するため
 - 影響: `runPipeline` の summary には `dedupedArticles` と `duplicatesCollapsed` を含め、ログでも dedupe 結果を確認できる
 - V2 メモ: 履歴 state や公開 JSON 生成が入る段階で、dedupe module を internal state layer と接続するか再検討する
+
+
+## D-031: FS-PIPE-04 の公開 JSON 生成は専用 module で `public/data` へ出力する
+
+- 決定: `FS-PIPE-04` は `scripts/pipeline/buildPublicExports.js` を追加し、`runPipeline` では dedupe 済み canonical article object から `articles.json` / `categories.json` / `sources.json` / `meta.json` を生成して標準では `public/data/` へ書き出す
+- 理由: 公開 JSON 契約を dedupe や将来の UI 実装から分離し、出力先も静的配信用の分かりやすい既定値へ固定したいため
+- 影響: `runPipeline` の summary には公開件数と `outputDir` / `generatedAt` を含め、`--dry-run` では同じ shape を in-memory で検証できる
+- 影響: `categoryId` slug は v1 では transliteration を行わず、Unicode を保持した deterministic slug + collision error を採用する
+- V2 メモ: feed fetch / state save / static page build が入ったら、public export module を build orchestration からさらに分離するか再検討する

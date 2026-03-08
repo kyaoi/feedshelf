@@ -2,10 +2,12 @@ const path = require('node:path');
 const { loadFeeds } = require('./loadFeeds');
 const { normalizeFeedDocument } = require('./normalizeFeed');
 const { dedupeArticles } = require('./dedupeArticles');
+const { buildPublicExports, writePublicExports } = require('./buildPublicExports');
 
 function parseArgs(argv) {
   const args = {
     feedsPath: path.resolve(process.cwd(), 'data/feeds.json'),
+    outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
   };
 
@@ -18,6 +20,16 @@ function parseArgs(argv) {
         throw new Error('--feeds requires a path argument.');
       }
       args.feedsPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--output-dir') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--output-dir requires a path argument.');
+      }
+      args.outputDir = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -35,6 +47,7 @@ function parseArgs(argv) {
 
 async function runPipeline(options = {}) {
   const feedsPath = options.feedsPath || path.resolve(process.cwd(), 'data/feeds.json');
+  const outputDir = options.outputDir || path.resolve(process.cwd(), 'public/data');
   const logger = options.logger || console;
   const feeds = await loadFeeds(feedsPath);
   const enabledFeeds = feeds.filter((feed) => feed.enabled);
@@ -58,13 +71,31 @@ async function runPipeline(options = {}) {
   }
 
   const dedupedArticles = dedupeArticles(articles);
+  const publicExports = buildPublicExports({
+    articles: dedupedArticles,
+    feeds,
+    generatedAt: options.generatedAt || new Date().toISOString(),
+  });
+
+  if (!options.dryRun) {
+    await writePublicExports({
+      outputDir,
+      publicExports,
+    });
+  }
+
   const summary = {
     feedsPath,
+    outputDir,
+    generatedAt: publicExports.meta.generatedAt,
     totalFeeds: feeds.length,
     enabledFeeds: enabledFeeds.length,
     normalizedArticles: articles.length,
     dedupedArticles: dedupedArticles.length,
     duplicatesCollapsed: articles.length - dedupedArticles.length,
+    publicArticles: publicExports.meta.articleCount,
+    publicCategories: publicExports.meta.categoryCount,
+    publicSources: publicExports.meta.sourceCount,
   };
 
   logger.log(
@@ -76,11 +107,15 @@ async function runPipeline(options = {}) {
     logger.log(`[pipeline] dedupedArticles=${dedupedArticles.length} duplicatesCollapsed=${summary.duplicatesCollapsed}`);
   }
 
+  logger.log(
+    `[pipeline] publicArticles=${summary.publicArticles} publicCategories=${summary.publicCategories} publicSources=${summary.publicSources} outputDir=${path.relative(process.cwd(), outputDir) || 'public/data'}`,
+  );
+
   if (options.dryRun) {
-    logger.log('[pipeline] dry-run: fetch/export steps are not implemented yet.');
+    logger.log('[pipeline] dry-run: public JSON was generated in-memory and not written to disk.');
   }
 
-  logger.log('[pipeline] FS-PIPE-03 dedupe ready');
+  logger.log('[pipeline] FS-PIPE-04 public JSON ready');
 
   return summary;
 }
