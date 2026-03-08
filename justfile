@@ -1,17 +1,16 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 bootstrap:
-    corepack enable
-    pnpm install --frozen-lockfile=false
+	pnpm install
+	lefthook install
 
 lint:
-    pnpm run lint
+    pnpm lint
 
 test:
-    pnpm run test
+    pnpm test
 
-ci:
-    pnpm run ci
+build:
+    pnpm build
 
-pipeline-run:
-    pnpm run pipeline:run
+ci: lint test # build

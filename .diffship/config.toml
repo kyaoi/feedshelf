@@ -45,6 +45,12 @@ policy = "auto"            # auto|manual
 # cmd2 = "just docs-check"
 # cmd3 = "just trace-check"
 # cmd4 = "just ci"
+#
+# FeedShelf keeps tool versions in `mise` and repo tasks in `just`.
+[ops.post_apply]
+cmd1 = "mise trust . -y"
+cmd2 = "mise install"
+cmd3 = "just bootstrap"
 
 # ---
 # Planned / reserved keys (kept here for future versions):
