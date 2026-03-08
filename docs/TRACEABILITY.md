@@ -6,7 +6,7 @@
 | FS-002 | カテゴリ別に絞り込める | カテゴリ一覧ページ | 指定カテゴリのみ表示される |
 | FS-003 | 媒体別に絞り込める | 媒体一覧ページ | 指定媒体のみ表示される |
 | FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク | 外部URLへ遷移できる |
-| FS-005 | RSS / Atom を共通形式へ正規化できる | 取得スクリプト | 必須項目が揃う |
+| FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.js` | RSS / Atom fixture が canonical article object へ変換される |
 | FS-006 | 重複記事を抑制できる | dedupe 処理 | 同一記事の多重表示を抑制 |
 | FS-007 | GitHub Actions で定期更新できる | workflow | 定期実行でデータ更新 |
 | FS-008 | GitHub Pages で公開できる | 静的ビルド / deploy | 公開URLで閲覧可能 |
@@ -18,13 +18,13 @@
 | FS-014 | フィード定義を `data/feeds.json` に集約できる | `data/feeds.json` / `scripts/pipeline/loadFeeds.js` | 単一ファイルから全フィードを読める |
 | FS-015 | フィード `id` を安定キーとして扱える | schema / validation | `id` が内部参照キーとして利用できる |
 | FS-016 | フィード定義の必須項目が明示されている | docs / loader contract | 必須フィールド欠落時に検出できる |
-| FS-017 | 記事正規化オブジェクトを共通中間表現として固定できる | canonical article object / docs | 取得処理と生成物 shape の責務が分離されている |
-| FS-018 | 公開日時が無い記事でも `fetchedAt` を持って保持できる | normalization contract | `publishedAt=null` でも記事を表現できる |
+| FS-017 | 記事正規化オブジェクトを共通中間表現として固定できる | `scripts/pipeline/normalizeFeed.js` / docs | canonical article object の shape と責務が tests で固定される |
+| FS-018 | 公開日時が無い記事でも `fetchedAt` を持って保持できる | `scripts/pipeline/normalizeFeed.js` | `publishedAt` 欠損時も `fetchedAt` を ISO 8601 で保持できる |
 | FS-019 | optional 項目の欠損表現が安定している | schema / JSON contract | 単数値は `null`、配列は `[]` で揃う |
-| FS-020 | 記事側だけで表示に必要な媒体メタデータを読める | `sourceName/category/language` の保持 | 追加 join なしで最低限の表示ができる |
-| FS-021 | `summary` を表示用の正規化済み文字列として扱える | normalization rule | raw HTML 前提にしないことが仕様で確認できる |
-| FS-022 | URL 正規化を安全な変形のみに限定できる | `normalizedUrl` ルール / tracking 除去 | 破壊的 canonicalization を行わないことが仕様で確認できる |
-| FS-023 | 記事 `id` を URL 優先の段階的 hash で安定生成できる | normalization / ID generator | URL → source item → fallback の優先順位が仕様で確認できる |
+| FS-020 | 記事側だけで表示に必要な媒体メタデータを読める | `scripts/pipeline/normalizeFeed.js` | feed 定義由来の `sourceName/category/language` が記事に補完される |
+| FS-021 | `summary` を表示用の正規化済み文字列として扱える | `scripts/pipeline/normalizeFeed.js` | HTML を除去した summary が canonical article object に入る |
+| FS-022 | URL 正規化を安全な変形のみに限定できる | `scripts/pipeline/normalizeFeed.js` | scheme/host 小文字化・tracking 除去・query 安定化のみを行う |
+| FS-023 | 記事 `id` を URL 優先の段階的 hash で安定生成できる | `scripts/pipeline/normalizeFeed.js` | URL → source item → fallback の順で ID を生成できる |
 | FS-024 | dedupe を全 feed 横断で conservative に行える | dedupe key selector | `normalizedUrl` と `(feedId, sourceItemId)` だけで判定する |
 | FS-025 | 重複記事を richest-wins で統合できる | duplicate merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
 | FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |
@@ -36,5 +36,5 @@
 | FS-031 | `categoryId` を安定 slug として扱える | category summary / routing key | 表示ラベルと内部キーが分離され、衝突が build error として扱える |
 | FS-032 | Phase 2 の実行モデルを GitHub Actions-first で固定できる | workflow strategy / docs | 定期実行が標準であり公開向け CLI を必須にしないことが仕様で確認できる |
 | FS-033 | 長期保持する取得 state を cache / artifact 非依存で保存できる | state storage strategy | 永続 state の正本が repository 管理下の保存先に置かれることが仕様で確認できる |
-| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | `package.json` / `scripts/pipeline/run.js` / `justfile` | `pnpm run pipeline:run` と workflow が同じ処理系を共有できる |
+| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | `package.json` / `scripts/pipeline/run.js` / `justfile` | `runPipeline` から正規化層まで同じ処理系を共有できる |
 | FS-035 | 公開生成物と内部 state の責務を分離できる | public export / internal state design | `articles.json` 等を公開契約に限定し、内部履歴と混同しないことが確認できる |

@@ -180,3 +180,10 @@
 - 理由: workflow YAML に処理を埋め込みすぎず、GitHub Actions とローカル再現で同じ実行入口を共有するため
 - 影響: リポジトリには `package.json` / `justfile` / `mise.toml` を置き、apply 後のローカル自動処理は `mise install` → `just bootstrap` → `just ci` で揃える
 - V2 メモ: pipeline が複雑化した場合は TypeScript 化や `src/` への昇格を再検討する
+
+## D-029: FS-PIPE-02 では RSS / Atom の core field だけを canonical article object に正規化する
+
+- 決定: `FS-PIPE-02` は RSS `<item>` と Atom `<entry>` の core field を canonical article object へ正規化し、本文取得・dedupe・公開 JSON 生成は後続タスクへ分離する
+- 理由: Phase 2 を「取得入口 → 正規化 → dedupe → 公開生成」の順で責務分離し、最小差分で安全に進めるため
+- 影響: この段階では `title` / `url` が欠けた item はスキップし、`summary` / `publishedAt` / `author` / `imageUrl` / `sourceItemId` は nullable contract に従って埋める
+- V2 メモ: 名前空間の多い feed や HTML-rich content の扱いが不足する場合は、専用 parser 導入を後続で検討する

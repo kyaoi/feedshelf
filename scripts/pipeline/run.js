@@ -1,5 +1,6 @@
 const path = require('node:path');
 const { loadFeeds } = require('./loadFeeds');
+const { normalizeFeedDocument } = require('./normalizeFeed');
 
 function parseArgs(argv) {
   const args = {
@@ -36,21 +37,45 @@ async function runPipeline(options = {}) {
   const logger = options.logger || console;
   const feeds = await loadFeeds(feedsPath);
   const enabledFeeds = feeds.filter((feed) => feed.enabled);
+  const feedDocuments = Array.isArray(options.feedDocuments) ? options.feedDocuments : [];
+  const feedMap = new Map(feeds.map((feed) => [feed.id, feed]));
+  const articles = [];
+
+  for (const document of feedDocuments) {
+    const feed = feedMap.get(document.feedId);
+    if (!feed) {
+      throw new Error(`Unknown feedId in feedDocuments: ${document.feedId}`);
+    }
+
+    articles.push(
+      ...normalizeFeedDocument({
+        feed,
+        xml: document.xml,
+        fetchedAt: document.fetchedAt,
+      }),
+    );
+  }
+
   const summary = {
     feedsPath,
     totalFeeds: feeds.length,
     enabledFeeds: enabledFeeds.length,
+    normalizedArticles: articles.length,
   };
 
   logger.log(
     `[pipeline] feeds=${summary.totalFeeds} enabled=${summary.enabledFeeds} feedsPath=${path.relative(process.cwd(), feedsPath) || 'data/feeds.json'}`,
   );
 
-  if (options.dryRun) {
-    logger.log('[pipeline] dry-run: fetch/normalize/export steps are not implemented yet.');
+  if (articles.length > 0) {
+    logger.log(`[pipeline] normalizedArticles=${articles.length}`);
   }
 
-  logger.log('[pipeline] FS-PIPE-01 entrypoint ready');
+  if (options.dryRun) {
+    logger.log('[pipeline] dry-run: fetch/export steps are not implemented yet.');
+  }
+
+  logger.log('[pipeline] FS-PIPE-02 normalization ready');
 
   return summary;
 }
