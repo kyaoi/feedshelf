@@ -1,0 +1,17 @@
+{
+  "name": "feedshelf",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FeedShelf internal pipeline entrypoint",
+  "packageManager": "pnpm@10.6.2",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "bootstrap": "pnpm install --frozen-lockfile=false",
+    "pipeline:run": "node scripts/pipeline/run.js",
+    "lint": "node scripts/lint.js",
+    "test": "node --test",
+    "ci": "pnpm run lint && pnpm run test"
+  }
+}

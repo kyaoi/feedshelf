@@ -15,7 +15,7 @@
 | FS-011 | 静的生成データの責務を分離できる | `feeds/articles/categories/sources` の生成 | UI が必要データを静的成果物から読める |
 | FS-012 | ルーティングが一覧中心で定義されている | `/`, `/categories/[category]`, `/sources/[source]` | 導線が仕様と一致する |
 | FS-013 | 更新失敗時も前回成功データを破壊しない | workflow / deploy 設計 | 一部失敗時の継続方針が保たれる |
-| FS-014 | フィード定義を `data/feeds.json` に集約できる | hand-authored source / loader | 単一ファイルから全フィードを読める |
+| FS-014 | フィード定義を `data/feeds.json` に集約できる | `data/feeds.json` / `scripts/pipeline/loadFeeds.js` | 単一ファイルから全フィードを読める |
 | FS-015 | フィード `id` を安定キーとして扱える | schema / validation | `id` が内部参照キーとして利用できる |
 | FS-016 | フィード定義の必須項目が明示されている | docs / loader contract | 必須フィールド欠落時に検出できる |
 | FS-017 | 記事正規化オブジェクトを共通中間表現として固定できる | canonical article object / docs | 取得処理と生成物 shape の責務が分離されている |
@@ -36,5 +36,5 @@
 | FS-031 | `categoryId` を安定 slug として扱える | category summary / routing key | 表示ラベルと内部キーが分離され、衝突が build error として扱える |
 | FS-032 | Phase 2 の実行モデルを GitHub Actions-first で固定できる | workflow strategy / docs | 定期実行が標準であり公開向け CLI を必須にしないことが仕様で確認できる |
 | FS-033 | 長期保持する取得 state を cache / artifact 非依存で保存できる | state storage strategy | 永続 state の正本が repository 管理下の保存先に置かれることが仕様で確認できる |
-| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | scripts / module entrypoint | workflow とローカル検証が同じ処理系を共有できる |
+| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | `package.json` / `scripts/pipeline/run.js` / `justfile` | `pnpm run pipeline:run` と workflow が同じ処理系を共有できる |
 | FS-035 | 公開生成物と内部 state の責務を分離できる | public export / internal state design | `articles.json` 等を公開契約に限定し、内部履歴と混同しないことが確認できる |

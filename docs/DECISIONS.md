@@ -173,3 +173,10 @@
 - 理由: 公開契約を安定させつつ、内部の取得戦略や履歴表現を後から拡張しやすくするため
 - 影響: `articles.json` などの公開生成物だけを長期運用の正本として扱わない
 - V2 メモ: public export と internal cache の保存形式をさらに強く分離する場合は別仕様を追加する
+
+## D-028: v1 の pipeline entrypoint は Node script + `pnpm` script で固定する
+
+- 決定: `FS-PIPE-01` の内部 entrypoint は `scripts/pipeline/run.js` とし、`pnpm run pipeline:run` から呼べる形で実装する
+- 理由: workflow YAML に処理を埋め込みすぎず、GitHub Actions とローカル再現で同じ実行入口を共有するため
+- 影響: リポジトリには `package.json` / `justfile` / `mise.toml` を置き、apply 後のローカル自動処理は `mise install` → `just bootstrap` → `just ci` で揃える
+- V2 メモ: pipeline が複雑化した場合は TypeScript 化や `src/` への昇格を再検討する
