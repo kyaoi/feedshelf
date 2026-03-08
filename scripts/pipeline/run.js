@@ -1,6 +1,7 @@
 const path = require('node:path');
 const { loadFeeds } = require('./loadFeeds');
 const { normalizeFeedDocument } = require('./normalizeFeed');
+const { dedupeArticles } = require('./dedupeArticles');
 
 function parseArgs(argv) {
   const args = {
@@ -56,11 +57,14 @@ async function runPipeline(options = {}) {
     );
   }
 
+  const dedupedArticles = dedupeArticles(articles);
   const summary = {
     feedsPath,
     totalFeeds: feeds.length,
     enabledFeeds: enabledFeeds.length,
     normalizedArticles: articles.length,
+    dedupedArticles: dedupedArticles.length,
+    duplicatesCollapsed: articles.length - dedupedArticles.length,
   };
 
   logger.log(
@@ -69,13 +73,14 @@ async function runPipeline(options = {}) {
 
   if (articles.length > 0) {
     logger.log(`[pipeline] normalizedArticles=${articles.length}`);
+    logger.log(`[pipeline] dedupedArticles=${dedupedArticles.length} duplicatesCollapsed=${summary.duplicatesCollapsed}`);
   }
 
   if (options.dryRun) {
     logger.log('[pipeline] dry-run: fetch/export steps are not implemented yet.');
   }
 
-  logger.log('[pipeline] FS-PIPE-02 normalization ready');
+  logger.log('[pipeline] FS-PIPE-03 dedupe ready');
 
   return summary;
 }

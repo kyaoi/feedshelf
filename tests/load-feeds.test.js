@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const { loadFeeds } = require('../scripts/pipeline/loadFeeds');
 const { normalizeFeedDocument, normalizeUrl } = require('../scripts/pipeline/normalizeFeed');
+const { dedupeArticles } = require('../scripts/pipeline/dedupeArticles');
 const { parseArgs, runPipeline } = require('../scripts/pipeline/run');
 
 const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -162,6 +163,154 @@ test('normalizeFeedDocument converts Atom entries into canonical article objects
   });
 });
 
+
+
+test('dedupeArticles merges duplicates by normalizedUrl across feeds', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example RSS',
+      category: 'Examples',
+      language: 'en',
+      title: 'Shared article',
+      url: 'https://example.com/shared?a=1&utm_source=rss',
+      summary: 'Short summary.',
+      publishedAt: null,
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      tags: ['rss'],
+      sourceItemId: 'rss-shared',
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Atom',
+      category: 'Examples',
+      language: 'en',
+      title: 'Shared article (richer)',
+      url: 'https://example.com/shared?a=1&utm_medium=email',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-08T01:02:03.000Z',
+      fetchedAt: '2026-03-08T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared.jpg',
+      tags: ['atom'],
+      sourceItemId: 'atom-shared',
+      seenInFeeds: ['atom-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 1);
+  assert.deepEqual(deduped[0], {
+    id: 'article-b',
+    feedId: 'atom-feed',
+    sourceName: 'Example Atom',
+    category: 'Examples',
+    language: 'en',
+    title: 'Shared article (richer)',
+    url: 'https://example.com/shared?a=1&utm_medium=email',
+    summary: 'Longer summary with more useful detail.',
+    publishedAt: '2026-03-08T01:02:03.000Z',
+    fetchedAt: '2026-03-08T06:00:00.000Z',
+    author: 'Atom Author',
+    imageUrl: 'https://example.com/shared.jpg',
+    tags: ['atom', 'rss'],
+    sourceItemId: 'atom-shared',
+    seenInFeeds: ['atom-feed', 'rss-feed'],
+  });
+});
+
+test('dedupeArticles merges duplicates by feedId and sourceItemId when URL cannot be normalized', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example RSS',
+      category: 'Examples',
+      language: 'en',
+      title: 'Opaque URL article',
+      url: '/articles/opaque',
+      summary: null,
+      publishedAt: null,
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      tags: [],
+      sourceItemId: 'opaque-1',
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-b',
+      feedId: 'rss-feed',
+      sourceName: 'Example RSS',
+      category: 'Examples',
+      language: 'en',
+      title: 'Opaque URL article',
+      url: 'not-a-valid-url',
+      summary: 'Recovered metadata.',
+      publishedAt: '2026-03-08T01:02:03.000Z',
+      fetchedAt: '2026-03-08T06:05:00.000Z',
+      author: 'RSS Author',
+      imageUrl: null,
+      tags: ['deduped'],
+      sourceItemId: 'opaque-1',
+      seenInFeeds: ['rss-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 1);
+  assert.equal(deduped[0].sourceItemId, 'opaque-1');
+  assert.equal(deduped[0].publishedAt, '2026-03-08T01:02:03.000Z');
+  assert.equal(deduped[0].summary, 'Recovered metadata.');
+  assert.equal(deduped[0].author, 'RSS Author');
+  assert.equal(deduped[0].fetchedAt, '2026-03-08T06:00:00.000Z');
+  assert.deepEqual(deduped[0].tags, ['deduped']);
+});
+
+test('dedupeArticles does not collapse articles by title similarity alone', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example RSS',
+      category: 'Examples',
+      language: 'en',
+      title: 'Same title',
+      url: 'https://example.com/articles/a',
+      summary: null,
+      publishedAt: null,
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      tags: [],
+      sourceItemId: null,
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Atom',
+      category: 'Examples',
+      language: 'en',
+      title: 'Same title',
+      url: 'https://example.com/articles/b',
+      summary: null,
+      publishedAt: null,
+      fetchedAt: '2026-03-08T06:05:00.000Z',
+      author: null,
+      imageUrl: null,
+      tags: [],
+      sourceItemId: null,
+      seenInFeeds: ['atom-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 2);
+});
+
 test('runPipeline reports normalized article counts when feed documents are provided', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-run-'));
   const feedsPath = path.join(tempDir, 'feeds.json');
@@ -196,7 +345,10 @@ test('runPipeline reports normalized article counts when feed documents are prov
     totalFeeds: 2,
     enabledFeeds: 2,
     normalizedArticles: 2,
+    dedupedArticles: 2,
+    duplicatesCollapsed: 0,
   });
   assert.match(lines.join('\n'), /normalizedArticles=2/);
-  assert.match(lines.join('\n'), /FS-PIPE-02 normalization ready/);
+  assert.match(lines.join('\n'), /dedupedArticles=2 duplicatesCollapsed=0/);
+  assert.match(lines.join('\n'), /FS-PIPE-03 dedupe ready/);
 });

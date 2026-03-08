@@ -7,7 +7,7 @@
 | FS-003 | 媒体別に絞り込める | 媒体一覧ページ | 指定媒体のみ表示される |
 | FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク | 外部URLへ遷移できる |
 | FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.js` | RSS / Atom fixture が canonical article object へ変換される |
-| FS-006 | 重複記事を抑制できる | dedupe 処理 | 同一記事の多重表示を抑制 |
+| FS-006 | 重複記事を抑制できる | `scripts/pipeline/dedupeArticles.js` | 同一記事の多重表示を抑制 |
 | FS-007 | GitHub Actions で定期更新できる | workflow | 定期実行でデータ更新 |
 | FS-008 | GitHub Pages で公開できる | 静的ビルド / deploy | 公開URLで閲覧可能 |
 | FS-009 | 単一フィード失敗で全体を止めない | 取得エラーハンドリング | 一部失敗でも生成継続 |
@@ -25,9 +25,9 @@
 | FS-021 | `summary` を表示用の正規化済み文字列として扱える | `scripts/pipeline/normalizeFeed.js` | HTML を除去した summary が canonical article object に入る |
 | FS-022 | URL 正規化を安全な変形のみに限定できる | `scripts/pipeline/normalizeFeed.js` | scheme/host 小文字化・tracking 除去・query 安定化のみを行う |
 | FS-023 | 記事 `id` を URL 優先の段階的 hash で安定生成できる | `scripts/pipeline/normalizeFeed.js` | URL → source item → fallback の順で ID を生成できる |
-| FS-024 | dedupe を全 feed 横断で conservative に行える | dedupe key selector | `normalizedUrl` と `(feedId, sourceItemId)` だけで判定する |
-| FS-025 | 重複記事を richest-wins で統合できる | duplicate merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
-| FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |
+| FS-024 | dedupe を全 feed 横断で conservative に行える | `scripts/pipeline/dedupeArticles.js` key selector | `normalizedUrl` と `(feedId, sourceItemId)` だけで判定する |
+| FS-025 | 重複記事を richest-wins で統合できる | `scripts/pipeline/dedupeArticles.js` merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
+| FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | `scripts/pipeline/dedupeArticles.js` provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |
 
 | FS-027 | `articles.json` の一覧用 shape と並び順を固定できる | public articles generator | `sortAt` を含む summary object 配列として生成できる |
 | FS-028 | `categories.json` の shape を固定できる | public categories generator | `id/label/articleCount/latestSortAt` を生成できる |

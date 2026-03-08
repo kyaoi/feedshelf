@@ -187,3 +187,10 @@
 - 理由: Phase 2 を「取得入口 → 正規化 → dedupe → 公開生成」の順で責務分離し、最小差分で安全に進めるため
 - 影響: この段階では `title` / `url` が欠けた item はスキップし、`summary` / `publishedAt` / `author` / `imageUrl` / `sourceItemId` は nullable contract に従って埋める
 - V2 メモ: 名前空間の多い feed や HTML-rich content の扱いが不足する場合は、専用 parser 導入を後続で検討する
+
+## D-030: FS-PIPE-03 の dedupe は `normalize -> dedupe` の独立段として実装する
+
+- 決定: `FS-PIPE-03` は `scripts/pipeline/dedupeArticles.js` を独立段として追加し、`runPipeline` では canonical article object の配列を受け取って dedupe してから後続段へ渡す
+- 理由: `FS-PIPE-02` の正規化責務を崩さず、dedupe key / merge rule / provenance-lite を単体テストしやすい境界として分離するため
+- 影響: `runPipeline` の summary には `dedupedArticles` と `duplicatesCollapsed` を含め、ログでも dedupe 結果を確認できる
+- V2 メモ: 履歴 state や公開 JSON 生成が入る段階で、dedupe module を internal state layer と接続するか再検討する
