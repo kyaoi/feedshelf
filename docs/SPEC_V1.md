@@ -479,15 +479,62 @@ v1 の公開 JSON は次の 4 つを基本とする。
 - category master data の独立管理
 
 
-## 12. 更新フロー
+## 12. Phase 2 の実行・保存・公開戦略
+
+### 12.1 v1 の実行モデル
+
+v1 の取得・生成パイプラインは GitHub Actions からの定期実行を標準とする。
+
+- GitHub Actions が定期的に pipeline を起動する
+- pipeline は内部 script / module entrypoint を呼び出して取得・正規化・dedupe・JSON 生成を行う
+- エンドユーザー向けの CLI 契約は v1 の必須要件にしない
+- 同じ内部 entrypoint はローカルでも再現実行できる形を維持する
+
+### 12.2 内部 entrypoint の位置づけ
+
+- `pnpm` scripts などから呼べる内部実行入口を持つ
+- これは workflow から再利用できる実装単位であり、公開 CLI 製品を意味しない
+- v1 では Actions から呼べることを優先し、ローカル実行は再現・検証手段として扱う
+
+### 12.3 永続 state の保存方針
+
+長期的に保持したい state は、Actions cache や artifact ではなく、管理された実データとして保持する。
+
+保持対象の例:
+- dedupe 後の canonical article records
+- seen article IDs / normalized URLs
+- feed ごとの最終取得メタデータ
+
+ルール:
+- cache は依存関係や一時高速化にのみ使う
+- artifact は build/deploy の受け渡しにのみ使う
+- 永続 state の正本は repository 管理下の保存先に置く
+- v1 では専用 `data` branch など、公開サイト本体と分離した保存先を採用してよい
+
+### 12.4 公開データと内部 state の分離
+
+- `articles.json` / `categories.json` / `sources.json` / `meta.json` は Pages 公開用の生成物とする
+- dedupe や再取得に必要な内部 state は公開 JSON と責務を分ける
+- 公開用生成物だけで運用履歴を表現しようとしない
+
+### 12.5 v1 の更新・公開フロー
 
 1. フィード定義を読み込む
-2. 各 RSS / Atom を取得する
-3. 記事を canonical article object へ正規化する
-4. URL 正規化と dedupe を行う
-5. 公開 JSON (`articles/categories/sources/meta`) を生成する
-6. 静的ページを生成する
-7. GitHub Pages へ公開する
+2. 永続 state を読み込む
+3. 各 RSS / Atom を取得する
+4. 記事を canonical article object へ正規化する
+5. URL 正規化と dedupe を行う
+6. 公開 JSON (`articles/categories/sources/meta`) を生成する
+7. 静的ページを生成する
+8. GitHub Pages へ公開する
+9. 更新後の内部 state を保存先へ書き戻す
+
+### 12.6 v2 で再検討する項目
+
+- SQLite / D1 / 外部 KV などへの state 保存先移行
+- build と state 保存の別 repository 化
+- より高度な増分取得戦略
+- 監視 / 通知を含む workflow 運用
 
 ---
 

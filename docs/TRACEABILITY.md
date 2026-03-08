@@ -34,3 +34,7 @@
 | FS-029 | `sources.json` の shape を固定できる | public sources generator | `id/name/siteUrl/language/categoryId/categoryLabel/articleCount/latestSortAt` を生成できる |
 | FS-030 | `meta.json` で生成時刻と件数を公開できる | public meta generator | `generatedAt/articleCount/sourceCount/categoryCount` を生成できる |
 | FS-031 | `categoryId` を安定 slug として扱える | category summary / routing key | 表示ラベルと内部キーが分離され、衝突が build error として扱える |
+| FS-032 | Phase 2 の実行モデルを GitHub Actions-first で固定できる | workflow strategy / docs | 定期実行が標準であり公開向け CLI を必須にしないことが仕様で確認できる |
+| FS-033 | 長期保持する取得 state を cache / artifact 非依存で保存できる | state storage strategy | 永続 state の正本が repository 管理下の保存先に置かれることが仕様で確認できる |
+| FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | scripts / module entrypoint | workflow とローカル検証が同じ処理系を共有できる |
+| FS-035 | 公開生成物と内部 state の責務を分離できる | public export / internal state design | `articles.json` 等を公開契約に限定し、内部履歴と混同しないことが確認できる |

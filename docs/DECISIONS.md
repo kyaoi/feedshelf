@@ -145,3 +145,31 @@
 - 理由: ルーティングや内部参照を表示名変更から切り離すため
 - 影響: slug 衝突は build error とし、`categoryLabel` は表示専用とする
 - V2 メモ: category master data を hand-authored source に昇格させるか再検討する
+
+## D-024: Phase 2 の実行モデルは GitHub Actions-first とする
+
+- 決定: v1 の取得・生成パイプラインは GitHub Actions からの定期実行を標準とし、公開向け CLI 契約は必須にしない
+- 理由: GitHub Pages + GitHub Actions 前提の運用と整合し、MVP で必要な責務を最小差分で実装できるため
+- 影響: 実装は workflow から呼べる内部 entrypoint を持つが、v1 では配布用 CLI を前提にしない
+- V2 メモ: ローカル運用や外部 scheduler を強める場合は CLI / service interface を再検討する
+
+## D-025: 長期保持する取得 state は cache / artifact ではなく管理された実データとして保存する
+
+- 決定: 記事履歴や dedupe 用 state の正本は Actions cache や artifact に依存させず、repository 管理下の保存先に置く
+- 理由: cache / artifact は長期永続の前提が弱く、履歴や再取得戦略の基盤としては不安定なため
+- 影響: v1 では専用 `data` branch など、公開成果物と分離した保存先を採用してよい
+- V2 メモ: データ量や更新頻度が増えたら DB / object storage への移行を再検討する
+
+## D-026: 内部 pipeline entrypoint は Actions とローカル再現の両方から呼べる形にする
+
+- 決定: 取得・正規化・生成処理は `pnpm` scripts などから呼べる内部実行入口として実装し、Actions とローカル再現で同じ処理系を使う
+- 理由: 実装責務を workflow YAML に埋め込みすぎず、検証と保守をしやすくするため
+- 影響: v1 の `FS-PIPE-01` は「GitHub Actions から呼べる取得入口」を作るタスクとして扱う
+- V2 メモ: パイプラインが複雑化した場合はジョブ分割や専用 runner 向けの実行設計を見直す
+
+## D-027: 公開用生成物と内部 state は責務を分離する
+
+- 決定: GitHub Pages に出す公開 JSON / 静的サイトと、dedupe や履歴のための内部 state は別レイヤとして扱う
+- 理由: 公開契約を安定させつつ、内部の取得戦略や履歴表現を後から拡張しやすくするため
+- 影響: `articles.json` などの公開生成物だけを長期運用の正本として扱わない
+- V2 メモ: public export と internal cache の保存形式をさらに強く分離する場合は別仕様を追加する
