@@ -23,3 +23,8 @@
 | FS-019 | optional 項目の欠損表現が安定している | schema / JSON contract | 単数値は `null`、配列は `[]` で揃う |
 | FS-020 | 記事側だけで表示に必要な媒体メタデータを読める | `sourceName/category/language` の保持 | 追加 join なしで最低限の表示ができる |
 | FS-021 | `summary` を表示用の正規化済み文字列として扱える | normalization rule | raw HTML 前提にしないことが仕様で確認できる |
+| FS-022 | URL 正規化を安全な変形のみに限定できる | `normalizedUrl` ルール / tracking 除去 | 破壊的 canonicalization を行わないことが仕様で確認できる |
+| FS-023 | 記事 `id` を URL 優先の段階的 hash で安定生成できる | normalization / ID generator | URL → source item → fallback の優先順位が仕様で確認できる |
+| FS-024 | dedupe を全 feed 横断で conservative に行える | dedupe key selector | `normalizedUrl` と `(feedId, sourceItemId)` だけで判定する |
+| FS-025 | 重複記事を richest-wins で統合できる | duplicate merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
+| FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |

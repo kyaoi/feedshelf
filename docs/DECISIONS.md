@@ -89,3 +89,38 @@
 - 決定: `summary` は表示用の短い正規化済み文字列とし、raw HTML 全文の保持は前提にしない
 - 理由: 静的 UI でのサニタイズ負荷と実装分岐を増やさず、v1 の一覧用途に必要十分な情報量へ絞るため
 - 影響: 正規化処理は HTML をそのまま保存するのではなく、表示向けの文字列整形を行う
+
+## D-016: dedupe は v1 でも全 feed 横断だが conservative に行う
+
+- 決定: dedupe は feed 内限定ではなく全 feed 横断で行うが、判定は `normalizedUrl` と `(feedId, sourceItemId)` のみを使う
+- 理由: 一覧での重複表示を抑えつつ、タイトル類似だけによる誤爆を避けるため
+- 影響: v1 では fuzzy dedupe を入れず、同じ話題でも URL や source item が異なれば別記事として残りうる
+- V2 メモ: title/date 類似や内容類似を使う fuzzy dedupe は別タスクで再検討する
+
+## D-017: URL 正規化は「壊さない」変形だけに限定する
+
+- 決定: scheme / host の lowercase、default port 除去、fragment 除去、tracking query 除去など安全な正規化のみ行う
+- 理由: dedupe 精度を上げつつ、host 固有ルールや推測変換による誤変形を避けるため
+- 影響: `normalizedUrl` は v1 の dedupe 用 canonical 値になるが、完全 canonical URL を保証しない
+- V2 メモ: redirect 解決、AMP → canonical、host 固有ルールは後続タスクで扱う
+
+## D-018: 記事 ID は URL 優先の段階的 hash で生成する
+
+- 決定: `id` は `normalizedUrl` → `(feedId, sourceItemId)` → `feedId + normalizedTitle + publishedAt` fallback の順で hash 生成する
+- 理由: feed をまたいでも安定しやすい識別子を優先しつつ、URL や source item が弱い feed でも最低限の内部キーを作るため
+- 影響: `id` は内部安定キーとして扱い、UI の表示文字列や外部URLそのものとしては使わない
+- V2 メモ: canonical URL 解決や richer provenance を導入した場合は ID 生成式の再評価余地がある
+
+## D-019: 重複マージは richest-wins + earliest fetchedAt とする
+
+- 決定: duplicate merge では情報量の多い record を winner にしつつ、`fetchedAt` は最初に観測した時刻を残す
+- 理由: 一覧表示で必要な情報をなるべく失わず、いつ最初に観測したかも保持したいため
+- 影響: `summary` / `author` / `imageUrl` / `tags` / `seenInFeeds` などは統合ルールを前提に扱う
+- V2 メモ: 本文抜粋、score、信頼度など richer merge policy が必要になれば別 decision を追加する
+
+## D-020: v1 の provenance は `seenInFeeds[]` に限定する
+
+- 決定: 全 feed 横断 dedupe の結果として、同一記事が観測された feed は `seenInFeeds[]` に `feedId` 集合として保持する
+- 理由: cross-feed provenance を完全に捨てずに残しつつ、canonical article object の複雑化を最小限に抑えるため
+- 影響: `feedId` / `sourceName` / `category` / `language` は primary record の値を採用し、完全 provenance graph は持たない
+- V2 メモ: feed ごとの observedAt や source metadata を含む richer provenance object は後続タスクで再検討する
