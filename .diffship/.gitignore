@@ -1,0 +1,5 @@
+artifacts/handoffs/
+runs/
+worktrees/
+sessions/
+lock
