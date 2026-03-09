@@ -740,6 +740,8 @@ Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / 
   - `just ci` は `pnpm run ci` の薄いラッパーとし、lefthook は pre-commit=`just check-fast`、pre-push=`just ci` に分担する
   - 初期 lint gate では既存 runtime の unrelated refactor を避けるため、`biome.json` で `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` に固定する
 - `FS-DX-03` は通常の品質確認 CI workflow を追加し、既存の update / deploy workflow と責務を分ける
+  - `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとに `pnpm run ci` を実行する routine quality gate を担わせる
+  - `update-public-data` workflow には `pipeline:update` / Pages artifact / deploy を残し、Pages 固有処理を通常 CI へ混ぜない
 - `FS-DX-04` は tests / docs / workflow の追跡を同期し、tooling 変更を traceability と確認手順へ反映する
 - Phase DX では新しい runtime 機能追加よりも、既存 workflow / docs / package scripts の契約ズレを先に解消することを優先する
 

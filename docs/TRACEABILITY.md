@@ -63,6 +63,6 @@
 
 | FS-059 | Biome を formatter / linter の baseline として段階導入できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `package.json` / `biome.json` / `pnpm-lock.yaml` / `tests/typescript-tooling.test.ts` | `FS-DX-01` では Biome dependency・config・baseline scripts・対象外パスが確認でき、full gate との統合は `FS-DX-02` へ受け渡せる |
 | FS-060 | full quality gate を単一入口コマンドとして固定できる | `package.json` / `justfile` / `lefthook.yml` / `tests/typescript-tooling.test.ts` / `.github/workflows/*.yml` | `FS-DX-02` では `check:fast` と `pnpm run ci`、`just ci`、lefthook の契約が tests で確認でき、workflow からも `pnpm run ci` を呼べる |
-| FS-061 | 定期更新 / deploy workflow と通常 CI workflow の責務を分離できる | `.github/workflows/update-public-data.yml` / `.github/workflows/ci.yml` / `docs/SPEC_V1.md` | `FS-DX-00` では分離方針が docs で確認でき、実装は `FS-DX-03` で workflow 追加と追跡更新を行う |
+| FS-061 | 定期更新 / deploy workflow と通常 CI workflow の責務を分離できる | `.github/workflows/update-public-data.yml` / `.github/workflows/ci.yml` / `docs/SPEC_V1.md` | `tests/ci-workflow.test.ts` と `tests/update-workflow.test.ts` で通常 CI と update / deploy の境界が確認できる |
 | FS-062 | repo 固有 check を汎用 formatter / linter と分離して扱える | `scripts/lint.ts` / `package.json` / `docs/DECISIONS.md` / `tests/typescript-tooling.test.ts` | `FS-DX-02` では `check:fast` が `format:check` / `lint:biome` / repo 固有 `lint` を順に呼ぶことを tests で確認できる |
 | FS-063 | pre-commit / CI failure 時に working tree を保持したまま diffship 修正ループへ渡せる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `FS-DX-00` では stash 前提にしない運用と `git rev-parse HEAD` / failure log の受け渡しが docs で確認できる |

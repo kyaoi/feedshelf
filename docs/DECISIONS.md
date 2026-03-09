@@ -455,3 +455,9 @@
 - 影響: `package.json` / `justfile` / `lefthook.yml` / `tests/typescript-tooling.test.ts` を更新し、`just ci` は `pnpm run ci` の薄いラッパー、pre-commit は `just check-fast`、pre-push は `just ci` へ揃える
 - 補足: 既存 runtime の unrelated refactor を `FS-DX-02` へ混ぜないため、initial gate の `biome.json` では `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` にして baseline lint を安定化する
 
+## D-072: FS-DX-03 では routine quality gate を `.github/workflows/ci.yml` へ切り出す
+
+- 決定: `FS-DX-03` では `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとに `actions/checkout`、`actions/setup-node`、`corepack enable`、`pnpm install --frozen-lockfile`、`pnpm run ci` を実行する通常 CI workflow を導入する
+- 理由: pre-push だけに full gate を閉じ込めると GitHub 上の変更でも routine quality gate の結果を追いにくく、更新 / deploy workflow に Pages 固有処理が混ざったままでは通常 CI の失敗原因も切り分けにくいため
+- 影響: `.github/workflows/update-public-data.yml` は定期更新 / Pages deploy に専念し、通常の品質確認は `tests/ci-workflow.test.ts` と合わせて `.github/workflows/ci.yml` で追跡する
+

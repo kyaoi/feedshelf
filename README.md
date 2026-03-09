@@ -89,9 +89,11 @@ python -m http.server 4173 --directory public
 
 ## GitHub Actions / Pages
 
-- workflow: `.github/workflows/update-public-data.yml`
-- `build-public-data` job で依存解決、品質ゲート、`pnpm run pipeline:update`、Pages artifact upload を行う
-- `deploy-github-pages` job で Pages へ deploy する
+- 通常 CI workflow: `.github/workflows/ci.yml`
+  - `push` / `pull_request` ごとに `pnpm run ci` を実行する
+- 更新 / 公開 workflow: `.github/workflows/update-public-data.yml`
+  - `build-public-data` job で依存解決、品質ゲート、`pnpm run pipeline:update`、Pages artifact upload を行う
+  - `deploy-github-pages` job で Pages へ deploy する
 - enabled feed が全件取得失敗した場合は、deploy を進めず前回成功サイトを保護する
 
 ## docs を読む順番
