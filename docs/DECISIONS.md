@@ -234,3 +234,10 @@
 - 決定: `public/data/articles.json` などが 404 の場合、トップページでは generic fetch failure と分けて pipeline 未実行を示す案内を表示する
 - 理由: 初回 clone 直後や CI 未実行の状態でも、何が足りないかを分かりやすく伝えるため
 - 影響: `FS-WEB-01` の fallback 表示は `missing-data` と `generic error` を区別する
+
+## D-037: `FS-WEB-02` のカテゴリ選択は query parameter 方式とする
+
+- 決定: `FS-WEB-02` のカテゴリ別一覧は `public/categories/index.html` を単一 entrypoint とし、対象カテゴリは `?id=<categoryId>` で指定する
+- 理由: GitHub Pages 前提の static hosting で 404 を増やさず、差分を最小に保てるため
+- 影響: トップページのカテゴリ chip は `/categories/?id=<categoryId>` へリンクし、`id` 未指定・不正値時はカテゴリ選択導線と案内を表示する
+

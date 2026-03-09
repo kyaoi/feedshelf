@@ -5,6 +5,10 @@
   const GENERIC_LOAD_ERROR = '公開データの読み込みに失敗しました。GitHub Pages または静的サーバー経由で開いているか確認してください。';
   const FILE_PROTOCOL_ERROR = 'file:// 直開きでは JSON を読み込めない場合があります。静的サーバー経由で開いてください。';
   const MISSING_PUBLIC_DATA_ERROR = '公開データがまだ生成されていません。先に `pnpm run pipeline:run` を実行して `public/data/*.json` を作成してください。';
+  const CATEGORY_QUERY_PARAM = 'id';
+  const MISSING_CATEGORY_SELECTION_MESSAGE = 'カテゴリが選択されていません。トップページまたはカテゴリ一覧から選んでください。';
+  const UNKNOWN_CATEGORY_MESSAGE = '指定されたカテゴリは見つかりませんでした。別のカテゴリを選んでください。';
+  const EMPTY_CATEGORY_ARTICLES_MESSAGE = 'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
 
   function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
     const trimmed = String(basePath).replace(/\/+$/u, '') || '.';
@@ -112,6 +116,10 @@
       .replace(/'/g, '&#39;');
   }
 
+  function formatCount(value) {
+    return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
+  }
+
   function buildHomePageViewModel({ articles, categories, sources, meta }) {
     return {
       generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
@@ -129,30 +137,85 @@
           value: formatCount(meta && meta.categoryCount),
         },
       ],
-      categories: categories.map((category) => ({
-        label: category.label,
-        countLabel: `${formatCount(category.articleCount)}件`,
-      })),
+      categories: buildCategoryNavigationItems(categories, { hrefBuilder: buildCategoryHrefFromHome }),
       sources: sources.map((source) => ({
         name: source.name,
         countLabel: `${formatCount(source.articleCount)}件`,
         metaLabel: [source.categoryLabel, source.language].filter(Boolean).join(' / '),
       })),
-      articles: articles.map((article) => ({
-        title: article.title,
-        url: article.url,
-        sourceName: article.sourceName,
-        categoryLabel: article.categoryLabel,
-        publishedAtLabel: formatDateTime(article.publishedAt || article.sortAt),
-        summary: article.summary || MISSING_SUMMARY_LABEL,
-        hasSummary: Boolean(article.summary),
-        imageUrl: article.imageUrl || null,
-      })),
+      articles: buildArticleViewModels(articles),
     };
   }
 
-  function formatCount(value) {
-    return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
+  function buildArticleViewModels(articles) {
+    return articles.map((article) => ({
+      title: article.title,
+      url: article.url,
+      sourceName: article.sourceName,
+      categoryLabel: article.categoryLabel,
+      publishedAtLabel: formatDateTime(article.publishedAt || article.sortAt),
+      summary: article.summary || MISSING_SUMMARY_LABEL,
+      hasSummary: Boolean(article.summary),
+      imageUrl: article.imageUrl || null,
+    }));
+  }
+
+  function buildCategoryNavigationItems(categories, { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome } = {}) {
+    return categories.map((category) => ({
+      id: category.id,
+      label: category.label,
+      countLabel: `${formatCount(category.articleCount)}件`,
+      href: typeof hrefBuilder === 'function' ? hrefBuilder(category.id) : null,
+      isSelected: selectedCategoryId === category.id,
+    }));
+  }
+
+  function buildCategoryPageViewModel({ categoryId, articles, categories, meta }) {
+    const navigationItems = buildCategoryNavigationItems(categories, {
+      selectedCategoryId: categoryId,
+      hrefBuilder: buildCategoryHrefFromCategoryPage,
+    });
+    const selectedCategory = categories.find((category) => category.id === categoryId) || null;
+
+    if (!categoryId) {
+      return {
+        kind: 'missing-category',
+        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        navigationItems,
+        title: 'カテゴリを選択してください',
+        description: MISSING_CATEGORY_SELECTION_MESSAGE,
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: MISSING_CATEGORY_SELECTION_MESSAGE,
+      };
+    }
+
+    if (!selectedCategory) {
+      return {
+        kind: 'unknown-category',
+        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        navigationItems,
+        title: 'カテゴリが見つかりません',
+        description: UNKNOWN_CATEGORY_MESSAGE,
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: UNKNOWN_CATEGORY_MESSAGE,
+      };
+    }
+
+    const selectedArticles = articles.filter((article) => article.categoryId === selectedCategory.id);
+
+    return {
+      kind: selectedArticles.length === 0 ? 'empty-category' : 'ready',
+      generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+      navigationItems,
+      title: `${selectedCategory.label} の記事一覧`,
+      description: `${selectedCategory.label} に分類された記事だけを新着順で表示しています。`,
+      articlesCountText: `${selectedArticles.length} 件`,
+      articles: buildArticleViewModels(selectedArticles),
+      statusMessage: selectedArticles.length === 0 ? EMPTY_CATEGORY_ARTICLES_MESSAGE : '',
+      selectedCategoryLabel: selectedCategory.label,
+    };
   }
 
   function renderStats(stats) {
@@ -174,15 +237,30 @@
     }
 
     return categories
-      .map(
-        (category) => `
-          <span class="chip">
-            <span>${escapeHtml(category.label)}</span>
-            <span class="chip__count">${escapeHtml(category.countLabel)}</span>
-          </span>
-        `,
-      )
+      .map((category) => renderCategoryChip(category))
       .join('');
+  }
+
+  function renderCategoryChip(category) {
+    const selectedClassName = category.isSelected ? ' chip--selected' : '';
+    const content = `
+      <span>${escapeHtml(category.label)}</span>
+      <span class="chip__count">${escapeHtml(category.countLabel)}</span>
+    `;
+
+    if (category.href) {
+      return `
+        <a class="chip${selectedClassName}" href="${escapeHtml(category.href)}" ${category.isSelected ? 'aria-current="page"' : ''}>
+          ${content}
+        </a>
+      `;
+    }
+
+    return `
+      <span class="chip${selectedClassName}">
+        ${content}
+      </span>
+    `;
   }
 
   function renderSourceItems(sources) {
@@ -238,6 +316,23 @@
         `,
       )
       .join('');
+  }
+
+  function buildCategoryHrefFromHome(categoryId) {
+    return `./categories/?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
+  }
+
+  function buildCategoryHrefFromCategoryPage(categoryId) {
+    return `./?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
+  }
+
+  function getCategoryIdFromLocation(locationRef = globalScope.location) {
+    if (!locationRef || typeof locationRef.search !== 'string') {
+      return '';
+    }
+
+    const params = new URLSearchParams(locationRef.search);
+    return params.get(CATEGORY_QUERY_PARAM) || '';
   }
 
   function setStatus(documentRef, { kind, message }) {
@@ -302,6 +397,59 @@
     listElement.innerHTML = renderArticleItems(viewModel.articles);
   }
 
+  function renderCategoryPage(documentRef, payload, { categoryId } = {}) {
+    const viewModel = buildCategoryPageViewModel({
+      categoryId,
+      articles: payload.articles,
+      categories: payload.categories,
+      meta: payload.meta,
+    });
+    const generatedAtElement = documentRef.getElementById('generated-at');
+    const navElement = documentRef.getElementById('category-nav');
+    const titleElement = documentRef.getElementById('category-page-title');
+    const descriptionElement = documentRef.getElementById('category-page-description');
+    const articlesCountElement = documentRef.getElementById('articles-count');
+    const statusElement = documentRef.getElementById('articles-status');
+    const listElement = documentRef.getElementById('articles-list');
+
+    if (generatedAtElement) {
+      generatedAtElement.textContent = viewModel.generatedAtText;
+    }
+
+    if (navElement) {
+      navElement.innerHTML = renderChipItems(viewModel.navigationItems);
+    }
+
+    if (titleElement) {
+      titleElement.textContent = viewModel.title;
+    }
+
+    if (descriptionElement) {
+      descriptionElement.textContent = viewModel.description;
+    }
+
+    if (articlesCountElement) {
+      articlesCountElement.textContent = viewModel.articlesCountText;
+    }
+
+    if (!statusElement || !listElement) {
+      return viewModel;
+    }
+
+    if (viewModel.kind !== 'ready') {
+      setStatus(documentRef, {
+        kind: 'warning',
+        message: viewModel.statusMessage,
+      });
+      return viewModel;
+    }
+
+    statusElement.hidden = true;
+    listElement.hidden = false;
+    listElement.innerHTML = renderArticleItems(viewModel.articles);
+    return viewModel;
+  }
+
   async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = globalScope.fetch, documentRef = globalScope.document } = {}) {
     if (!documentRef) {
       return { kind: 'skipped' };
@@ -326,20 +474,62 @@
     return payload;
   }
 
+  async function initCategoryPage({
+    basePath = '..',
+    fetchImpl = globalScope.fetch,
+    documentRef = globalScope.document,
+    locationRef = globalScope.location,
+  } = {}) {
+    if (!documentRef) {
+      return { kind: 'skipped' };
+    }
+
+    setStatus(documentRef, {
+      kind: 'loading',
+      message: '公開 JSON を読み込んでいます…',
+    });
+
+    const payload = await loadHomePageData({ basePath, fetchImpl });
+
+    if (payload.kind === 'ready') {
+      return renderCategoryPage(documentRef, payload, {
+        categoryId: getCategoryIdFromLocation(locationRef),
+      });
+    }
+
+    setStatus(documentRef, {
+      kind: payload.kind === 'missing-data' ? 'warning' : 'error',
+      message: payload.message,
+    });
+    return payload;
+  }
+
   const exported = {
+    CATEGORY_QUERY_PARAM,
     DEFAULT_BASE_PATH,
+    EMPTY_CATEGORY_ARTICLES_MESSAGE,
+    MISSING_CATEGORY_SELECTION_MESSAGE,
     MISSING_PUBLIC_DATA_ERROR,
     MISSING_SUMMARY_LABEL,
+    UNKNOWN_CATEGORY_MESSAGE,
     UNKNOWN_PUBLISHED_AT_LABEL,
+    buildArticleViewModels,
+    buildCategoryHrefFromCategoryPage,
+    buildCategoryHrefFromHome,
+    buildCategoryNavigationItems,
+    buildCategoryPageViewModel,
     buildDataPaths,
     buildHomePageViewModel,
     describeLoadError,
     escapeHtml,
     formatCount,
     formatDateTime,
+    getCategoryIdFromLocation,
+    initCategoryPage,
     initHomePage,
     loadHomePageData,
     renderArticleItems,
+    renderCategoryPage,
     renderChipItems,
     renderHomePage,
     renderSourceItems,
@@ -355,8 +545,14 @@
 
   if (globalScope.document) {
     globalScope.addEventListener('DOMContentLoaded', () => {
-      initHomePage().catch((error) => {
-        console.error('[feedshelf] failed to initialize home page', error);
+      const pathname = globalScope.location && typeof globalScope.location.pathname === 'string'
+        ? globalScope.location.pathname
+        : '';
+      const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
+      const initializer = isCategoryPage ? initCategoryPage : initHomePage;
+
+      initializer().catch((error) => {
+        console.error('[feedshelf] failed to initialize page', error);
       });
     });
   }

@@ -3,7 +3,7 @@
 | Spec ID | 要件 | 初期実装候補 | テスト/確認 |
 |---|---|---|---|
 | FS-001 | 新着一覧を表示できる | `public/index.html` / `public/assets/app.js` / 記事カード | トップで新着順表示できる |
-| FS-002 | カテゴリ別に絞り込める | カテゴリ一覧ページ | 指定カテゴリのみ表示される |
+| FS-002 | カテゴリ別に絞り込める | `public/categories/index.html` / `public/assets/app.js` | `?id=<categoryId>` で指定カテゴリのみ表示される |
 | FS-003 | 媒体別に絞り込める | 媒体一覧ページ | 指定媒体のみ表示される |
 | FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク | 外部URLへ遷移できる |
 | FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.js` | RSS / Atom fixture が canonical article object へ変換される |
@@ -41,3 +41,4 @@
 | FS-037 | UI が 4 つの公開 JSON だけで一覧表示に必要な情報を取得できる | `public/data/articles/categories/sources/meta` consumer | 追加 dedupe や feed join が不要なことを仕様で確認できる |
 | FS-038 | UI が loading / empty / error と nullable 項目欠損に耐えられる | `public/assets/app.js` / `tests/web-home.test.js` | `summary` / `publishedAt` / `imageUrl` 欠損時も表示が崩れない |
 | FS-039 | AI handoff からローカル依存物・生成物・秘密情報を既定除外できる | `.diffshipignore` | `node_modules/` や `public/data/` が既定 handoff に入らない |
+| FS-040 | カテゴリ一覧ルートで query parameter により対象カテゴリを選択できる | `public/categories/index.html` / `public/assets/app.js` / `tests/web-categories.test.js` | `id` 未指定・未知カテゴリ・空カテゴリでも導線と案内が崩れない |

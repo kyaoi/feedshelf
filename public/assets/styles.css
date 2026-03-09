@@ -42,6 +42,10 @@ a {
   padding: 56px 0 28px;
 }
 
+.hero--compact {
+  padding-top: 32px;
+}
+
 .hero__inner {
   display: grid;
   gap: 16px;
@@ -78,6 +82,19 @@ h2 {
   color: var(--muted);
   font-size: 1rem;
   line-height: 1.8;
+}
+
+.back-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
 }
 
 .layout {
@@ -148,6 +165,21 @@ h2 {
   color: var(--text);
   font-size: 0.95rem;
   line-height: 1.4;
+  text-decoration: none;
+}
+
+.chip:hover {
+  background: #dfe6ff;
+}
+
+.chip--selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.chip--selected .chip__count {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
 }
 
 .source-pill {

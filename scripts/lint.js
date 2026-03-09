@@ -12,6 +12,7 @@ const FILES_TO_CHECK = [
   'public/assets/app.js',
   'tests/load-feeds.test.js',
   'tests/web-home.test.js',
+  'tests/web-categories.test.js',
 ];
 
 async function main() {

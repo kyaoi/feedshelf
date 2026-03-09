@@ -82,8 +82,10 @@ MVP として最低限必要な機能は以下とする。
 
 ### 6.2 カテゴリ別一覧
 
+- ルートは `/categories/` とし、v1 では `?id=<categoryId>` クエリで対象カテゴリを指定する
 - 指定カテゴリの記事のみを表示する
 - 標準ソートは新着順とする
+- `id` 未指定または不正な場合は、カテゴリ選択導線と案内メッセージを表示する
 
 ### 6.3 媒体別一覧
 
@@ -107,6 +109,7 @@ v1 では必須ではない。
 - UI は `public/data/articles.json` / `categories.json` / `sources.json` / `meta.json` を read-only に読む
 - UI 側で dedupe、feed 定義との追加 join、canonicalization の再計算を行わない
 - v1 の主要ルートは `/` / `/categories/` / `/sources/` を基本とする
+- `/categories/` と `/sources/` の対象選択は、v1 では static hosting と相性のよい query parameter 方式を採用してよい
 - 記事詳細ページは v1 の必須対象外とする
 
 ---
