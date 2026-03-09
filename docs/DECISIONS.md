@@ -247,3 +247,10 @@
 - 決定: `FS-WEB-03` の媒体別一覧は `public/sources/index.html` を単一 entrypoint とし、対象媒体は `?id=<sourceId>` で指定する
 - 理由: GitHub Pages 前提の static hosting で 404 を増やさず、カテゴリ別一覧と同じ構造で保守できるため
 - 影響: トップページの媒体 pill は `/sources/?id=<sourceId>` へリンクし、`id` 未指定・不正値時は媒体選択導線と案内を表示する
+
+## D-039: `FS-WEB-04` の元記事リンクは http/https のみを有効扱いにする
+
+- 決定: 記事カードの元記事リンクは `http` / `https` URL のみ外部遷移として有効化し、それ以外は非活性表示へフォールバックする
+- 理由: `javascript:` などの unsafe URL をそのまま描画せず、壊れたデータが混ざっても UI を安全に保つため
+- 影響: 有効リンクは新しいタブで開き `noopener noreferrer` を付与し、無効 URL ではタイトルと CTA を非リンク表示にする
+- V2 メモ: 外部リンクポリシーや analytics を足す場合は `referrerpolicy` や allowlist を再検討する

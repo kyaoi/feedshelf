@@ -2,11 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  INVALID_ARTICLE_LINK_LABEL,
   MISSING_PUBLIC_DATA_ERROR,
   MISSING_SUMMARY_LABEL,
   buildDataPaths,
   buildHomePageViewModel,
   loadHomePageData,
+  normalizeExternalArticleUrl,
   renderArticleItems,
 } = require('../public/assets/app.js');
 
@@ -120,4 +122,61 @@ test('renderArticleItems escapes HTML in titles and summaries', () => {
   assert.match(markup, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.match(markup, /&lt;b&gt;unsafe&lt;\/b&gt;/);
   assert.doesNotMatch(markup, /<script>alert/);
+});
+
+
+test('normalizeExternalArticleUrl accepts only http and https URLs', () => {
+  assert.equal(normalizeExternalArticleUrl('https://example.com/articles/1'), 'https://example.com/articles/1');
+  assert.equal(normalizeExternalArticleUrl('http://example.com/articles/1'), 'http://example.com/articles/1');
+  assert.equal(normalizeExternalArticleUrl('javascript:alert(1)'), null);
+  assert.equal(normalizeExternalArticleUrl('mailto:test@example.com'), null);
+  assert.equal(normalizeExternalArticleUrl(''), null);
+});
+
+test('buildHomePageViewModel marks invalid external links as unavailable', () => {
+  const viewModel = buildHomePageViewModel({
+    articles: [
+      {
+        id: 'article-1',
+        title: 'Broken link article',
+        url: 'javascript:alert(1)',
+        summary: null,
+        publishedAt: '2026-03-09T00:00:00Z',
+        sortAt: '2026-03-09T00:00:00Z',
+        sourceName: 'Example Source',
+        categoryLabel: 'Example Category',
+        imageUrl: null,
+      },
+    ],
+    categories: [],
+    sources: [],
+    meta: { generatedAt: '2026-03-09T00:00:00Z', articleCount: 1, sourceCount: 0, categoryCount: 0 },
+  });
+
+  assert.equal(viewModel.articles[0].url, null);
+  assert.equal(viewModel.articles[0].canOpenExternal, false);
+  assert.equal(viewModel.articles[0].externalLinkDescription, INVALID_ARTICLE_LINK_LABEL);
+});
+
+test('renderArticleItems disables external link button when article URL is unsafe', () => {
+  const markup = renderArticleItems([
+    {
+      title: 'Unsafe link article',
+      url: null,
+      sourceName: 'Example Source',
+      categoryLabel: 'Example Category',
+      publishedAtLabel: '2026/03/09 09:00',
+      summary: 'Summary',
+      hasSummary: true,
+      imageUrl: null,
+      canOpenExternal: false,
+      externalLinkDescription: INVALID_ARTICLE_LINK_LABEL,
+    },
+  ]);
+
+  assert.match(markup, /元記事リンクを確認できません。/);
+  assert.match(markup, /article-card__link article-card__link--disabled/);
+  assert.match(markup, /aria-disabled="true"/);
+  assert.doesNotMatch(markup, /target="_blank"/);
+  assert.doesNotMatch(markup, /href="javascript:/);
 });

@@ -5,7 +5,7 @@
 | FS-001 | 新着一覧を表示できる | `public/index.html` / `public/assets/app.js` / 記事カード | トップで新着順表示できる |
 | FS-002 | カテゴリ別に絞り込める | `public/categories/index.html` / `public/assets/app.js` | `?id=<categoryId>` で指定カテゴリのみ表示される |
 | FS-003 | 媒体別に絞り込める | 媒体一覧ページ | 指定媒体のみ表示される |
-| FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク | 外部URLへ遷移できる |
+| FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク / safe external URL handling | `http/https` のみ外部URLへ遷移し、unsafe URL は非活性表示へ落ちる |
 | FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.js` | RSS / Atom fixture が canonical article object へ変換される |
 | FS-006 | 重複記事を抑制できる | `scripts/pipeline/dedupeArticles.js` | 同一記事の多重表示を抑制 |
 | FS-007 | GitHub Actions で定期更新できる | workflow | 定期実行でデータ更新 |

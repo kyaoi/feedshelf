@@ -13,6 +13,7 @@
   const MISSING_SOURCE_SELECTION_MESSAGE = '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
   const UNKNOWN_SOURCE_MESSAGE = '指定された媒体は見つかりませんでした。別の媒体を選んでください。';
   const EMPTY_SOURCE_ARTICLES_MESSAGE = 'この媒体の記事はまだありません。次回の生成を待つか、別の媒体を選んでください。';
+  const INVALID_ARTICLE_LINK_LABEL = '元記事リンクを確認できません。';
 
   function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
     const trimmed = String(basePath).replace(/\/+$/u, '') || '.';
@@ -147,17 +148,40 @@
     };
   }
 
+  function normalizeExternalArticleUrl(value) {
+    if (typeof value !== 'string' || value.trim() === '') {
+      return null;
+    }
+
+    try {
+      const parsed = new URL(value);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return null;
+      }
+
+      return parsed.toString();
+    } catch (_error) {
+      return null;
+    }
+  }
+
   function buildArticleViewModels(articles) {
-    return articles.map((article) => ({
-      title: article.title,
-      url: article.url,
-      sourceName: article.sourceName,
-      categoryLabel: article.categoryLabel,
-      publishedAtLabel: formatDateTime(article.publishedAt || article.sortAt),
-      summary: article.summary || MISSING_SUMMARY_LABEL,
-      hasSummary: Boolean(article.summary),
-      imageUrl: article.imageUrl || null,
-    }));
+    return articles.map((article) => {
+      const externalUrl = normalizeExternalArticleUrl(article.url);
+
+      return {
+        title: article.title,
+        url: externalUrl,
+        sourceName: article.sourceName,
+        categoryLabel: article.categoryLabel,
+        publishedAtLabel: formatDateTime(article.publishedAt || article.sortAt),
+        summary: article.summary || MISSING_SUMMARY_LABEL,
+        hasSummary: Boolean(article.summary),
+        imageUrl: article.imageUrl || null,
+        canOpenExternal: Boolean(externalUrl),
+        externalLinkDescription: externalUrl ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL,
+      };
+    });
   }
 
   function buildCategoryNavigationItems(categories, { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome } = {}) {
@@ -361,8 +385,26 @@
 
   function renderArticleItems(articles) {
     return articles
-      .map(
-        (article) => `
+      .map((article) => {
+        const safeArticleUrl = article.canOpenExternal === false ? null : normalizeExternalArticleUrl(article.url);
+        const canOpenExternal = Boolean(safeArticleUrl);
+        const externalLinkDescription = article.externalLinkDescription || (canOpenExternal ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL);
+        const articleTitleMarkup = canOpenExternal
+          ? `
+              <a href="${escapeHtml(safeArticleUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${article.title} を元記事で開く`)}">
+                ${escapeHtml(article.title)}
+              </a>
+            `
+          : `<span>${escapeHtml(article.title)}</span>`;
+        const articleLinkMarkup = canOpenExternal
+          ? `
+              <a class="article-card__link" href="${escapeHtml(safeArticleUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${article.title} を元記事で開く`)}">
+                開く
+              </a>
+            `
+          : '<span class="article-card__link article-card__link--disabled" aria-disabled="true">リンクなし</span>';
+
+        return `
           <li class="article-card ${article.imageUrl ? 'article-card--with-image' : ''}">
             <article class="article-card__content">
               <div class="article-card__meta">
@@ -371,18 +413,14 @@
                 <span class="meta-pill">${escapeHtml(article.publishedAtLabel)}</span>
               </div>
               <h3 class="article-card__title">
-                <a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">
-                  ${escapeHtml(article.title)}
-                </a>
+                ${articleTitleMarkup}
               </h3>
               <p class="article-card__summary ${article.hasSummary ? '' : 'article-card__summary--missing'}">
                 ${escapeHtml(article.summary)}
               </p>
               <div class="article-card__footer">
-                <span class="muted">元記事で続きを読む</span>
-                <a class="article-card__link" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">
-                  開く
-                </a>
+                <span class="muted">${escapeHtml(externalLinkDescription)}</span>
+                ${articleLinkMarkup}
               </div>
             </article>
             ${
@@ -391,8 +429,8 @@
                 : ''
             }
           </li>
-        `,
-      )
+        `;
+      })
       .join('');
   }
 
@@ -689,6 +727,7 @@
     MISSING_CATEGORY_SELECTION_MESSAGE,
     MISSING_PUBLIC_DATA_ERROR,
     MISSING_SOURCE_SELECTION_MESSAGE,
+    INVALID_ARTICLE_LINK_LABEL,
     MISSING_SUMMARY_LABEL,
     SOURCE_QUERY_PARAM,
     UNKNOWN_CATEGORY_MESSAGE,
@@ -705,6 +744,7 @@
     buildSourcePageViewModel,
     buildDataPaths,
     buildHomePageViewModel,
+    normalizeExternalArticleUrl,
     describeLoadError,
     escapeHtml,
     formatCount,

@@ -309,6 +309,13 @@ h2 {
   font-weight: 700;
 }
 
+.article-card__link--disabled {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .article-card__image {
   width: 160px;
   height: 120px;
