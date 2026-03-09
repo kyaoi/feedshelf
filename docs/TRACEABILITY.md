@@ -42,3 +42,4 @@
 | FS-038 | UI が loading / empty / error と nullable 項目欠損に耐えられる | `public/assets/app.js` / `tests/web-home.test.js` | `summary` / `publishedAt` / `imageUrl` 欠損時も表示が崩れない |
 | FS-039 | AI handoff からローカル依存物・生成物・秘密情報を既定除外できる | `.diffshipignore` | `node_modules/` や `public/data/` が既定 handoff に入らない |
 | FS-040 | カテゴリ一覧ルートで query parameter により対象カテゴリを選択できる | `public/categories/index.html` / `public/assets/app.js` / `tests/web-categories.test.js` | `id` 未指定・未知カテゴリ・空カテゴリでも導線と案内が崩れない |
+| FS-041 | 媒体一覧ルートで query parameter により対象媒体を選択できる | `public/sources/index.html` / `public/assets/app.js` / `tests/web-sources.test.js` | `id` 未指定・未知媒体・空媒体でも導線と案内が崩れない |

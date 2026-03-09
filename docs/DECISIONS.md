@@ -241,3 +241,9 @@
 - 理由: GitHub Pages 前提の static hosting で 404 を増やさず、差分を最小に保てるため
 - 影響: トップページのカテゴリ chip は `/categories/?id=<categoryId>` へリンクし、`id` 未指定・不正値時はカテゴリ選択導線と案内を表示する
 
+
+## D-038: `FS-WEB-03` の媒体選択は query parameter 方式とする
+
+- 決定: `FS-WEB-03` の媒体別一覧は `public/sources/index.html` を単一 entrypoint とし、対象媒体は `?id=<sourceId>` で指定する
+- 理由: GitHub Pages 前提の static hosting で 404 を増やさず、カテゴリ別一覧と同じ構造で保守できるため
+- 影響: トップページの媒体 pill は `/sources/?id=<sourceId>` へリンクし、`id` 未指定・不正値時は媒体選択導線と案内を表示する

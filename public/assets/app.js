@@ -9,6 +9,10 @@
   const MISSING_CATEGORY_SELECTION_MESSAGE = 'カテゴリが選択されていません。トップページまたはカテゴリ一覧から選んでください。';
   const UNKNOWN_CATEGORY_MESSAGE = '指定されたカテゴリは見つかりませんでした。別のカテゴリを選んでください。';
   const EMPTY_CATEGORY_ARTICLES_MESSAGE = 'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
+  const SOURCE_QUERY_PARAM = 'id';
+  const MISSING_SOURCE_SELECTION_MESSAGE = '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
+  const UNKNOWN_SOURCE_MESSAGE = '指定された媒体は見つかりませんでした。別の媒体を選んでください。';
+  const EMPTY_SOURCE_ARTICLES_MESSAGE = 'この媒体の記事はまだありません。次回の生成を待つか、別の媒体を選んでください。';
 
   function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
     const trimmed = String(basePath).replace(/\/+$/u, '') || '.';
@@ -138,11 +142,7 @@
         },
       ],
       categories: buildCategoryNavigationItems(categories, { hrefBuilder: buildCategoryHrefFromHome }),
-      sources: sources.map((source) => ({
-        name: source.name,
-        countLabel: `${formatCount(source.articleCount)}件`,
-        metaLabel: [source.categoryLabel, source.language].filter(Boolean).join(' / '),
-      })),
+      sources: buildSourceNavigationItems(sources, { hrefBuilder: buildSourceHrefFromHome }),
       articles: buildArticleViewModels(articles),
     };
   }
@@ -168,6 +168,69 @@
       href: typeof hrefBuilder === 'function' ? hrefBuilder(category.id) : null,
       isSelected: selectedCategoryId === category.id,
     }));
+  }
+
+  function buildSourceNavigationItems(sources, { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome } = {}) {
+    return sources.map((source) => ({
+      id: source.id,
+      name: source.name,
+      countLabel: `${formatCount(source.articleCount)}件`,
+      metaLabel: [source.categoryLabel, source.language].filter(Boolean).join(' / '),
+      href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
+      isSelected: selectedSourceId === source.id,
+    }));
+  }
+
+  function buildSourcePageViewModel({ sourceId, articles, sources, meta }) {
+    const navigationItems = buildSourceNavigationItems(sources, {
+      selectedSourceId: sourceId,
+      hrefBuilder: buildSourceHrefFromSourcePage,
+    });
+    const selectedSource = sources.find((source) => source.id === sourceId) || null;
+
+    if (!sourceId) {
+      return {
+        kind: 'missing-source',
+        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        navigationItems,
+        title: '媒体を選択してください',
+        description: MISSING_SOURCE_SELECTION_MESSAGE,
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: MISSING_SOURCE_SELECTION_MESSAGE,
+      };
+    }
+
+    if (!selectedSource) {
+      return {
+        kind: 'unknown-source',
+        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        navigationItems,
+        title: '媒体が見つかりません',
+        description: UNKNOWN_SOURCE_MESSAGE,
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: UNKNOWN_SOURCE_MESSAGE,
+      };
+    }
+
+    const selectedArticles = articles.filter((article) => article.sourceId === selectedSource.id);
+    const descriptionParts = [selectedSource.categoryLabel, selectedSource.language].filter(Boolean);
+    const description = descriptionParts.length > 0
+      ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。`
+      : `${selectedSource.name} の記事だけを新着順で表示しています。`;
+
+    return {
+      kind: selectedArticles.length === 0 ? 'empty-source' : 'ready',
+      generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+      navigationItems,
+      title: `${selectedSource.name} の記事一覧`,
+      description,
+      articlesCountText: `${selectedArticles.length} 件`,
+      articles: buildArticleViewModels(selectedArticles),
+      statusMessage: selectedArticles.length === 0 ? EMPTY_SOURCE_ARTICLES_MESSAGE : '',
+      selectedSourceName: selectedSource.name,
+    };
   }
 
   function buildCategoryPageViewModel({ categoryId, articles, categories, meta }) {
@@ -269,16 +332,31 @@
     }
 
     return sources
-      .map(
-        (source) => `
-          <span class="source-pill">
-            <span>${escapeHtml(source.name)}</span>
-            <span class="source-pill__count">${escapeHtml(source.countLabel)}</span>
-            ${source.metaLabel ? `<span class="source-pill__meta">${escapeHtml(source.metaLabel)}</span>` : ''}
-          </span>
-        `,
-      )
+      .map((source) => renderSourcePill(source))
       .join('');
+  }
+
+  function renderSourcePill(source) {
+    const selectedClassName = source.isSelected ? ' source-pill--selected' : '';
+    const content = `
+      <span>${escapeHtml(source.name)}</span>
+      <span class="source-pill__count">${escapeHtml(source.countLabel)}</span>
+      ${source.metaLabel ? `<span class="source-pill__meta">${escapeHtml(source.metaLabel)}</span>` : ''}
+    `;
+
+    if (source.href) {
+      return `
+        <a class="source-pill${selectedClassName}" href="${escapeHtml(source.href)}" ${source.isSelected ? 'aria-current="page"' : ''}>
+          ${content}
+        </a>
+      `;
+    }
+
+    return `
+      <span class="source-pill${selectedClassName}">
+        ${content}
+      </span>
+    `;
   }
 
   function renderArticleItems(articles) {
@@ -326,6 +404,14 @@
     return `./?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
   }
 
+  function buildSourceHrefFromHome(sourceId) {
+    return `./sources/?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
+  }
+
+  function buildSourceHrefFromSourcePage(sourceId) {
+    return `./?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
+  }
+
   function getCategoryIdFromLocation(locationRef = globalScope.location) {
     if (!locationRef || typeof locationRef.search !== 'string') {
       return '';
@@ -333,6 +419,15 @@
 
     const params = new URLSearchParams(locationRef.search);
     return params.get(CATEGORY_QUERY_PARAM) || '';
+  }
+
+  function getSourceIdFromLocation(locationRef = globalScope.location) {
+    if (!locationRef || typeof locationRef.search !== 'string') {
+      return '';
+    }
+
+    const params = new URLSearchParams(locationRef.search);
+    return params.get(SOURCE_QUERY_PARAM) || '';
   }
 
   function setStatus(documentRef, { kind, message }) {
@@ -450,6 +545,59 @@
     return viewModel;
   }
 
+  function renderSourcePage(documentRef, payload, { sourceId } = {}) {
+    const viewModel = buildSourcePageViewModel({
+      sourceId,
+      articles: payload.articles,
+      sources: payload.sources,
+      meta: payload.meta,
+    });
+    const generatedAtElement = documentRef.getElementById('generated-at');
+    const navElement = documentRef.getElementById('source-nav');
+    const titleElement = documentRef.getElementById('source-page-title');
+    const descriptionElement = documentRef.getElementById('source-page-description');
+    const articlesCountElement = documentRef.getElementById('articles-count');
+    const statusElement = documentRef.getElementById('articles-status');
+    const listElement = documentRef.getElementById('articles-list');
+
+    if (generatedAtElement) {
+      generatedAtElement.textContent = viewModel.generatedAtText;
+    }
+
+    if (navElement) {
+      navElement.innerHTML = renderSourceItems(viewModel.navigationItems);
+    }
+
+    if (titleElement) {
+      titleElement.textContent = viewModel.title;
+    }
+
+    if (descriptionElement) {
+      descriptionElement.textContent = viewModel.description;
+    }
+
+    if (articlesCountElement) {
+      articlesCountElement.textContent = viewModel.articlesCountText;
+    }
+
+    if (!statusElement || !listElement) {
+      return viewModel;
+    }
+
+    if (viewModel.kind !== 'ready') {
+      setStatus(documentRef, {
+        kind: 'warning',
+        message: viewModel.statusMessage,
+      });
+      return viewModel;
+    }
+
+    statusElement.hidden = true;
+    listElement.hidden = false;
+    listElement.innerHTML = renderArticleItems(viewModel.articles);
+    return viewModel;
+  }
+
   async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = globalScope.fetch, documentRef = globalScope.document } = {}) {
     if (!documentRef) {
       return { kind: 'skipped' };
@@ -504,20 +652,57 @@
     return payload;
   }
 
+  async function initSourcePage({
+    basePath = '..',
+    fetchImpl = globalScope.fetch,
+    documentRef = globalScope.document,
+    locationRef = globalScope.location,
+  } = {}) {
+    if (!documentRef) {
+      return { kind: 'skipped' };
+    }
+
+    setStatus(documentRef, {
+      kind: 'loading',
+      message: '公開 JSON を読み込んでいます…',
+    });
+
+    const payload = await loadHomePageData({ basePath, fetchImpl });
+
+    if (payload.kind === 'ready') {
+      return renderSourcePage(documentRef, payload, {
+        sourceId: getSourceIdFromLocation(locationRef),
+      });
+    }
+
+    setStatus(documentRef, {
+      kind: payload.kind === 'missing-data' ? 'warning' : 'error',
+      message: payload.message,
+    });
+    return payload;
+  }
+
   const exported = {
     CATEGORY_QUERY_PARAM,
     DEFAULT_BASE_PATH,
     EMPTY_CATEGORY_ARTICLES_MESSAGE,
     MISSING_CATEGORY_SELECTION_MESSAGE,
     MISSING_PUBLIC_DATA_ERROR,
+    MISSING_SOURCE_SELECTION_MESSAGE,
     MISSING_SUMMARY_LABEL,
+    SOURCE_QUERY_PARAM,
     UNKNOWN_CATEGORY_MESSAGE,
     UNKNOWN_PUBLISHED_AT_LABEL,
+    UNKNOWN_SOURCE_MESSAGE,
     buildArticleViewModels,
     buildCategoryHrefFromCategoryPage,
     buildCategoryHrefFromHome,
     buildCategoryNavigationItems,
     buildCategoryPageViewModel,
+    buildSourceHrefFromHome,
+    buildSourceHrefFromSourcePage,
+    buildSourceNavigationItems,
+    buildSourcePageViewModel,
     buildDataPaths,
     buildHomePageViewModel,
     describeLoadError,
@@ -525,16 +710,20 @@
     formatCount,
     formatDateTime,
     getCategoryIdFromLocation,
+    getSourceIdFromLocation,
     initCategoryPage,
     initHomePage,
+    initSourcePage,
     loadHomePageData,
     renderArticleItems,
     renderCategoryPage,
     renderChipItems,
     renderHomePage,
     renderSourceItems,
+    renderSourcePage,
     renderStats,
     setStatus,
+    EMPTY_SOURCE_ARTICLES_MESSAGE,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
@@ -549,7 +738,8 @@
         ? globalScope.location.pathname
         : '';
       const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
-      const initializer = isCategoryPage ? initCategoryPage : initHomePage;
+      const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
+      const initializer = isCategoryPage ? initCategoryPage : (isSourcePage ? initSourcePage : initHomePage);
 
       initializer().catch((error) => {
         console.error('[feedshelf] failed to initialize page', error);
