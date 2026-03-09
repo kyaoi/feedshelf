@@ -461,3 +461,8 @@
 - 理由: pre-push だけに full gate を閉じ込めると GitHub 上の変更でも routine quality gate の結果を追いにくく、更新 / deploy workflow に Pages 固有処理が混ざったままでは通常 CI の失敗原因も切り分けにくいため
 - 影響: `.github/workflows/update-public-data.yml` は定期更新 / Pages deploy に専念し、通常の品質確認は `tests/ci-workflow.test.ts` と合わせて `.github/workflows/ci.yml` で追跡する
 
+## D-073: FS-DX-04 では DX docs の契約を workflow と専用 test に同期する
+
+- 決定: `FS-DX-04` では `README.md` に quality gate failure 時の運用入口を追加し、`tests/dx-docs-sync.test.ts` で README / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` / `PLAN.md` が `.github/workflows/ci.yml` と `.github/workflows/update-public-data.yml` の境界、ならびに diffship 修正ループ運用を同じ内容で指していることを確認する
+- 理由: Biome / hook / workflow の実装だけ整っても、repo 直下の入口と traceability が追随しなければ、将来の修正時に「どの gate がどこで走るか」「失敗時に何を渡すか」の判断が再び docs と実装でずれやすいため
+- 影響: `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/TRACEABILITY.md` を更新し、DX の docs 契約は `tests/dx-docs-sync.test.ts` で継続監視する

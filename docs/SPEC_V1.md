@@ -743,9 +743,11 @@ Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / 
   - `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとに `pnpm run ci` を実行する routine quality gate を担わせる
   - `update-public-data` workflow には `pipeline:update` / Pages artifact / deploy を残し、Pages 固有処理を通常 CI へ混ぜない
 - `FS-DX-04` は tests / docs / workflow の追跡を同期し、tooling 変更を traceability と確認手順へ反映する
+  - `README.md` に pre-commit / pre-push / CI failure 時の運用入口を追加し、working tree を保持したまま `git rev-parse HEAD` と failure log を diffship 修正ループへ渡す手順を repo 直下から読めるようにする
+  - `tests/dx-docs-sync.test.ts` を追加し、README / SPEC / DECISIONS / TRACEABILITY / PLAN の DX 契約が workflow ファイルと同じ境界を指していることを継続確認できるようにする
 - Phase DX では新しい runtime 機能追加よりも、既存 workflow / docs / package scripts の契約ズレを先に解消することを優先する
 
 既知の契約差として、workflow / README / tests は `pnpm run ci` を前提にしている。`FS-DX-00` では verify failure を避けるため `package.json` に最小の `ci` script を補完し、hook / workflow / repo 固有 check の統合は `FS-DX-02` で行う。
 
-運用上は、pre-commit や CI が失敗した場合でも原則 stash を前提にせず、失敗した変更を working tree に保持したまま exact HEAD と failure log を diffship 修正ループへ渡せるようにする。
+運用上は、pre-commit や CI が失敗した場合でも原則 stash を前提にせず、失敗した変更を working tree に保持したまま exact HEAD と failure log を diffship 修正ループへ渡せるようにする。この運用は `README.md` の失敗時ガイドと `tests/dx-docs-sync.test.ts` の docs 追跡でも確認できる状態に保つ。
 

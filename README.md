@@ -96,6 +96,13 @@ python -m http.server 4173 --directory public
   - `deploy-github-pages` job で Pages へ deploy する
 - enabled feed が全件取得失敗した場合は、deploy を進めず前回成功サイトを保護する
 
+## 品質ゲートが失敗したときの運用
+
+- pre-commit / pre-push / CI が失敗しても、原則として失敗したタスクの変更は stash しない
+- 修正対象の差分は working tree に残したまま、`git rev-parse HEAD` で exact HEAD を取得する
+- hook や CI の failure log を保存し、その exact HEAD と一緒に diffship の修正ループへ渡す
+- unrelated な変更だけを一時退避したい場合に限り、必要最小限で stash を使う
+
 ## docs を読む順番
 
 1. `README.md`
