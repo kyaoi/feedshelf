@@ -27,3 +27,7 @@ tmp/
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# TypeScript / build outputs
+dist/
+*.tsbuildinfo

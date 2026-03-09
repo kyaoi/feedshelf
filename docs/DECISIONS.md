@@ -254,3 +254,28 @@
 - 理由: `javascript:` などの unsafe URL をそのまま描画せず、壊れたデータが混ざっても UI を安全に保つため
 - 影響: 有効リンクは新しいタブで開き `noopener noreferrer` を付与し、無効 URL ではタイトルと CTA を非リンク表示にする
 - V2 メモ: 外部リンクポリシーや analytics を足す場合は `referrerpolicy` や allowlist を再検討する
+
+
+## D-040: TypeScript 移行は docs-first の段階移行で進める
+
+- 決定: TypeScript 化は `FS-TS-00` で docs を先に固定し、その後に小さな実装タスクへ分割して進める
+- 理由: pipeline / web UI / tests / tooling を一度に動かす大規模変更を避け、diffship 前提で最小差分を保つため
+- 影響: 先に `PLAN.md` / `SPEC_V1.md` / `DECISIONS.md` / `TRACEABILITY.md` / `docs/TYPESCRIPT_MIGRATION.md` を更新し、実装は後続タスクで段階投入する
+
+## D-041: 最初に型として固定するのは公開 JSON 契約と pipeline 入出力である
+
+- 決定: TypeScript 化の初手では `articles.json` / `categories.json` / `sources.json` / `meta.json` の shape と pipeline 内の canonical article object 周辺を優先して型付けする
+- 理由: pipeline・UI・tests が同じ契約を共有できると、以降の移行が局所化しやすいため
+- 影響: `public/assets/app.js` のような UI ロジックも、まず共有型を読む方向で移行計画を立てる
+
+## D-042: 初期導入では `tsx` 実行 + `tsc --noEmit` を採用する
+
+- 決定: TypeScript 初期導入では build 済み `dist/` の必須化を避け、`tsx` による直接実行と `tsc --noEmit` の型検査を基本案とする
+- 理由: 現在の Node script 中心の実行モデルに近く、差分を小さく保ったまま型安全化を始めやすいため
+- 影響: `dist/` 出力は初期フェーズの必須要件ではないが、将来導入する場合は ignore と運用ルールを先に整備する
+
+## D-043: TypeScript 由来の生成物は repo と handoff の両方で既定除外する
+
+- 決定: 将来 `dist/`、`*.tsbuildinfo`、型検査キャッシュなどが導入された場合は `.gitignore` と `.diffshipignore` の両方で既定除外する
+- 理由: handoff ノイズやレビュー対象外の生成物を bundle に混ぜず、AI に渡す差分を小さく保つため
+- 影響: 型安全化の実装タスクでは、ignore 更新をセットで扱う

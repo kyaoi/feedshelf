@@ -43,3 +43,7 @@
 | FS-039 | AI handoff からローカル依存物・生成物・秘密情報を既定除外できる | `.diffshipignore` | `node_modules/` や `public/data/` が既定 handoff に入らない |
 | FS-040 | カテゴリ一覧ルートで query parameter により対象カテゴリを選択できる | `public/categories/index.html` / `public/assets/app.js` / `tests/web-categories.test.js` | `id` 未指定・未知カテゴリ・空カテゴリでも導線と案内が崩れない |
 | FS-041 | 媒体一覧ルートで query parameter により対象媒体を選択できる | `public/sources/index.html` / `public/assets/app.js` / `tests/web-sources.test.js` | `id` 未指定・未知媒体・空媒体でも導線と案内が崩れない |
+| FS-042 | TypeScript 移行順序を docs で固定できる | `PLAN.md` / `docs/TYPESCRIPT_MIGRATION.md` | pipeline -> web UI -> tests/tooling の順が docs で確認できる |
+| FS-043 | 公開 JSON 契約と pipeline 入出力を共有型の優先対象として定義できる | `docs/SPEC_V1.md` / `docs/TYPESCRIPT_MIGRATION.md` | `articles/categories/sources/meta` と canonical article object が型付けの先行対象として明示される |
+| FS-044 | 初期導入の実行方式を `tsx` + `tsc --noEmit` で固定できる | `docs/DECISIONS.md` / `docs/TYPESCRIPT_MIGRATION.md` | build 出力必須ではない初期移行方針が docs で確認できる |
+| FS-045 | TypeScript 由来の生成物を repo / handoff から既定除外できる | `.gitignore` / `.diffshipignore` | `dist/` と `*.tsbuildinfo` が ignore される |

@@ -119,6 +119,16 @@ v1 では必須ではない。
 - `/categories/` と `/sources/` の対象選択は、v1 では static hosting と相性のよい query parameter 方式を採用してよい
 - 記事詳細ページは v1 の必須対象外とする
 
+### 6.6 TypeScript 移行方針
+
+- `FS-TS-00` は docs-first task とし、実装前に移行順序・責務・品質ゲートを固定する
+- TypeScript 化は一括置換ではなく、`pipeline -> public web UI -> tests / lint / verify` の順で段階移行する
+- 初期導入では `tsx` による直接実行と `tsc --noEmit` による型検査を基本とし、いきなり build 出力必須にはしない
+- 共存期間は `allowJs` を許容してよいが、新規または移行済みロジックは `.ts` を優先する
+- まず型として固定する対象は公開 JSON 契約と pipeline 入出力であり、UI / tests も同じ契約を共有する
+- 将来 `dist/`、`*.tsbuildinfo`、追加キャッシュなどの生成物が生じる場合は repo と handoff の ignore ルールを更新する
+- 具体的な移行順序・対象ファイル・実行方式の候補は `docs/TYPESCRIPT_MIGRATION.md` に集約する
+
 ---
 
 ## 7. フィード定義
