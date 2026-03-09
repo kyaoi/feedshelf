@@ -441,3 +441,9 @@
 - 決定: hook や CI が失敗した場合、原則として失敗したタスクの変更は stash せず working tree に残し、exact HEAD と failure log を添えて diffship 修正ループへ渡す
 - 理由: 失敗状態の差分とログをそのまま材料にした方が、AI へ渡す修正対象が明確で、stash / 再適用による unrelated diff 混入も避けやすいため
 - 影響: `FS-DX-00` では運用方針を docs に固定し、後続の実装タスクでは hook / CI 失敗時の修正依頼に必要な情報として `git rev-parse HEAD` と failure log を渡す前提を採る
+
+## D-070: FS-DX-01 では Biome を hand-authored な TS / JSON 向け baseline として固定する
+
+- 決定: `FS-DX-01` では `@biomejs/biome` 1.9.4 と `biome.json` を追加し、`.diffship/**` / `public/**` / `scripts/**/*.js` を除外した baseline formatter / linter を導入する
+- 理由: checked-in browser asset や JS wrapper、diffship ローカル運用ファイルまで一度に formatter 対象へ含めると差分が荒れやすく、導入初手としては破壊範囲が大きいため
+- 影響: `package.json` には `format` / `format:check` / `lint:biome` を追加するが、既存の `lint` は repo 固有 check のまま維持し、full gate や hook との統合は `FS-DX-02` で扱う

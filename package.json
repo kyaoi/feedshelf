@@ -9,6 +9,9 @@
   },
   "scripts": {
     "bootstrap": "pnpm install --frozen-lockfile=false",
+    "format": "biome format . --write",
+    "format:check": "biome format . --check",
+    "lint:biome": "biome lint .",
     "pipeline:run": "tsx scripts/pipeline/run.js",
     "pipeline:update": "tsx scripts/pipeline/update.js",
     "lint": "tsx scripts/lint.ts",
@@ -20,6 +23,7 @@
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/node": "^25.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
