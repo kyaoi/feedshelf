@@ -7,10 +7,13 @@ bootstrap:
 lint:
     pnpm lint
 
+typecheck:
+    pnpm typecheck
+
 test:
     pnpm test
 
 build:
     pnpm build
 
-ci: lint test # build
+ci: lint typecheck test # build

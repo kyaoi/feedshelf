@@ -47,3 +47,5 @@
 | FS-043 | 公開 JSON 契約と pipeline 入出力を共有型の優先対象として定義できる | `docs/SPEC_V1.md` / `docs/TYPESCRIPT_MIGRATION.md` | `articles/categories/sources/meta` と canonical article object が型付けの先行対象として明示される |
 | FS-044 | 初期導入の実行方式を `tsx` + `tsc --noEmit` で固定できる | `docs/DECISIONS.md` / `docs/TYPESCRIPT_MIGRATION.md` | build 出力必須ではない初期移行方針が docs で確認できる |
 | FS-045 | TypeScript 由来の生成物を repo / handoff から既定除外できる | `.gitignore` / `.diffshipignore` | `dist/` と `*.tsbuildinfo` が ignore される |
+| FS-046 | JS / TS 共存期でも pipeline と lint の実行入口を固定できる | `package.json` / `tsconfig.json` | `pipeline:run` と `lint` が `tsx` 起動になっている |
+| FS-047 | 型検査を通常の品質ゲートに組み込める | `package.json` / `justfile` / `tests/typescript-tooling.test.js` | `typecheck` script と `just ci` の導線が確認できる |

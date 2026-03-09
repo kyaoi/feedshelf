@@ -279,3 +279,16 @@
 - 決定: 将来 `dist/`、`*.tsbuildinfo`、型検査キャッシュなどが導入された場合は `.gitignore` と `.diffshipignore` の両方で既定除外する
 - 理由: handoff ノイズやレビュー対象外の生成物を bundle に混ぜず、AI に渡す差分を小さく保つため
 - 影響: 型安全化の実装タスクでは、ignore 更新をセットで扱う
+
+
+## D-044: `FS-TS-01` では JS entrypoint を `tsx` 実行へ寄せる
+
+- 決定: pipeline / lint の実行入口は、ファイル拡張子がまだ `.js` の段階でも `tsx` から起動する
+- 理由: 後続タスクで `.ts` 化しても package script の入口を大きく変えずに済み、移行差分を局所化できるため
+- 影響: `package.json` の `pipeline:run` / `lint` は `tsx` ベースとなり、JS と TS の共存期間を許容する
+
+## D-045: `FS-TS-01` から型検査を通常の品質ゲートに含める
+
+- 決定: `tsc --noEmit` を `typecheck` script として導入し、`just ci` / `pnpm run ci` の一部として実行する
+- 理由: 実ファイルの全面 `.ts` 化を待たずに、型安全化の入口を早い段階で継続的に検証したいため
+- 影響: TypeScript 移行以後の実装は `lint` / `typecheck` / `test` の 3 系統を通す前提で進める

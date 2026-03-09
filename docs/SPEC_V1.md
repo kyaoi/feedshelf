@@ -128,6 +128,8 @@ v1 では必須ではない。
 - まず型として固定する対象は公開 JSON 契約と pipeline 入出力であり、UI / tests も同じ契約を共有する
 - 将来 `dist/`、`*.tsbuildinfo`、追加キャッシュなどの生成物が生じる場合は repo と handoff の ignore ルールを更新する
 - 具体的な移行順序・対象ファイル・実行方式の候補は `docs/TYPESCRIPT_MIGRATION.md` に集約する
+- `FS-TS-01` では `tsconfig.json` を追加し、既存の pipeline / lint entrypoint は `tsx` から実行できる状態を基準にする
+- `FS-TS-01` では `tsc --noEmit` を quality gate に追加し、JS / TS 共存期間でも型検査を先に導入する
 
 ---
 

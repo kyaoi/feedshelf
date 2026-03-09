@@ -9,9 +9,15 @@
   },
   "scripts": {
     "bootstrap": "pnpm install --frozen-lockfile=false",
-    "pipeline:run": "node scripts/pipeline/run.js",
-    "lint": "node scripts/lint.js",
+    "pipeline:run": "tsx scripts/pipeline/run.js",
+    "lint": "tsx scripts/lint.js",
     "test": "node --test",
-    "ci": "pnpm run lint && pnpm run test"
+    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }
