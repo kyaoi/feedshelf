@@ -5,7 +5,8 @@
     "moduleResolution": "Node",
     "lib": [
       "ES2023",
-      "DOM"
+      "DOM",
+      "DOM.Iterable"
     ],
     "types": [
       "node"
@@ -13,7 +14,7 @@
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
-    "strict": false,
+    "strict": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

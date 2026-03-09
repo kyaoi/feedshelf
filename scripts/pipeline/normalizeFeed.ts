@@ -32,7 +32,10 @@ export function collectMatches(pattern: RegExp, value: string): string[] {
   let match = pattern.exec(value);
 
   while (match) {
-    matches.push(match[1]);
+    const captured = match[1];
+    if (typeof captured === 'string') {
+      matches.push(captured);
+    }
     match = pattern.exec(value);
   }
 
@@ -85,7 +88,12 @@ function extractTagText(block: string, tagNames: string[]): string | null {
       continue;
     }
 
-    const text = toDisplayText(match[1]);
+    const captured = match[1];
+    if (typeof captured !== 'string') {
+      continue;
+    }
+
+    const text = toDisplayText(captured);
     if (text !== null) {
       return text;
     }
@@ -102,7 +110,12 @@ function extractRawTagText(block: string, tagNames: string[]): string | null {
       continue;
     }
 
-    const text = normalizeWhitespace(decodeEntities(match[1]));
+    const captured = match[1];
+    if (typeof captured !== 'string') {
+      continue;
+    }
+
+    const text = normalizeWhitespace(decodeEntities(captured));
     if (text !== '') {
       return text;
     }
@@ -117,7 +130,10 @@ function parseAttributes(fragment: string): Record<string, string> {
   let match = attributePattern.exec(fragment);
 
   while (match) {
-    attributes[match[1]] = decodeEntities(match[3] || match[4] || '');
+    const key = match[1];
+    if (typeof key === 'string') {
+      attributes[key] = decodeEntities(match[3] || match[4] || '');
+    }
     match = attributePattern.exec(fragment);
   }
 
@@ -130,7 +146,12 @@ function extractAtomLink(block: string): string | null {
   let match = linkPattern.exec(block);
 
   while (match) {
-    const attributes = parseAttributes(match[1]);
+    const captured = match[1];
+    if (typeof captured !== 'string') {
+      continue;
+    }
+
+    const attributes = parseAttributes(captured);
     const href = typeof attributes.href === 'string' ? attributes.href.trim() : '';
     if (href === '') {
       match = linkPattern.exec(block);
@@ -165,7 +186,12 @@ function extractImageUrl(block: string): string | null {
       continue;
     }
 
-    const attributes = parseAttributes(match[1]);
+    const captured = match[1];
+    if (typeof captured !== 'string') {
+      continue;
+    }
+
+    const attributes = parseAttributes(captured);
     const candidate = typeof attributes.url === 'string' ? attributes.url.trim() : '';
     if (candidate !== '') {
       return candidate;
@@ -223,7 +249,7 @@ export function normalizeUrl(urlValue: string | null | undefined): string | null
   }
 
   const nextParams: Array<[string, string]> = [];
-  for (const [key, value] of parsed.searchParams.entries()) {
+  for (const [key, value] of parsed.searchParams) {
     const lowerKey = key.toLowerCase();
     if (TRACKING_QUERY_KEYS.has(lowerKey) || TRACKING_QUERY_PREFIXES.some((prefix) => lowerKey.startsWith(prefix))) {
       continue;
@@ -322,7 +348,10 @@ function normalizeAtomEntry(feed: FeedDefinition, entryXml: string, fetchedAt?: 
   const title = extractTagText(entryXml, ['title']);
   const url = extractAtomLink(entryXml);
   const authorBlock = entryXml.match(/<author\b[^>]*>([\s\S]*?)<\/author>/i);
-  const author = authorBlock ? (extractTagText(authorBlock[1], ['name']) || toDisplayText(authorBlock[1])) : null;
+  const authorBlockContent = authorBlock?.[1];
+  const author = typeof authorBlockContent === 'string'
+    ? (extractTagText(authorBlockContent, ['name']) || toDisplayText(authorBlockContent))
+    : null;
 
   return createArticle({
     feed,

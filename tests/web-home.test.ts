@@ -22,8 +22,8 @@ test('buildDataPaths builds public JSON paths under ./data by default', () => {
 });
 
 test('loadHomePageData loads articles/categories/sources/meta together', async () => {
-  const calls = [];
-  const fixtures = {
+  const calls: string[] = [];
+  const fixtures: Record<string, unknown> = {
     './data/articles.json': [{
       id: 'article-1',
       title: 'Example article',
@@ -40,7 +40,7 @@ test('loadHomePageData loads articles/categories/sources/meta together', async (
     './data/meta.json': { generatedAt: '2026-03-09T00:00:00Z', articleCount: 1, sourceCount: 1, categoryCount: 1 },
   };
 
-  const fetchImpl = async (url) => {
+  const fetchImpl = async (url: string) => {
     calls.push(url);
     return {
       ok: true,

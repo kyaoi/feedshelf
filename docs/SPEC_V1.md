@@ -136,6 +136,7 @@ v1 では必須ではない。
 - `FS-TS-03` で build step が必要になった場合は、専用 config から `public/assets/app.js` を更新する方式を採用してよい
 - `FS-TS-04` では tests と lint の入口を `.ts` へ寄せ、`public/assets/app.js` の同期は build 実行そのものではなく verify 手順で検査してよい
 - `FS-TS-04` では `pnpm run ci` / `just ci` に browser asset の verify を含め、checked-in asset が source-of-truth とずれていないことを確認できるようにする
+- `FS-TS-05` ではまず `strict: true` を有効化し、`noUncheckedIndexedAccess` / `exactOptionalPropertyTypes` / `allowJs` 縮退は後続の段階タスクへ分離してよい
 
 ---
 

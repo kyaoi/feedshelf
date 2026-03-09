@@ -1,3 +1,4 @@
+"use strict";
 (function (globalScope) {
     const browserScope = globalScope;
     const commonJsModule = (() => {

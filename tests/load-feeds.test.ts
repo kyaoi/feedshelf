@@ -477,7 +477,7 @@ test('runPipeline reports public JSON counts in dry-run mode', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-run-'));
   const feedsPath = path.join(tempDir, 'feeds.json');
   const outputDir = path.join(tempDir, 'public-data');
-  const lines = [];
+  const lines: string[] = [];
 
   await fs.writeFile(feedsPath, JSON.stringify([RSS_FEED, ATOM_FEED]));
 
@@ -499,7 +499,7 @@ test('runPipeline reports public JSON counts in dry-run mode', async () => {
       },
     ],
     logger: {
-      log(message) {
+      log(message: string) {
         lines.push(message);
       },
     },
@@ -574,7 +574,7 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
     },
   ]);
   assert.deepEqual(
-    sources.map((source) => source.id),
+    sources.map((source: { id: string }) => source.id),
     ['atom-feed', 'rss-feed'],
   );
   assert.deepEqual(meta, {

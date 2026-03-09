@@ -329,3 +329,10 @@
 - 決定: `public/assets/app.js` は引き続き checked-in browser asset として保持しつつ、`verify:web-ui` で `tsconfig.web.json` から再生成した出力と一致するかを比較する
 - 理由: `ci` のたびに tracked file を上書きするよりも、source-of-truth と checked-in asset のズレを検知する専用 verify の方が安全で差分も明確なため
 - 影響: `pnpm run ci` / `just ci` は `verify:web-ui` を含み、`src/web/app.ts` を変えた場合は regenerate 後の `public/assets/app.js` も同時に更新する前提となる
+
+
+## D-052: `FS-TS-05` では strictness 引き上げの初手を `strict: true` に限定する
+
+- 決定: `FS-TS-05` では `tsconfig.json` の `strict` を `true` へ引き上げ、`DOM.Iterable` の追加と最小限の型注釈・null/undefined ガードで既存 TS 実装を適合させる
+- 理由: `noUncheckedIndexedAccess` / `exactOptionalPropertyTypes` / `allowJs` 撤去まで同時に進めると変更範囲が広がり、strictness 導入と大規模整理が混ざって差分が不安定になるため
+- 影響: `strict: true` は通常の `typecheck` で担保し、残る追加 strictness は後続タスクとして段階投入する
