@@ -98,6 +98,19 @@ export interface PipelineSummary {
   publicSources: number;
 }
 
+export interface FeedFetchFailure {
+  feedId: string;
+  feedUrl: string;
+  message: string;
+}
+
+export interface UpdatePipelineSummary extends PipelineSummary {
+  attemptedFeeds: number;
+  fetchedDocuments: number;
+  failedFeeds: number;
+  failedFetches: FeedFetchFailure[];
+}
+
 export interface PipelineLogger {
   log(message: string): void;
 }

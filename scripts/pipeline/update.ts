@@ -3,8 +3,9 @@ import path from 'node:path';
 import type {
   FeedDefinition,
   FeedDocumentInput,
+  FeedFetchFailure,
   PipelineLogger,
-  PipelineSummary,
+  UpdatePipelineSummary,
 } from '../../src/shared/contracts.ts';
 import { loadFeeds } from './loadFeeds.ts';
 import { runPipeline } from './run.ts';
@@ -25,6 +26,13 @@ export interface RunUpdatePipelineOptions extends UpdatePipelineArgs {
   generatedAt?: string;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
+}
+
+export interface FetchEnabledFeedDocumentsResult {
+  feeds: FeedDefinition[];
+  enabledFeeds: FeedDefinition[];
+  feedDocuments: FeedDocumentInput[];
+  failedFetches: FeedFetchFailure[];
 }
 
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
@@ -109,6 +117,37 @@ export async function fetchFeedDocument(
   };
 }
 
+function formatFeedFetchFailure(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return String(error);
+}
+
+export function shouldPublishFromFetchedDocuments({
+  enabledFeeds,
+  feedDocuments,
+}: {
+  enabledFeeds: FeedDefinition[];
+  feedDocuments: FeedDocumentInput[];
+}): { ok: true } | { ok: false; reason: string } {
+  if (enabledFeeds.length === 0) {
+    return {
+      ok: false,
+      reason: 'No enabled feeds were configured; refusing to publish an empty update.',
+    };
+  }
+
+  if (feedDocuments.length === 0) {
+    return {
+      ok: false,
+      reason: 'All enabled feeds failed to fetch; deploy will be skipped to preserve the previous site.',
+    };
+  }
+
+  return { ok: true };
+}
+
 export async function fetchEnabledFeedDocuments({
   feedsPath,
   logger = console,
@@ -119,40 +158,63 @@ export async function fetchEnabledFeedDocuments({
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
-}): Promise<{ feeds: FeedDefinition[]; enabledFeeds: FeedDefinition[]; feedDocuments: FeedDocumentInput[] }> {
+}): Promise<FetchEnabledFeedDocumentsResult> {
   const feeds = await loadFeeds(feedsPath);
   const enabledFeeds = selectEnabledFeeds(feeds);
   const feedDocuments: FeedDocumentInput[] = [];
+  const failedFetches: FeedFetchFailure[] = [];
 
   logger.log(`[update] feeds=${feeds.length} enabled=${enabledFeeds.length}`);
 
   for (const feed of enabledFeeds) {
     logger.log(`[update] fetching ${feed.id} ${feed.feedUrl}`);
-    const document = await fetchFeedDocument(feed, {
-      fetchImpl,
-      fetchedAt: generatedAt,
-    });
-    feedDocuments.push(document);
+
+    try {
+      const document = await fetchFeedDocument(feed, {
+        fetchImpl,
+        fetchedAt: generatedAt,
+      });
+      feedDocuments.push(document);
+    } catch (error) {
+      const message = formatFeedFetchFailure(error);
+      failedFetches.push({
+        feedId: feed.id,
+        feedUrl: feed.feedUrl,
+        message,
+      });
+      logger.log(`[update] fetch-failed ${feed.id} ${message}`);
+    }
   }
 
   return {
     feeds,
     enabledFeeds,
     feedDocuments,
+    failedFetches,
   };
 }
 
-export async function runUpdatePipeline(options: RunUpdatePipelineOptions): Promise<PipelineSummary> {
+export async function runUpdatePipeline(options: RunUpdatePipelineOptions): Promise<UpdatePipelineSummary> {
   const logger: PipelineLogger = options.logger || console;
   const generatedAt = new Date(options.generatedAt || Date.now()).toISOString();
-  const { feedDocuments } = await fetchEnabledFeedDocuments({
+  const { enabledFeeds, feedDocuments, failedFetches } = await fetchEnabledFeedDocuments({
     feedsPath: options.feedsPath,
     logger,
     fetchImpl: options.fetchImpl,
     generatedAt,
   });
 
-  const summary = await runPipeline({
+  const publishDecision = shouldPublishFromFetchedDocuments({
+    enabledFeeds,
+    feedDocuments,
+  });
+
+  if (!publishDecision.ok) {
+    logger.log(`[update] publish-skipped ${publishDecision.reason}`);
+    throw new Error(publishDecision.reason);
+  }
+
+  const pipelineSummary = await runPipeline({
     feedsPath: options.feedsPath,
     outputDir: options.outputDir,
     dryRun: options.dryRun,
@@ -161,8 +223,20 @@ export async function runUpdatePipeline(options: RunUpdatePipelineOptions): Prom
     logger,
   });
 
-  logger.log(`[update] fetchedDocuments=${feedDocuments.length}`);
-  logger.log('[update] FS-OPS-01 workflow-ready public data prepared');
+  const summary: UpdatePipelineSummary = {
+    ...pipelineSummary,
+    attemptedFeeds: enabledFeeds.length,
+    fetchedDocuments: feedDocuments.length,
+    failedFeeds: failedFetches.length,
+    failedFetches,
+  };
+
+  logger.log(`[update] fetchedDocuments=${summary.fetchedDocuments} failedFeeds=${summary.failedFeeds}`);
+  if (summary.failedFeeds > 0) {
+    const failedFeedIds = summary.failedFetches.map((failure) => failure.feedId).join(', ');
+    logger.log(`[update] partial-failure: continuing with fetched feeds only (${failedFeedIds})`);
+  }
+  logger.log('[update] FS-OPS-03 partial failure policy applied');
 
   return summary;
 }

@@ -14,6 +14,7 @@ const {
   parseUpdateArgs,
   selectEnabledFeeds,
   fetchFeedDocument,
+  shouldPublishFromFetchedDocuments,
   runUpdatePipeline,
 } = require('../scripts/pipeline/update.js');
 
@@ -39,6 +40,16 @@ const DISABLED_FEED: FeedDefinition = {
   siteUrl: 'https://example.com/',
   language: 'en',
   enabled: false,
+};
+
+const FAILING_FEED: FeedDefinition = {
+  id: 'failing-feed',
+  name: 'Failing Feed',
+  category: 'Examples',
+  feedUrl: 'https://example.com/failing.xml',
+  siteUrl: 'https://example.com/',
+  language: 'en',
+  enabled: true,
 };
 
 const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -95,6 +106,26 @@ test('fetchFeedDocument requests feed XML with explicit headers', async () => {
   assert.match(String(requestHeaders['user-agent']), /FeedShelf\/0\.1/);
 });
 
+test('shouldPublishFromFetchedDocuments refuses deploy when no enabled feed succeeded', () => {
+  const noEnabled = shouldPublishFromFetchedDocuments({
+    enabledFeeds: [],
+    feedDocuments: [],
+  });
+  assert.deepEqual(noEnabled, {
+    ok: false,
+    reason: 'No enabled feeds were configured; refusing to publish an empty update.',
+  });
+
+  const allFailed = shouldPublishFromFetchedDocuments({
+    enabledFeeds: [ENABLED_FEED, FAILING_FEED],
+    feedDocuments: [],
+  });
+  assert.deepEqual(allFailed, {
+    ok: false,
+    reason: 'All enabled feeds failed to fetch; deploy will be skipped to preserve the previous site.',
+  });
+});
+
 test('runUpdatePipeline fetches only enabled feeds and produces public summaries', async () => {
   const fsPromises = require('node:fs/promises');
   const os = require('node:os');
@@ -127,10 +158,93 @@ test('runUpdatePipeline fetches only enabled feeds and produces public summaries
   assert.equal(summary.enabledFeeds, 1);
   assert.equal(summary.totalFeeds, 2);
   assert.equal(summary.publicArticles, 1);
+  assert.equal(summary.attemptedFeeds, 1);
+  assert.equal(summary.fetchedDocuments, 1);
+  assert.equal(summary.failedFeeds, 0);
+  assert.deepEqual(summary.failedFetches, []);
 
   const articles = JSON.parse(await fsPromises.readFile(path.join(outputDir, 'articles.json'), 'utf8'));
   assert.equal(articles.length, 1);
   assert.equal(articles[0].title, 'Workflow article');
+});
+
+test('runUpdatePipeline keeps successful feeds when another feed fails', async () => {
+  const fsPromises = require('node:fs/promises');
+  const os = require('node:os');
+
+  const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'feedshelf-update-partial-'));
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const outputDir = path.join(tempDir, 'public-data');
+  const logMessages: string[] = [];
+
+  await fsPromises.writeFile(feedsPath, JSON.stringify([ENABLED_FEED, FAILING_FEED], null, 2));
+
+  const summary = await runUpdatePipeline({
+    feedsPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-09T10:00:00Z',
+    fetchImpl: async (url: string) => {
+      if (url.includes('failing.xml')) {
+        throw new Error('network timeout');
+      }
+      return {
+        ok: true,
+        text: async () => RSS_XML,
+      };
+    },
+    logger: {
+      log(message: string) {
+        logMessages.push(message);
+      },
+    },
+  });
+
+  assert.equal(summary.attemptedFeeds, 2);
+  assert.equal(summary.fetchedDocuments, 1);
+  assert.equal(summary.failedFeeds, 1);
+  assert.deepEqual(summary.failedFetches, [
+    {
+      feedId: 'failing-feed',
+      feedUrl: 'https://example.com/failing.xml',
+      message: 'network timeout',
+    },
+  ]);
+  assert.equal(summary.publicArticles, 1);
+  assert.ok(logMessages.some((message) => message.includes('fetch-failed failing-feed network timeout')));
+  assert.ok(logMessages.some((message) => message.includes('partial-failure: continuing with fetched feeds only')));
+});
+
+test('runUpdatePipeline fails the build when every enabled feed fails', async () => {
+  const fsPromises = require('node:fs/promises');
+  const os = require('node:os');
+
+  const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'feedshelf-update-fail-'));
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const outputDir = path.join(tempDir, 'public-data');
+  const logMessages: string[] = [];
+
+  await fsPromises.writeFile(feedsPath, JSON.stringify([FAILING_FEED], null, 2));
+
+  await assert.rejects(
+    runUpdatePipeline({
+      feedsPath,
+      outputDir,
+      dryRun: false,
+      generatedAt: '2026-03-09T10:00:00Z',
+      fetchImpl: async () => {
+        throw new Error('network timeout');
+      },
+      logger: {
+        log(message: string) {
+          logMessages.push(message);
+        },
+      },
+    }),
+    /All enabled feeds failed to fetch; deploy will be skipped to preserve the previous site\./,
+  );
+
+  assert.ok(logMessages.some((message) => message.includes('publish-skipped All enabled feeds failed to fetch')));
 });
 
 test('update workflow keeps build and deploy boundaries explicit', () => {

@@ -573,6 +573,7 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 - `FS-OPS-01` は update workflow の責務を持ち、schedule / manual trigger / concurrency / quality gate / enabled feed の取得 / pipeline 呼び出し / Pages artifact 準備までを扱う
 - `FS-OPS-02` は Pages deploy の責務を持ち、`FS-OPS-01` が成功時に生成した artifact だけを公開対象にする。deploy は update job と分離した job で行い、`needs` / `environment: github-pages` / `page_url` output を明示する
 - `FS-OPS-03` は partial failure policy の責務を持ち、単一フィード失敗の収集・publish 条件・deploy skip 条件を実装へ落とし込む
+- v1 の publish 条件は「enabled feed のうち 1 件以上の取得と生成が成功していること」とし、全件失敗または enabled feed 0 件の更新では deploy を行わない
 - 現在の `scripts/pipeline/run.js` は pre-fetched な `feedDocuments` を受け取る形を維持してよく、feed の実取得は薄い orchestration layer として workflow 側または隣接 script に分離してよい
 
 ### 12.6 v1 の更新・公開フロー
@@ -580,6 +581,8 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 1. フィード定義を読み込む
 2. 永続 state を読み込む
 3. 各 RSS / Atom を取得する
+   - 単一フィード失敗は収集して継続する
+   - enabled feed の全件失敗時は publish 不可として build を失敗させる
 4. 記事を canonical article object へ正規化する
 5. URL 正規化と dedupe を行う
 6. 公開 JSON (`articles/categories/sources/meta`) を生成する
@@ -605,6 +608,7 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 ### 13.2 更新
 - GitHub Actions で定期更新できること
 - 単一フィードの失敗で全体を停止しないこと
+- enabled feed の全件失敗時は新しい公開を行わず、前回成功済みサイトを維持すること
 
 ### 13.3 パフォーマンス
 - 初回表示が重くなりすぎないこと

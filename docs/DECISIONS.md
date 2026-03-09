@@ -374,3 +374,10 @@
 - 決定: `FS-OPS-02` では `.github/workflows/update-public-data.yml` に `deploy-github-pages` job を追加し、`needs: build-public-data`、`environment: github-pages`、`url: ${{ steps.deployment.outputs.page_url }}`、`pages: write` / `id-token: write` permissions、`actions/deploy-pages@v4` を固定する
 - 理由: GitHub Pages の custom workflow では deploy job に `pages: write` と `id-token: write` permissions、`needs`、`environment`、`page_url` 出力が必要であり、artifact upload と deploy を分離した方が更新と公開の境界も追跡しやすいため
 - 影響: `FS-OPS-02` 完了時点で、成功した update artifact からの公開は workflow 上で自動化される。一方で単一フィード失敗時の継続判定や deploy skip 条件の詳細実装は `FS-OPS-03` に残る
+
+## D-059: `FS-OPS-03` の publish 条件は「enabled feed 1 件以上成功」に固定する
+
+- 決定: `scripts/pipeline/update.ts` では feed ごとの fetch 失敗を収集しつつ継続し、enabled feed のうち 1 件以上の取得に成功した場合のみ pipeline を進める。enabled feed 0 件または全件失敗時は build を失敗させ、deploy を走らせない
+- 理由: 単一フィード失敗で全体を止めないという v1 要件を満たしつつ、取得結果 0 件の更新で空の公開物や不完全な公開物へ切り替えて前回成功済みサイトを壊すことを避けるため
+- 影響: `FS-OPS-03` では workflow YAML を大きく増やさず、`update.ts` の orchestration layer に partial failure policy を集約する。テストでは「一部失敗なら継続」「全件失敗なら build 失敗」の両方を確認する
+
