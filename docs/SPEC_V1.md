@@ -134,6 +134,8 @@ v1 では必須ではない。
 - `FS-TS-02` では既存の CLI / test import surface を壊さないため、同名の `.js` wrapper を互換用に残してよい
 - `FS-TS-03` では Web UI の source-of-truth を `src/web/app.ts` に置き、browser が読む `public/assets/app.js` は互換 asset path として維持してよい
 - `FS-TS-03` で build step が必要になった場合は、専用 config から `public/assets/app.js` を更新する方式を採用してよい
+- `FS-TS-04` では tests と lint の入口を `.ts` へ寄せ、`public/assets/app.js` の同期は build 実行そのものではなく verify 手順で検査してよい
+- `FS-TS-04` では `pnpm run ci` / `just ci` に browser asset の verify を含め、checked-in asset が source-of-truth とずれていないことを確認できるようにする
 
 ---
 

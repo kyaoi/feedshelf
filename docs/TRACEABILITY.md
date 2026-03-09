@@ -53,3 +53,5 @@
 | FS-049 | pipeline 本体を TS 化しても既存 entrypoint を維持できる | `scripts/pipeline/*.ts` / `scripts/pipeline/*.js` / `package.json` | JS wrapper 経由で既存 import / CLI surface を壊さずに TS 実装を呼べる |
 | FS-050 | public Web UI ロジックを TS source へ移しても browser asset path を維持できる | `src/web/app.ts` / `public/assets/app.js` / `public/*.html` | HTML の `<script src>` を変えずに UI ロジックの source-of-truth を TS 化できる |
 | FS-051 | Web UI 用の browser asset を dedicated TS emit config から再生成できる | `tsconfig.web.json` / `package.json` / `tests/typescript-tooling.test.js` | `build:web-ui` と emit config が固定されている |
+| FS-052 | tests / lint の品質ゲートを TS entrypoint ベースへ更新できる | `tests/*.test.ts` / `scripts/lint.ts` / `package.json` | `tsx` 前提の test / lint 導線が確認できる |
+| FS-053 | checked-in browser asset が TS source と同期していることを verify できる | `scripts/verifyWebBuild.ts` / `tsconfig.web.json` / `public/assets/app.js` | 再生成結果と checked-in asset の一致が確認できる |

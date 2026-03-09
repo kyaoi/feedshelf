@@ -16,4 +16,7 @@ test:
 build:
     pnpm build
 
-ci: lint typecheck test # build
+verify-web-ui:
+    pnpm verify:web-ui
+
+ci: lint typecheck test verify-web-ui

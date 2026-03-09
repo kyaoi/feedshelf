@@ -1,23 +1,19 @@
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
-const { loadFeeds } = require('./pipeline/loadFeeds');
+
+const { loadFeeds } = require('./pipeline/loadFeeds.ts');
 
 const FILES_TO_CHECK = [
-  'scripts/lint.js',
   'scripts/pipeline/loadFeeds.js',
   'scripts/pipeline/dedupeArticles.js',
   'scripts/pipeline/buildPublicExports.js',
   'scripts/pipeline/run.js',
   'scripts/pipeline/normalizeFeed.js',
   'public/assets/app.js',
-  'tests/load-feeds.test.js',
-  'tests/web-home.test.js',
-  'tests/web-categories.test.js',
-  'tests/web-sources.test.js',
-];
+] as const;
 
-async function main() {
-  const rootDir = path.resolve(__dirname, '..');
+async function main(): Promise<void> {
+  const rootDir = process.cwd();
 
   for (const relativePath of FILES_TO_CHECK) {
     execFileSync(process.execPath, ['--check', path.join(rootDir, relativePath)], {
@@ -29,7 +25,7 @@ async function main() {
   console.log('[lint] OK');
 }
 
-main().catch((error) => {
+main().catch((error: unknown) => {
   console.error('[lint] failed', error);
   process.exit(1);
 });

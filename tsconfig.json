@@ -18,14 +18,14 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force"
   },
   "include": [
     "src/**/*.ts",
     "scripts/**/*.ts",
     "scripts/**/*.js",
-    "tests/**/*.js",
-    "public/assets/**/*.js"
+    "tests/**/*.ts"
   ],
   "exclude": [
     "node_modules",

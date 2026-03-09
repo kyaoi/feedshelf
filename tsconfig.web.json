@@ -8,7 +8,9 @@
     "module": "none",
     "types": [],
     "rootDir": "src/web",
-    "outDir": "public/assets"
+    "outDir": "public/assets",
+    "resolveJsonModule": false,
+    "moduleDetection": "auto"
   },
   "include": [
     "src/web/app.ts"

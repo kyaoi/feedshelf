@@ -160,7 +160,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
 (function (globalScope: typeof globalThis) {
   const browserScope = globalScope as FeedShelfGlobalScope;
-  const commonJsModule = (browserScope as FeedShelfGlobalScope & { module?: { exports?: unknown } }).module;
+  const commonJsModule = (() => {
+    try {
+      return eval('typeof module !== \"undefined\" ? module : undefined') as { exports?: unknown } | undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   const DEFAULT_BASE_PATH = '.';
   const MISSING_SUMMARY_LABEL = '要約はありません。';
   const UNKNOWN_PUBLISHED_AT_LABEL = '公開日時不明';

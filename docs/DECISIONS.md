@@ -317,3 +317,15 @@
 - 決定: Web UI 用の emit は `tsconfig.web.json` と `build:web-ui` script に分離し、通常の `tsc --noEmit` と責務を分ける
 - 理由: Node 向け pipeline / test の型検査設定と browser asset の emit 設定を分けた方が、移行中の差分と失敗要因を局所化しやすいため
 - 影響: `FS-TS-03` 時点では browser asset を再生成できるが、build verify を通常ゲートへ組み込むのは `FS-TS-04` 以降で扱う
+
+## D-050: `FS-TS-04` では tests / lint の entrypoint も `.ts` を正本にする
+
+- 決定: `tests/*.test.ts` と `scripts/lint.ts` を追加し、test / lint の package script は `.ts` entrypoint を直接 `tsx` から実行する
+- 理由: pipeline / web UI の source-of-truth が TS 化された段階で、品質ゲート側も同じ実装言語へ揃えた方が diffship 向けの差分追跡と型検査を一貫させやすいため
+- 影響: 以後の test / lint 修正は `.ts` ファイルを正本とし、残る `.js` は runtime wrapper または生成 asset に限定される
+
+## D-051: `FS-TS-04` では browser asset の同期を dedicated verify で担保する
+
+- 決定: `public/assets/app.js` は引き続き checked-in browser asset として保持しつつ、`verify:web-ui` で `tsconfig.web.json` から再生成した出力と一致するかを比較する
+- 理由: `ci` のたびに tracked file を上書きするよりも、source-of-truth と checked-in asset のズレを検知する専用 verify の方が安全で差分も明確なため
+- 影響: `pnpm run ci` / `just ci` は `verify:web-ui` を含み、`src/web/app.ts` を変えた場合は regenerate 後の `public/assets/app.js` も同時に更新する前提となる

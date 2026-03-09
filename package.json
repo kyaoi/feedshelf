@@ -10,12 +10,13 @@
   "scripts": {
     "bootstrap": "pnpm install --frozen-lockfile=false",
     "pipeline:run": "tsx scripts/pipeline/run.js",
-    "lint": "tsx scripts/lint.js",
-    "test": "tsx --test tests/*.test.js",
-    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "lint": "tsx scripts/lint.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui",
     "typecheck": "tsc --noEmit",
     "build:web-ui": "tsc -p tsconfig.web.json",
-    "build": "pnpm run build:web-ui"
+    "build": "pnpm run build:web-ui",
+    "verify:web-ui": "tsx scripts/verifyWebBuild.ts"
   },
   "devDependencies": {
     "@types/node": "^25.0.2",
