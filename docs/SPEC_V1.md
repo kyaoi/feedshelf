@@ -683,3 +683,20 @@ v2 以降で追加検討可能な項目:
 - fuzzy dedupe
 - richer provenance 記録
 - public JSON の sharding / pagination
+
+
+### 14.6 `FS-QA-02` README / docs 導線整理
+
+`FS-QA-02` では、監査で見つかった docs flow の不足に対して、repo 直下の `README.md` を入口として追加し、以下を一貫した導線として揃える。
+
+- FeedShelf の目的と MVP 前提
+- 最低限のセットアップ手順
+- `pnpm run ci` / `pnpm run pipeline:update` / `python -m http.server --directory public` によるローカル確認手順
+- GitHub Actions / GitHub Pages 前提の公開フロー概要
+- `SPEC_V1` / `DECISIONS` / `TRACEABILITY` / `TYPESCRIPT_MIGRATION` / `PLAN` の読み分け
+
+このタスクでは、新しい実装機能や dev server script を追加せず、既存コマンドと既存 docs を最小差分でつなぐことを優先する。
+
+また、`README.md` は人間の入口として扱う一方、仕様の正本は引き続き `docs/SPEC_V1.md`、判断理由の正本は `docs/DECISIONS.md`、仕様と実装・テストの対応表は `docs/TRACEABILITY.md` として分離する。
+
+これにより、Phase 5 の残タスクは `FS-QA-03` の受け入れ証跡整理へ絞られる。
