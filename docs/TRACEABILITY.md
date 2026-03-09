@@ -56,3 +56,4 @@
 | FS-052 | tests / lint の品質ゲートを TS entrypoint ベースへ更新できる | `tests/*.test.ts` / `scripts/lint.ts` / `package.json` | `tsx` 前提の test / lint 導線が確認できる |
 | FS-053 | checked-in browser asset が TS source と同期していることを verify できる | `scripts/verifyWebBuild.ts` / `tsconfig.web.json` / `public/assets/app.js` | 再生成結果と checked-in asset の一致が確認できる |
 | FS-054 | TypeScript strict mode の初手を最小差分で有効化できる | `tsconfig.json` / `scripts/pipeline/normalizeFeed.ts` / `tests/*.ts` | `strict: true` が有効で、既存 TS 実装が暗黙 `any` や未ガード capture に依存しない |
+| FS-055 | Phase 5 の audit / docs flow / acceptance verification の順序を docs で固定できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `FS-QA-01` / `FS-QA-02` / `FS-QA-03` の責務分割と完了条件が docs で確認できる |

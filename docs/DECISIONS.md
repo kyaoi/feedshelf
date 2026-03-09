@@ -381,3 +381,15 @@
 - 理由: 単一フィード失敗で全体を止めないという v1 要件を満たしつつ、取得結果 0 件の更新で空の公開物や不完全な公開物へ切り替えて前回成功済みサイトを壊すことを避けるため
 - 影響: `FS-OPS-03` では workflow YAML を大きく増やさず、`update.ts` の orchestration layer に partial failure policy を集約する。テストでは「一部失敗なら継続」「全件失敗なら build 失敗」の両方を確認する
 
+## D-060: Phase 5 は `FS-QA-00` の docs-first planning から始める
+
+- 決定: Phase 5 は `FS-QA-01` に入る前に、`FS-QA-00` として spec 実装差分監査 / README・docs 導線整理 / MVP 受け入れ確認の責務分割と実装順を docs に固定する
+- 理由: Phase 4 までで MVP に必要な主要実装はほぼ揃っているため、ここで新機能追加と仕上げ作業を混ぜるより、まず監査と受け入れ確認の観点を固定した方が差分を小さく安全に進められるため
+- 影響: `PLAN.md` / `docs/SPEC_V1.md` / `docs/TRACEABILITY.md` を先に更新し、その後の Phase 5 タスクはこの境界に従って進める
+
+## D-061: Phase 5 は `FS-QA-01` / `02` / `03` で audit・docs flow・acceptance verification を分離する
+
+- 決定: `FS-QA-01` は差分監査、`FS-QA-02` は README / docs 導線整理、`FS-QA-03` は MVP 受け入れ確認を主責務として分ける
+- 理由: 仕様との差分検出・利用者向け導線整備・完了判定は必要なファイルと確認観点が異なり、1 タスクにまとめると docs 変更と実装修正の境界が曖昧になりやすいため
+- 影響: `FS-QA-01` では不足の記録を優先し、`FS-QA-02` では README / docs を最小差分で整え、`FS-QA-03` ではテストと手動確認の証跡整理に集中する
+

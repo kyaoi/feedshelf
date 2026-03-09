@@ -638,6 +638,16 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 - 一覧表示に必要な最小項目を保持できる
 - canonical article object と公開 JSON の責務が分離されている
 
+### 14.4 Phase 5 の docs-first planning
+
+Phase 5 は、実装に入る前に `FS-QA-00` で監査・導線・受け入れ確認の責務を docs に固定してから進める。
+
+- `FS-QA-01` は spec / decisions / traceability / workflow / tests / checked-in assets を横断して、MVP と受け入れ条件に対する差分を洗い出す責務を持つ
+- `FS-QA-01` は差分の洗い出しを主眼とし、そこで見つかった不足を一度に広く実装しきることは責務に含めない
+- `FS-QA-02` は README を含む利用者向け導線と docs 間リンクの整理を責務とし、最低限のセットアップ手順・ローカル確認方法・GitHub Actions / Pages 前提を一貫した導線として整える
+- `FS-QA-03` は Phase 5 完了判定の責務を持ち、既存 test / verify と必要最小限の手動確認を用いて MVP / 受け入れ条件を満たすかを記録する
+- Phase 5 では新機能追加よりも、既存仕様との整合・導線の明確化・受け入れ根拠の明文化を優先する
+
 ---
 
 ## 15. 将来拡張
