@@ -336,3 +336,28 @@
 - 決定: `FS-TS-05` では `tsconfig.json` の `strict` を `true` へ引き上げ、`DOM.Iterable` の追加と最小限の型注釈・null/undefined ガードで既存 TS 実装を適合させる
 - 理由: `noUncheckedIndexedAccess` / `exactOptionalPropertyTypes` / `allowJs` 撤去まで同時に進めると変更範囲が広がり、strictness 導入と大規模整理が混ざって差分が不安定になるため
 - 影響: `strict: true` は通常の `typecheck` で担保し、残る追加 strictness は後続タスクとして段階投入する
+
+## D-053: Phase 4 は `FS-OPS-00` の docs-first planning から始める
+
+- 決定: Phase 4 は `FS-OPS-01` に入る前に、`FS-OPS-00` として workflow / deploy / failure handling の責務分割と実装順を docs に固定する
+- 理由: spec 上の更新フローには state 読み書きや公開まで含まれる一方、現行タスクリストは workflow / deploy / failure handling の境界がまだ粗いため、先に責務を整理した方が最小差分で安全に進められる
+- 影響: `PLAN.md` / `SPEC_V1.md` / `DECISIONS.md` / `TRACEABILITY.md` を先に更新し、その後の実装タスクはこの分割に従って進める
+
+## D-054: `FS-OPS-01` / `02` / `03` で update・deploy・failure handling を分離する
+
+- 決定: `FS-OPS-01` は update workflow、`FS-OPS-02` は Pages deploy、`FS-OPS-03` は partial failure policy を主責務として分ける
+- 理由: 取得・生成・公開・失敗継続を 1 タスクへ混ぜると、workflow YAML だけでなく pipeline 周辺のコード変更まで一度に膨らみやすいため
+- 影響: `FS-OPS-01` の時点では deploy を抱え込まず、Pages へ渡す artifact boundary を先に固定する
+
+## D-055: Pages deploy は成功した update artifact からのみ行う
+
+- 決定: GitHub Pages への deploy は、update job が成功し、publish 条件を満たしたときに生成された artifact だけを対象にする
+- 理由: 更新失敗や publish 条件未達の状態で新しい生成物を上書き公開すると、前回成功済みサイトを壊すリスクがあるため
+- 影響: `FS-OPS-02` では artifact upload/deploy の責務を明確にし、`FS-OPS-03` では deploy skip 条件を実装へ落とし込む
+
+## D-056: feed の実取得は core pipeline の外側に薄く分離してよい
+
+- 決定: `scripts/pipeline/run.js` の core pipeline は pre-fetched `feedDocuments` を受け取る形を維持してよく、enabled feed の network fetch は workflow から呼ぶ薄い orchestration layer として追加してよい
+- 理由: 正規化・dedupe・public export の core 処理と、外部 I/O を含む取得責務を分けた方がテストしやすく、既存の pipeline 契約も壊しにくいため
+- 影響: `FS-OPS-01` では workflow 追加だけでなく、必要なら feed fetch helper を最小差分で追加する前提を許容する
+

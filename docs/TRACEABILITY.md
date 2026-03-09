@@ -8,13 +8,13 @@
 | FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク / safe external URL handling | `http/https` のみ外部URLへ遷移し、unsafe URL は非活性表示へ落ちる |
 | FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.js` | RSS / Atom fixture が canonical article object へ変換される |
 | FS-006 | 重複記事を抑制できる | `scripts/pipeline/dedupeArticles.js` | 同一記事の多重表示を抑制 |
-| FS-007 | GitHub Actions で定期更新できる | workflow | 定期実行でデータ更新 |
-| FS-008 | GitHub Pages で公開できる | 静的ビルド / deploy | 公開URLで閲覧可能 |
-| FS-009 | 単一フィード失敗で全体を止めない | 取得エラーハンドリング | 一部失敗でも生成継続 |
+| FS-007 | GitHub Actions で定期更新できる | `PLAN.md` / `docs/SPEC_V1.md` / update workflow | schedule / manual trigger / concurrency / pipeline invocation の境界が確認できる |
+| FS-008 | GitHub Pages で公開できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / Pages artifact + deploy workflow | 成功した update artifact からのみ deploy する方針が確認できる |
+| FS-009 | 単一フィード失敗で全体を止めない | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / per-feed failure handling | 一部失敗の収集・publish 条件・継続条件が docs で確認できる |
 | FS-010 | 記事本文を保持しない | 設計方針 / UI | 本文表示を実装しない |
 | FS-011 | 静的生成データの責務を分離できる | `feeds/articles/categories/sources` の生成 | UI が必要データを静的成果物から読める |
 | FS-012 | ルーティングが一覧中心で定義されている | `/`, `/categories/[category]`, `/sources/[source]` | 導線が仕様と一致する |
-| FS-013 | 更新失敗時も前回成功データを破壊しない | workflow / deploy 設計 | 一部失敗時の継続方針が保たれる |
+| FS-013 | 更新失敗時も前回成功データを破壊しない | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / deploy gating | publish 条件未達や update failure では deploy を skip して前回成功サイトを維持する方針が確認できる |
 | FS-014 | フィード定義を `data/feeds.json` に集約できる | `data/feeds.json` / `scripts/pipeline/loadFeeds.js` | 単一ファイルから全フィードを読める |
 | FS-015 | フィード `id` を安定キーとして扱える | schema / validation | `id` が内部参照キーとして利用できる |
 | FS-016 | フィード定義の必須項目が明示されている | docs / loader contract | 必須フィールド欠落時に検出できる |
