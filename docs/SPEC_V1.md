@@ -648,6 +648,24 @@ Phase 5 は、実装に入る前に `FS-QA-00` で監査・導線・受け入れ
 - `FS-QA-03` は Phase 5 完了判定の責務を持ち、既存 test / verify と必要最小限の手動確認を用いて MVP / 受け入れ条件を満たすかを記録する
 - Phase 5 では新機能追加よりも、既存仕様との整合・導線の明確化・受け入れ根拠の明文化を優先する
 
+### 14.5 `FS-QA-01` 監査結果
+
+`FS-QA-01` では spec / decisions / traceability / workflow / tests / checked-in assets を突き合わせ、Phase 5 開始時点の差分を以下のように整理する。
+
+確認できたこと:
+- フィード定義、取得、正規化、dedupe、公開 JSON 生成、静的 UI 3 ルート、safe external link handling は実装済みとして追跡できる
+- GitHub Actions の定期更新、GitHub Pages への deploy、partial failure policy、TypeScript quality gate は workflow / tests / verify まで含めて追跡できる
+- 監査時点では、MVP の中核機能に対して新しい必須実装タスクを追加するより、仕上げ用 docs と受け入れ証跡の明文化を優先する方が安全である
+
+この時点で残る差分:
+- README が未整備で、初回セットアップ / ローカル確認 / Actions / Pages 前提の入口が repo 直下に揃っていない
+- Phase 5 完了判定として残す受け入れ証跡はまだ未記録である
+- traceability 上の実装候補表現には、TypeScript source-of-truth と query parameter routing に合わせて更新すべき箇所がある
+
+後続タスクへの受け渡し:
+- `FS-QA-02` では README / docs 導線整理を行う
+- `FS-QA-03` では quality gate と最小手動確認を用いた受け入れ証跡を残す
+
 ---
 
 ## 15. 将来拡張
