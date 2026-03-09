@@ -13,7 +13,6 @@
     "pipeline:update": "tsx scripts/pipeline/update.js",
     "lint": "tsx scripts/lint.ts",
     "test": "tsx --test tests/*.test.ts",
-    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui",
     "typecheck": "tsc --noEmit",
     "build:web-ui": "tsc -p tsconfig.web.json",
     "build": "pnpm run build:web-ui",
