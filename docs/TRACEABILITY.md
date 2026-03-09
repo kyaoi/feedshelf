@@ -28,7 +28,6 @@
 | FS-024 | dedupe を全 feed 横断で conservative に行える | `scripts/pipeline/dedupeArticles.js` key selector | `normalizedUrl` と `(feedId, sourceItemId)` だけで判定する |
 | FS-025 | 重複記事を richest-wins で統合できる | `scripts/pipeline/dedupeArticles.js` merge rule | `summary` / `imageUrl` / `tags` / `fetchedAt` の統合規則が確認できる |
 | FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | `scripts/pipeline/dedupeArticles.js` provenance-lite contract | primary metadata と provenance-lite の役割分担が確認できる |
-
 | FS-027 | `articles.json` の一覧用 shape と並び順を固定できる | `scripts/pipeline/buildPublicExports.js` articles generator | `sortAt` を含む summary object 配列として生成できる |
 | FS-028 | `categories.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.js` categories generator | `id/label/articleCount/latestSortAt` を生成できる |
 | FS-029 | `sources.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.js` sources generator | `id/name/siteUrl/language/categoryId/categoryLabel/articleCount/latestSortAt` を生成できる |
