@@ -38,3 +38,7 @@
 | FS-033 | 長期保持する取得 state を cache / artifact 非依存で保存できる | state storage strategy | 永続 state の正本が repository 管理下の保存先に置かれることが仕様で確認できる |
 | FS-034 | 内部 pipeline entrypoint を Actions とローカル再現の両方から呼べる | `package.json` / `scripts/pipeline/run.js` / `justfile` | `runPipeline` から正規化・dedupe・public export まで同じ処理系を共有できる |
 | FS-035 | 公開生成物と内部 state の責務を分離できる | public export / internal state design | `articles.json` 等を公開契約に限定し、内部履歴と混同しないことが確認できる |
+| FS-036 | Phase 3 の UI 実装境界を static HTML / CSS / JS + `public/data` 読み取りに固定できる | `public/` 配下の静的 UI / docs | Phase 3 着手前に UI 境界が docs で確認できる |
+| FS-037 | UI が 4 つの公開 JSON だけで一覧表示に必要な情報を取得できる | `public/data/articles/categories/sources/meta` consumer | 追加 dedupe や feed join が不要なことを仕様で確認できる |
+| FS-038 | UI が loading / empty / error と nullable 項目欠損に耐えられる | UI fallback states / article card rendering | `summary` / `publishedAt` / `imageUrl` 欠損時も表示が崩れない |
+| FS-039 | AI handoff からローカル依存物・生成物・秘密情報を既定除外できる | `.diffshipignore` | `node_modules/` や `public/data/` が既定 handoff に入らない |

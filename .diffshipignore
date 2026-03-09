@@ -1,0 +1,29 @@
+# package manager / local installs
+node_modules/
+.pnpm-store/
+
+# local env / secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# test / coverage
+coverage/
+
+# generated public exports
+public/data/
+
+# common temp/cache
+tmp/
+.temp/
+.cache/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

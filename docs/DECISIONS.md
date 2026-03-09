@@ -203,3 +203,22 @@
 - 影響: `runPipeline` の summary には公開件数と `outputDir` / `generatedAt` を含め、`--dry-run` では同じ shape を in-memory で検証できる
 - 影響: `categoryId` slug は v1 では transliteration を行わず、Unicode を保持した deterministic slug + collision error を採用する
 - V2 メモ: feed fetch / state save / static page build が入ったら、public export module を build orchestration からさらに分離するか再検討する
+
+## D-032: Phase 3 の Web UI は static HTML / CSS / JS とする
+
+- 決定: v1 の Web UI は `public/` 配下の static HTML / CSS / JS として実装する
+- 理由: GitHub Pages 前提の構成と整合し、Phase 3 を最小差分で安全に進めるため
+- 影響: Phase 3 では framework 導入や SSR / SPA router 前提の実装を必須にしない
+
+## D-033: Web UI は `public/data` の read-only consumer とする
+
+- 決定: v1 の UI は `public/data/articles.json` / `categories.json` / `sources.json` / `meta.json` を read-only に読み、追加の dedupe や canonicalization を再実装しない
+- 理由: pipeline と UI の責務を分離し、公開 JSON 契約を安定させるため
+- 影響: UI は listing-ready JSON をそのまま表示できる shape を前提にする
+- 影響: `summary` / `publishedAt` / `imageUrl` など nullable 項目の欠損には UI 側で耐性を持たせる
+
+## D-034: `.diffshipignore` で handoff ノイズを既定除外する
+
+- 決定: `node_modules/`、`.pnpm-store/`、`coverage/`、`*.log`、`public/data/`、`.env*` などのローカル依存物・生成物・秘密情報は `.diffshipignore` で既定除外する
+- 理由: AI に不要な差分を handoff へ載せず、bundle を小さく安定させるため
+- 影響: 生成済み `public/data/` を AI に見せたいタスクでは、明示 include か一時的な除外調整が必要になる
