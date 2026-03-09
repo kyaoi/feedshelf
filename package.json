@@ -13,7 +13,9 @@
     "lint": "tsx scripts/lint.js",
     "test": "tsx --test tests/*.test.js",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:web-ui": "tsc -p tsconfig.web.json",
+    "build": "pnpm run build:web-ui"
   },
   "devDependencies": {
     "@types/node": "^25.0.2",

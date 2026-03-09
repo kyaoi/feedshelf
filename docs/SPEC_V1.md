@@ -132,6 +132,8 @@ v1 では必須ではない。
 - `FS-TS-01` では `tsc --noEmit` を quality gate に追加し、JS / TS 共存期間でも型検査を先に導入する
 - `FS-TS-02` では pipeline と公開 JSON の共有型を `src/shared/contracts.ts` に集約し、主要 pipeline 実装を `scripts/pipeline/*.ts` へ移す
 - `FS-TS-02` では既存の CLI / test import surface を壊さないため、同名の `.js` wrapper を互換用に残してよい
+- `FS-TS-03` では Web UI の source-of-truth を `src/web/app.ts` に置き、browser が読む `public/assets/app.js` は互換 asset path として維持してよい
+- `FS-TS-03` で build step が必要になった場合は、専用 config から `public/assets/app.js` を更新する方式を採用してよい
 
 ---
 

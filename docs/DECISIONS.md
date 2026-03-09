@@ -305,3 +305,15 @@
 - 決定: `scripts/pipeline/*.ts` へ主要処理を移しつつ、同名の `.js` wrapper を残して既存 entrypoint と require 導線を維持する
 - 理由: `FS-TS-04` 前に test / lint / package scripts の全面切り替えを強制せず、最小差分で pipeline 本体だけを型安全化したいため
 - 影響: 現時点では runtime の入口名は維持されるが、実装の正本は `.ts` 側となる
+
+## D-048: `FS-TS-03` では Web UI の source-of-truth を `src/web/app.ts` に置く
+
+- 決定: `public/assets/app.js` の browser asset path は維持しつつ、Web UI ロジックの source-of-truth は `src/web/app.ts` に移す
+- 理由: static HTML の `<script src>` や既存テストの import path を大きく変えずに、UI ロジックだけを段階的に TS 化したいため
+- 影響: `public/*.html` はそのまま使え、以後の UI ロジック修正は `src/web/app.ts` を正本として行う
+
+## D-049: `FS-TS-03` の browser asset 再生成は dedicated TypeScript config で行う
+
+- 決定: Web UI 用の emit は `tsconfig.web.json` と `build:web-ui` script に分離し、通常の `tsc --noEmit` と責務を分ける
+- 理由: Node 向け pipeline / test の型検査設定と browser asset の emit 設定を分けた方が、移行中の差分と失敗要因を局所化しやすいため
+- 影響: `FS-TS-03` 時点では browser asset を再生成できるが、build verify を通常ゲートへ組み込むのは `FS-TS-04` 以降で扱う

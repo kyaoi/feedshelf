@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowJs": false,
+    "checkJs": false,
+    "allowImportingTsExtensions": false,
+    "module": "none",
+    "types": [],
+    "rootDir": "src/web",
+    "outDir": "public/assets"
+  },
+  "include": [
+    "src/web/app.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "public/data"
+  ]
+}

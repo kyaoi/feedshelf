@@ -51,3 +51,5 @@
 | FS-047 | 型検査を通常の品質ゲートに組み込める | `package.json` / `justfile` / `tests/typescript-tooling.test.js` | `typecheck` script と `just ci` の導線が確認できる |
 | FS-048 | pipeline 共有型を単一 TS module に集約できる | `src/shared/contracts.ts` / `scripts/pipeline/*.ts` | feed 定義・canonical article・公開 JSON shape が同じ型定義から参照できる |
 | FS-049 | pipeline 本体を TS 化しても既存 entrypoint を維持できる | `scripts/pipeline/*.ts` / `scripts/pipeline/*.js` / `package.json` | JS wrapper 経由で既存 import / CLI surface を壊さずに TS 実装を呼べる |
+| FS-050 | public Web UI ロジックを TS source へ移しても browser asset path を維持できる | `src/web/app.ts` / `public/assets/app.js` / `public/*.html` | HTML の `<script src>` を変えずに UI ロジックの source-of-truth を TS 化できる |
+| FS-051 | Web UI 用の browser asset を dedicated TS emit config から再生成できる | `tsconfig.web.json` / `package.json` / `tests/typescript-tooling.test.js` | `build:web-ui` と emit config が固定されている |

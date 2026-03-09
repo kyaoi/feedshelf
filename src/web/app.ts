@@ -1,5 +1,166 @@
-// Browser asset for FeedShelf web UI. Source of truth: src/web/app.ts. Rebuild with `pnpm run build:web-ui`.
-(function (globalScope) {
+
+interface PublicArticleSummaryLike {
+  id: string;
+  title: string;
+  url: string | null;
+  summary: string | null;
+  publishedAt: string | null;
+  sortAt: string;
+  sourceId: string;
+  sourceName: string;
+  categoryId: string;
+  categoryLabel: string;
+  imageUrl: string | null;
+}
+
+interface PublicCategorySummaryLike {
+  id: string;
+  label: string;
+  articleCount: number;
+  latestSortAt?: string;
+}
+
+interface PublicSourceSummaryLike {
+  id: string;
+  name: string;
+  articleCount: number;
+  categoryLabel: string;
+  language: string;
+  siteUrl?: string;
+  categoryId?: string;
+  latestSortAt?: string;
+}
+
+interface PublicMetaLike {
+  generatedAt?: string;
+  articleCount?: number;
+  sourceCount?: number;
+  categoryCount?: number;
+}
+
+interface ReadyPayload {
+  kind: 'ready';
+  articles: PublicArticleSummaryLike[];
+  categories: PublicCategorySummaryLike[];
+  sources: PublicSourceSummaryLike[];
+  meta: PublicMetaLike;
+}
+
+interface MissingDataPayload {
+  kind: 'missing-data';
+  message: string;
+}
+
+interface ErrorPayload {
+  kind: 'error';
+  message: string;
+}
+
+type HomePageDataResult = ReadyPayload | MissingDataPayload | ErrorPayload;
+
+interface StatViewModel {
+  label: string;
+  value: string;
+}
+
+interface ArticleViewModel {
+  title: string;
+  url: string | null;
+  sourceName: string;
+  categoryLabel: string;
+  publishedAtLabel: string;
+  summary: string;
+  hasSummary: boolean;
+  imageUrl: string | null;
+  canOpenExternal: boolean;
+  externalLinkDescription: string;
+}
+
+interface CategoryNavigationItem {
+  id: string;
+  label: string;
+  countLabel: string;
+  href: string | null;
+  isSelected: boolean;
+}
+
+interface SourceNavigationItem {
+  id: string;
+  name: string;
+  countLabel: string;
+  metaLabel: string;
+  href: string | null;
+  isSelected: boolean;
+}
+
+interface HomePageViewModel {
+  generatedAtText: string;
+  stats: StatViewModel[];
+  categories: CategoryNavigationItem[];
+  sources: SourceNavigationItem[];
+  articles: ArticleViewModel[];
+}
+
+interface CategoryPageViewModel {
+  kind: 'missing-category' | 'unknown-category' | 'empty-category' | 'ready';
+  generatedAtText: string;
+  navigationItems: CategoryNavigationItem[];
+  title: string;
+  description: string;
+  articlesCountText: string;
+  articles: ArticleViewModel[];
+  statusMessage: string;
+  selectedCategoryLabel?: string;
+}
+
+interface SourcePageViewModel {
+  kind: 'missing-source' | 'unknown-source' | 'empty-source' | 'ready';
+  generatedAtText: string;
+  navigationItems: SourceNavigationItem[];
+  title: string;
+  description: string;
+  articlesCountText: string;
+  articles: ArticleViewModel[];
+  statusMessage: string;
+  selectedSourceName?: string;
+}
+
+interface StatusOptions {
+  kind: string;
+  message: string;
+}
+
+interface LocationLike {
+  search?: string;
+  pathname?: string;
+  protocol?: string;
+}
+
+interface HomePageInitOptions {
+  basePath?: string;
+  fetchImpl?: typeof fetch;
+  documentRef?: Document | null;
+}
+
+interface CategoryPageInitOptions extends HomePageInitOptions {
+  locationRef?: LocationLike | null;
+}
+
+interface SourcePageInitOptions extends HomePageInitOptions {
+  locationRef?: LocationLike | null;
+}
+
+type FeedShelfGlobalScope = typeof globalThis & {
+  document?: Document;
+  location?: LocationLike;
+  fetch?: typeof fetch;
+  addEventListener?: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  FeedShelfApp?: unknown;
+};
+
+(function (globalScope: typeof globalThis) {
+  const browserScope = globalScope as FeedShelfGlobalScope;
+  const commonJsModule = (browserScope as FeedShelfGlobalScope & { module?: { exports?: unknown } }).module;
   const DEFAULT_BASE_PATH = '.';
   const MISSING_SUMMARY_LABEL = '要約はありません。';
   const UNKNOWN_PUBLISHED_AT_LABEL = '公開日時不明';
@@ -28,7 +189,7 @@
     };
   }
 
-  async function fetchJson(fetchImpl, url) {
+  async function fetchJson<T = unknown>(fetchImpl: typeof fetch | undefined, url: string): Promise<T> {
     if (typeof fetchImpl !== 'function') {
       throw new Error('Fetch API is not available in this environment.');
     }
@@ -40,34 +201,34 @@
     });
 
     if (!response.ok) {
-      const error = new Error(`Failed to fetch ${url}: ${response.status}`);
+      const error = new Error(`Failed to fetch ${url}: ${response.status}`) as Error & { status?: number };
       error.status = response.status;
       throw error;
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
   }
 
-  async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = globalScope.fetch } = {}) {
+  async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch }: HomePageInitOptions = {}): Promise<HomePageDataResult> {
     const paths = buildDataPaths(basePath);
 
     try {
       const [articles, categories, sources, meta] = await Promise.all([
-        fetchJson(fetchImpl, paths.articles),
-        fetchJson(fetchImpl, paths.categories),
-        fetchJson(fetchImpl, paths.sources),
-        fetchJson(fetchImpl, paths.meta),
+        fetchJson<unknown>(fetchImpl, paths.articles),
+        fetchJson<unknown>(fetchImpl, paths.categories),
+        fetchJson<unknown>(fetchImpl, paths.sources),
+        fetchJson<unknown>(fetchImpl, paths.meta),
       ]);
 
       return {
         kind: 'ready',
-        articles: Array.isArray(articles) ? articles : [],
-        categories: Array.isArray(categories) ? categories : [],
-        sources: Array.isArray(sources) ? sources : [],
-        meta: meta && typeof meta === 'object' ? meta : {},
+        articles: Array.isArray(articles) ? (articles as PublicArticleSummaryLike[]) : [],
+        categories: Array.isArray(categories) ? (categories as PublicCategorySummaryLike[]) : [],
+        sources: Array.isArray(sources) ? (sources as PublicSourceSummaryLike[]) : [],
+        meta: meta && typeof meta === 'object' ? (meta as PublicMetaLike) : {},
       };
     } catch (error) {
-      if (error && error.status === 404) {
+      if (error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 404) {
         return {
           kind: 'missing-data',
           message: MISSING_PUBLIC_DATA_ERROR,
@@ -81,23 +242,23 @@
     }
   }
 
-  function describeLoadError(error) {
+  function describeLoadError(error: unknown): string {
     if (
-      globalScope.location &&
-      typeof globalScope.location.protocol === 'string' &&
-      globalScope.location.protocol === 'file:'
+      browserScope.location &&
+      typeof browserScope.location.protocol === 'string' &&
+      browserScope.location.protocol === 'file:'
     ) {
       return FILE_PROTOCOL_ERROR;
     }
 
-    if (error && typeof error.message === 'string' && error.message.trim() !== '') {
+    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: string }).message === 'string' && (error as { message: string }).message.trim() !== '') {
       return GENERIC_LOAD_ERROR;
     }
 
     return GENERIC_LOAD_ERROR;
   }
 
-  function formatDateTime(value) {
+  function formatDateTime(value: string | null | undefined): string {
     if (!value) {
       return UNKNOWN_PUBLISHED_AT_LABEL;
     }
@@ -113,7 +274,7 @@
     }).format(parsed);
   }
 
-  function escapeHtml(value) {
+  function escapeHtml(value: unknown): string {
     return String(value)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -122,11 +283,11 @@
       .replace(/'/g, '&#39;');
   }
 
-  function formatCount(value) {
+  function formatCount(value: number | string | null | undefined): string {
     return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
   }
 
-  function buildHomePageViewModel({ articles, categories, sources, meta }) {
+  function buildHomePageViewModel({ articles, categories, sources, meta }: ReadyPayload): HomePageViewModel {
     return {
       generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
       stats: [
@@ -149,7 +310,7 @@
     };
   }
 
-  function normalizeExternalArticleUrl(value) {
+  function normalizeExternalArticleUrl(value: string | null | undefined): string | null {
     if (typeof value !== 'string' || value.trim() === '') {
       return null;
     }
@@ -166,7 +327,7 @@
     }
   }
 
-  function buildArticleViewModels(articles) {
+  function buildArticleViewModels(articles: PublicArticleSummaryLike[]): ArticleViewModel[] {
     return articles.map((article) => {
       const externalUrl = normalizeExternalArticleUrl(article.url);
 
@@ -185,7 +346,10 @@
     });
   }
 
-  function buildCategoryNavigationItems(categories, { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome } = {}) {
+  function buildCategoryNavigationItems(
+    categories: PublicCategorySummaryLike[],
+    { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome }: { selectedCategoryId?: string | null; hrefBuilder?: ((categoryId: string) => string) | null } = {},
+  ): CategoryNavigationItem[] {
     return categories.map((category) => ({
       id: category.id,
       label: category.label,
@@ -195,7 +359,10 @@
     }));
   }
 
-  function buildSourceNavigationItems(sources, { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome } = {}) {
+  function buildSourceNavigationItems(
+    sources: PublicSourceSummaryLike[],
+    { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome }: { selectedSourceId?: string | null; hrefBuilder?: ((sourceId: string) => string) | null } = {},
+  ): SourceNavigationItem[] {
     return sources.map((source) => ({
       id: source.id,
       name: source.name,
@@ -206,7 +373,7 @@
     }));
   }
 
-  function buildSourcePageViewModel({ sourceId, articles, sources, meta }) {
+  function buildSourcePageViewModel({ sourceId, articles, sources, meta }: { sourceId: string; articles: PublicArticleSummaryLike[]; sources: PublicSourceSummaryLike[]; meta: PublicMetaLike }): SourcePageViewModel {
     const navigationItems = buildSourceNavigationItems(sources, {
       selectedSourceId: sourceId,
       hrefBuilder: buildSourceHrefFromSourcePage,
@@ -258,7 +425,7 @@
     };
   }
 
-  function buildCategoryPageViewModel({ categoryId, articles, categories, meta }) {
+  function buildCategoryPageViewModel({ categoryId, articles, categories, meta }: { categoryId: string; articles: PublicArticleSummaryLike[]; categories: PublicCategorySummaryLike[]; meta: PublicMetaLike }): CategoryPageViewModel {
     const navigationItems = buildCategoryNavigationItems(categories, {
       selectedCategoryId: categoryId,
       hrefBuilder: buildCategoryHrefFromCategoryPage,
@@ -306,7 +473,7 @@
     };
   }
 
-  function renderStats(stats) {
+  function renderStats(stats: StatViewModel[]): string {
     return stats
       .map(
         (stat) => `
@@ -319,7 +486,7 @@
       .join('');
   }
 
-  function renderChipItems(categories) {
+  function renderChipItems(categories: CategoryNavigationItem[]): string {
     if (categories.length === 0) {
       return '<p class="placeholder-text">カテゴリはまだありません。</p>';
     }
@@ -329,7 +496,7 @@
       .join('');
   }
 
-  function renderCategoryChip(category) {
+  function renderCategoryChip(category: CategoryNavigationItem): string {
     const selectedClassName = category.isSelected ? ' chip--selected' : '';
     const content = `
       <span>${escapeHtml(category.label)}</span>
@@ -351,7 +518,7 @@
     `;
   }
 
-  function renderSourceItems(sources) {
+  function renderSourceItems(sources: SourceNavigationItem[]): string {
     if (sources.length === 0) {
       return '<p class="placeholder-text">媒体はまだありません。</p>';
     }
@@ -361,7 +528,7 @@
       .join('');
   }
 
-  function renderSourcePill(source) {
+  function renderSourcePill(source: SourceNavigationItem): string {
     const selectedClassName = source.isSelected ? ' source-pill--selected' : '';
     const content = `
       <span>${escapeHtml(source.name)}</span>
@@ -384,7 +551,7 @@
     `;
   }
 
-  function renderArticleItems(articles) {
+  function renderArticleItems(articles: ArticleViewModel[]): string {
     return articles
       .map((article) => {
         const safeArticleUrl = article.canOpenExternal === false ? null : normalizeExternalArticleUrl(article.url);
@@ -435,23 +602,23 @@
       .join('');
   }
 
-  function buildCategoryHrefFromHome(categoryId) {
+  function buildCategoryHrefFromHome(categoryId: string): string {
     return `./categories/?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
   }
 
-  function buildCategoryHrefFromCategoryPage(categoryId) {
+  function buildCategoryHrefFromCategoryPage(categoryId: string): string {
     return `./?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
   }
 
-  function buildSourceHrefFromHome(sourceId) {
+  function buildSourceHrefFromHome(sourceId: string): string {
     return `./sources/?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
   }
 
-  function buildSourceHrefFromSourcePage(sourceId) {
+  function buildSourceHrefFromSourcePage(sourceId: string): string {
     return `./?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
   }
 
-  function getCategoryIdFromLocation(locationRef = globalScope.location) {
+  function getCategoryIdFromLocation(locationRef: LocationLike | null | undefined = browserScope.location): string {
     if (!locationRef || typeof locationRef.search !== 'string') {
       return '';
     }
@@ -460,7 +627,7 @@
     return params.get(CATEGORY_QUERY_PARAM) || '';
   }
 
-  function getSourceIdFromLocation(locationRef = globalScope.location) {
+  function getSourceIdFromLocation(locationRef: LocationLike | null | undefined = browserScope.location): string {
     if (!locationRef || typeof locationRef.search !== 'string') {
       return '';
     }
@@ -469,7 +636,7 @@
     return params.get(SOURCE_QUERY_PARAM) || '';
   }
 
-  function setStatus(documentRef, { kind, message }) {
+  function setStatus(documentRef: Document, { kind, message }: StatusOptions): void {
     const statusElement = documentRef.getElementById('articles-status');
     const listElement = documentRef.getElementById('articles-list');
 
@@ -484,7 +651,7 @@
     listElement.innerHTML = '';
   }
 
-  function renderHomePage(documentRef, payload) {
+  function renderHomePage(documentRef: Document, payload: ReadyPayload): void {
     const viewModel = buildHomePageViewModel(payload);
     const generatedAtElement = documentRef.getElementById('generated-at');
     const metaStatsElement = documentRef.getElementById('meta-stats');
@@ -531,9 +698,9 @@
     listElement.innerHTML = renderArticleItems(viewModel.articles);
   }
 
-  function renderCategoryPage(documentRef, payload, { categoryId } = {}) {
+  function renderCategoryPage(documentRef: Document, payload: ReadyPayload, { categoryId }: { categoryId?: string } = {}): CategoryPageViewModel {
     const viewModel = buildCategoryPageViewModel({
-      categoryId,
+      categoryId: categoryId || '',
       articles: payload.articles,
       categories: payload.categories,
       meta: payload.meta,
@@ -584,9 +751,9 @@
     return viewModel;
   }
 
-  function renderSourcePage(documentRef, payload, { sourceId } = {}) {
+  function renderSourcePage(documentRef: Document, payload: ReadyPayload, { sourceId }: { sourceId?: string } = {}): SourcePageViewModel {
     const viewModel = buildSourcePageViewModel({
-      sourceId,
+      sourceId: sourceId || '',
       articles: payload.articles,
       sources: payload.sources,
       meta: payload.meta,
@@ -637,7 +804,7 @@
     return viewModel;
   }
 
-  async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = globalScope.fetch, documentRef = globalScope.document } = {}) {
+  async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, documentRef = browserScope.document }: HomePageInitOptions = {}): Promise<HomePageDataResult | { kind: 'skipped' }> {
     if (!documentRef) {
       return { kind: 'skipped' };
     }
@@ -663,10 +830,10 @@
 
   async function initCategoryPage({
     basePath = '..',
-    fetchImpl = globalScope.fetch,
-    documentRef = globalScope.document,
-    locationRef = globalScope.location,
-  } = {}) {
+    fetchImpl = browserScope.fetch,
+    documentRef = browserScope.document,
+    locationRef = browserScope.location,
+  }: CategoryPageInitOptions = {}): Promise<CategoryPageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }> {
     if (!documentRef) {
       return { kind: 'skipped' };
     }
@@ -693,10 +860,10 @@
 
   async function initSourcePage({
     basePath = '..',
-    fetchImpl = globalScope.fetch,
-    documentRef = globalScope.document,
-    locationRef = globalScope.location,
-  } = {}) {
+    fetchImpl = browserScope.fetch,
+    documentRef = browserScope.document,
+    locationRef = browserScope.location,
+  }: SourcePageInitOptions = {}): Promise<SourcePageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }> {
     if (!documentRef) {
       return { kind: 'skipped' };
     }
@@ -767,22 +934,22 @@
     EMPTY_SOURCE_ARTICLES_MESSAGE,
   };
 
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = exported;
+  if (commonJsModule && typeof commonJsModule === 'object') {
+    commonJsModule.exports = exported;
   }
 
-  globalScope.FeedShelfApp = exported;
+  browserScope.FeedShelfApp = exported;
 
-  if (globalScope.document) {
-    globalScope.addEventListener('DOMContentLoaded', () => {
-      const pathname = globalScope.location && typeof globalScope.location.pathname === 'string'
-        ? globalScope.location.pathname
+  if (browserScope.document) {
+    browserScope.addEventListener('DOMContentLoaded', () => {
+      const pathname = browserScope.location && typeof browserScope.location.pathname === 'string'
+        ? browserScope.location.pathname
         : '';
       const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
       const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
       const initializer = isCategoryPage ? initCategoryPage : (isSourcePage ? initSourcePage : initHomePage);
 
-      initializer().catch((error) => {
+      initializer().catch((error: unknown) => {
         console.error('[feedshelf] failed to initialize page', error);
       });
     });

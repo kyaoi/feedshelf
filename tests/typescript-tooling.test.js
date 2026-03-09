@@ -14,6 +14,8 @@ test('package scripts expose the TypeScript execution baseline', () => {
   assert.equal(packageJson.scripts.lint, 'tsx scripts/lint.js');
   assert.equal(packageJson.scripts.test, 'tsx --test tests/*.test.js');
   assert.equal(packageJson.scripts.typecheck, 'tsc --noEmit');
+  assert.equal(packageJson.scripts['build:web-ui'], 'tsc -p tsconfig.web.json');
+  assert.equal(packageJson.scripts.build, 'pnpm run build:web-ui');
   assert.match(packageJson.scripts.ci, /pnpm run typecheck/);
 });
 
@@ -34,4 +36,20 @@ test('tsconfig keeps JS/TS coexistence enabled during the first migration step',
   assert.ok(tsconfig.include.includes('scripts/**/*.js'));
   assert.ok(tsconfig.include.includes('tests/**/*.js'));
   assert.ok(tsconfig.include.includes('public/assets/**/*.js'));
+});
+
+test('web UI build config and TS source are present', () => {
+  const webTsconfig = readJson('tsconfig.web.json');
+  const compilerOptions = webTsconfig.compilerOptions || {};
+
+  assert.equal(compilerOptions.noEmit, false);
+  assert.equal(compilerOptions.allowJs, false);
+  assert.equal(compilerOptions.allowImportingTsExtensions, false);
+  assert.equal(compilerOptions.module, 'none');
+  assert.equal(compilerOptions.rootDir, 'src/web');
+  assert.equal(compilerOptions.outDir, 'public/assets');
+  assert.ok(Array.isArray(webTsconfig.include));
+  assert.deepEqual(webTsconfig.include, ['src/web/app.ts']);
+
+  assert.equal(fs.existsSync(path.resolve(__dirname, '..', 'src/web/app.ts')), true);
 });
