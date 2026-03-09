@@ -49,3 +49,5 @@
 | FS-045 | TypeScript 由来の生成物を repo / handoff から既定除外できる | `.gitignore` / `.diffshipignore` | `dist/` と `*.tsbuildinfo` が ignore される |
 | FS-046 | JS / TS 共存期でも pipeline と lint の実行入口を固定できる | `package.json` / `tsconfig.json` | `pipeline:run` と `lint` が `tsx` 起動になっている |
 | FS-047 | 型検査を通常の品質ゲートに組み込める | `package.json` / `justfile` / `tests/typescript-tooling.test.js` | `typecheck` script と `just ci` の導線が確認できる |
+| FS-048 | pipeline 共有型を単一 TS module に集約できる | `src/shared/contracts.ts` / `scripts/pipeline/*.ts` | feed 定義・canonical article・公開 JSON shape が同じ型定義から参照できる |
+| FS-049 | pipeline 本体を TS 化しても既存 entrypoint を維持できる | `scripts/pipeline/*.ts` / `scripts/pipeline/*.js` / `package.json` | JS wrapper 経由で既存 import / CLI surface を壊さずに TS 実装を呼べる |

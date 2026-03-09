@@ -130,6 +130,8 @@ v1 では必須ではない。
 - 具体的な移行順序・対象ファイル・実行方式の候補は `docs/TYPESCRIPT_MIGRATION.md` に集約する
 - `FS-TS-01` では `tsconfig.json` を追加し、既存の pipeline / lint entrypoint は `tsx` から実行できる状態を基準にする
 - `FS-TS-01` では `tsc --noEmit` を quality gate に追加し、JS / TS 共存期間でも型検査を先に導入する
+- `FS-TS-02` では pipeline と公開 JSON の共有型を `src/shared/contracts.ts` に集約し、主要 pipeline 実装を `scripts/pipeline/*.ts` へ移す
+- `FS-TS-02` では既存の CLI / test import surface を壊さないため、同名の `.js` wrapper を互換用に残してよい
 
 ---
 

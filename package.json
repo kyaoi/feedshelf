@@ -11,7 +11,7 @@
     "bootstrap": "pnpm install --frozen-lockfile=false",
     "pipeline:run": "tsx scripts/pipeline/run.js",
     "lint": "tsx scripts/lint.js",
-    "test": "node --test",
+    "test": "tsx --test tests/*.test.js",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run test",
     "typecheck": "tsc --noEmit"
   },

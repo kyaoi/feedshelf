@@ -292,3 +292,16 @@
 - 決定: `tsc --noEmit` を `typecheck` script として導入し、`just ci` / `pnpm run ci` の一部として実行する
 - 理由: 実ファイルの全面 `.ts` 化を待たずに、型安全化の入口を早い段階で継続的に検証したいため
 - 影響: TypeScript 移行以後の実装は `lint` / `typecheck` / `test` の 3 系統を通す前提で進める
+
+
+## D-046: `FS-TS-02` の共有型は `src/shared/contracts.ts` に集約する
+
+- 決定: pipeline と公開 JSON 契約で先行導入する TypeScript の共有型は `src/shared/contracts.ts` にまとめる
+- 理由: `FeedDefinition` / `CanonicalArticle` / 公開 JSON shape を 1 箇所に置くと、後続の web UI / tests 移行でも同じ契約を参照しやすいため
+- 影響: `scripts/pipeline/*.ts` は同ファイルの型を読む前提になり、UI 側の TS 化でも同じ契約を再利用する
+
+## D-047: `FS-TS-02` では pipeline の JS wrapper を一時維持する
+
+- 決定: `scripts/pipeline/*.ts` へ主要処理を移しつつ、同名の `.js` wrapper を残して既存 entrypoint と require 導線を維持する
+- 理由: `FS-TS-04` 前に test / lint / package scripts の全面切り替えを強制せず、最小差分で pipeline 本体だけを型安全化したいため
+- 影響: 現時点では runtime の入口名は維持されるが、実装の正本は `.ts` 側となる
