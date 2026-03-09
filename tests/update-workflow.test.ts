@@ -133,18 +133,25 @@ test('runUpdatePipeline fetches only enabled feeds and produces public summaries
   assert.equal(articles[0].title, 'Workflow article');
 });
 
-test('update workflow keeps update and deploy boundaries explicit', () => {
+test('update workflow keeps build and deploy boundaries explicit', () => {
   const workflow = readWorkflow();
 
   assert.match(workflow, /^name: Update public data/m);
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /schedule:/);
   assert.match(workflow, /concurrency:/);
+  assert.match(workflow, /build-public-data:/);
+  assert.match(workflow, /deploy-github-pages:/);
   assert.match(workflow, /actions\/checkout@v6/);
   assert.match(workflow, /actions\/setup-node@v6/);
   assert.match(workflow, /actions\/configure-pages@v5/);
   assert.match(workflow, /pnpm run ci/);
   assert.match(workflow, /pnpm run pipeline:update/);
   assert.match(workflow, /actions\/upload-pages-artifact@v4/);
-  assert.doesNotMatch(workflow, /actions\/deploy-pages@/);
+  assert.match(workflow, /needs: build-public-data/);
+  assert.match(workflow, /pages: write/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /name: github-pages/);
+  assert.match(workflow, /url: \$\{\{ steps\.deployment\.outputs\.page_url \}\}/);
+  assert.match(workflow, /actions\/deploy-pages@v4/);
 });

@@ -367,3 +367,10 @@
 - 理由: deploy job をまだ導入しない段階でも、Pages へ渡す artifact boundary を先に固定しておくと `FS-OPS-02` で deploy を足しやすく、checked-in static assets と生成 JSON の責務も明確になるため
 - 影響: `FS-OPS-02` はこの artifact を deploy する job の追加に集中でき、`FS-OPS-03` は update job の失敗条件と deploy skip 条件の実装に集中できる
 
+
+
+## D-058: `FS-OPS-02` は Pages deploy job を workflow 内で分離して追加する
+
+- 決定: `FS-OPS-02` では `.github/workflows/update-public-data.yml` に `deploy-github-pages` job を追加し、`needs: build-public-data`、`environment: github-pages`、`url: ${{ steps.deployment.outputs.page_url }}`、`pages: write` / `id-token: write` permissions、`actions/deploy-pages@v4` を固定する
+- 理由: GitHub Pages の custom workflow では deploy job に `pages: write` と `id-token: write` permissions、`needs`、`environment`、`page_url` 出力が必要であり、artifact upload と deploy を分離した方が更新と公開の境界も追跡しやすいため
+- 影響: `FS-OPS-02` 完了時点で、成功した update artifact からの公開は workflow 上で自動化される。一方で単一フィード失敗時の継続判定や deploy skip 条件の詳細実装は `FS-OPS-03` に残る
