@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FeedShelf</title>
+    <meta
+      name="description"
+      content="複数の公開 RSS / Atom フィードを横断して新着を確認するための静的 Web アプリ。"
+    />
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script defer src="./assets/app.js"></script>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="container hero__inner">
+        <p class="eyebrow">FeedShelf / Phase 3</p>
+        <h1>新着をまとめて読むための静的 RSS シェルフ</h1>
+        <p class="lead">
+          公開 RSS / Atom から生成した `public/data/*.json` を読み込み、新着記事を軽量に一覧表示します。
+        </p>
+      </div>
+    </header>
+
+    <main class="container layout">
+      <section class="panel" aria-labelledby="meta-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">公開データ</p>
+            <h2 id="meta-title">更新状況</h2>
+          </div>
+          <p id="generated-at" class="muted">読み込み中…</p>
+        </div>
+        <dl id="meta-stats" class="stats-grid" aria-live="polite">
+          <div class="stat-card">
+            <dt>記事数</dt>
+            <dd>—</dd>
+          </div>
+          <div class="stat-card">
+            <dt>媒体数</dt>
+            <dd>—</dd>
+          </div>
+          <div class="stat-card">
+            <dt>カテゴリ数</dt>
+            <dd>—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-labelledby="categories-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">カテゴリ</p>
+            <h2 id="categories-title">カテゴリ別の入口</h2>
+          </div>
+          <p class="muted">専用一覧ルートは次タスクで追加予定です。</p>
+        </div>
+        <div id="categories-list" class="chip-list" aria-live="polite">
+          <p class="placeholder-text">読み込み中…</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="sources-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">媒体</p>
+            <h2 id="sources-title">媒体別の入口</h2>
+          </div>
+          <p class="muted">専用一覧ルートは次タスクで追加予定です。</p>
+        </div>
+        <div id="sources-list" class="chip-list" aria-live="polite">
+          <p class="placeholder-text">読み込み中…</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="articles-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">新着</p>
+            <h2 id="articles-title">新着記事一覧</h2>
+          </div>
+          <p id="articles-count" class="muted">読み込み中…</p>
+        </div>
+
+        <div id="articles-status" class="status status--loading" aria-live="polite">
+          公開 JSON を読み込んでいます…
+        </div>
+        <ol id="articles-list" class="article-list" hidden></ol>
+      </section>
+    </main>
+  </body>
+</html>

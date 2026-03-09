@@ -9,7 +9,9 @@ const FILES_TO_CHECK = [
   'scripts/pipeline/buildPublicExports.js',
   'scripts/pipeline/run.js',
   'scripts/pipeline/normalizeFeed.js',
+  'public/assets/app.js',
   'tests/load-feeds.test.js',
+  'tests/web-home.test.js',
 ];
 
 async function main() {

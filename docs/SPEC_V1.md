@@ -66,6 +66,7 @@ MVP として最低限必要な機能は以下とする。
 
 表示項目:
 - サイトタイトル
+- 更新時刻
 - カテゴリ導線
 - 媒体導線
 - 新着記事一覧
@@ -493,6 +494,7 @@ v1 の公開 JSON は次の 4 つを基本とする。
 - v1 の UI は `articles.json` / `categories.json` / `sources.json` / `meta.json` だけで一覧表示に必要な情報を取得できる前提で実装する
 - `summary` / `publishedAt` / `imageUrl` など nullable な公開項目が欠けても UI が壊れないようにする
 - UI は fetch 中、0件、fetch 失敗時の最低限表示を持つ
+- `public/data/*.json` がまだ生成されていない場合は pipeline 未実行が分かる案内を表示してよい
 
 
 ## 12. Phase 2 の実行・保存・公開戦略

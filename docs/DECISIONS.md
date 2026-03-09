@@ -222,3 +222,15 @@
 - 決定: `node_modules/`、`.pnpm-store/`、`coverage/`、`*.log`、`public/data/`、`.env*` などのローカル依存物・生成物・秘密情報は `.diffshipignore` で既定除外する
 - 理由: AI に不要な差分を handoff へ載せず、bundle を小さく安定させるため
 - 影響: 生成済み `public/data/` を AI に見せたいタスクでは、明示 include か一時的な除外調整が必要になる
+
+## D-035: `FS-WEB-01` ではトップ `/` の summary sections を先に成立させる
+
+- 決定: `FS-WEB-01` ではトップ `/` に新着一覧・カテゴリ summary・媒体 summary を表示し、専用一覧ルートへのリンク化は `FS-WEB-02` / `FS-WEB-03` で追加する
+- 理由: Phase 3 の最初の UI を最小差分で成立させつつ、未実装ルートへの 404 リンクを避けるため
+- 影響: Phase 3 の中間段階ではカテゴリ / 媒体表示は summary section としてよく、導線の完全実装は後続タスクで行う
+
+## D-036: `public/data` 未生成時はトップページで案内を出す
+
+- 決定: `public/data/articles.json` などが 404 の場合、トップページでは generic fetch failure と分けて pipeline 未実行を示す案内を表示する
+- 理由: 初回 clone 直後や CI 未実行の状態でも、何が足りないかを分かりやすく伝えるため
+- 影響: `FS-WEB-01` の fallback 表示は `missing-data` と `generic error` を区別する

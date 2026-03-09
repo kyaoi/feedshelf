@@ -2,7 +2,7 @@
 
 | Spec ID | 要件 | 初期実装候補 | テスト/確認 |
 |---|---|---|---|
-| FS-001 | 新着一覧を表示できる | 一覧ページ / 記事カード | トップで新着順表示できる |
+| FS-001 | 新着一覧を表示できる | `public/index.html` / `public/assets/app.js` / 記事カード | トップで新着順表示できる |
 | FS-002 | カテゴリ別に絞り込める | カテゴリ一覧ページ | 指定カテゴリのみ表示される |
 | FS-003 | 媒体別に絞り込める | 媒体一覧ページ | 指定媒体のみ表示される |
 | FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク | 外部URLへ遷移できる |
@@ -40,5 +40,5 @@
 | FS-035 | 公開生成物と内部 state の責務を分離できる | public export / internal state design | `articles.json` 等を公開契約に限定し、内部履歴と混同しないことが確認できる |
 | FS-036 | Phase 3 の UI 実装境界を static HTML / CSS / JS + `public/data` 読み取りに固定できる | `public/` 配下の静的 UI / docs | Phase 3 着手前に UI 境界が docs で確認できる |
 | FS-037 | UI が 4 つの公開 JSON だけで一覧表示に必要な情報を取得できる | `public/data/articles/categories/sources/meta` consumer | 追加 dedupe や feed join が不要なことを仕様で確認できる |
-| FS-038 | UI が loading / empty / error と nullable 項目欠損に耐えられる | UI fallback states / article card rendering | `summary` / `publishedAt` / `imageUrl` 欠損時も表示が崩れない |
+| FS-038 | UI が loading / empty / error と nullable 項目欠損に耐えられる | `public/assets/app.js` / `tests/web-home.test.js` | `summary` / `publishedAt` / `imageUrl` 欠損時も表示が崩れない |
 | FS-039 | AI handoff からローカル依存物・生成物・秘密情報を既定除外できる | `.diffshipignore` | `node_modules/` や `public/data/` が既定 handoff に入らない |
