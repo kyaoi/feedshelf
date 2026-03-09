@@ -405,3 +405,10 @@
 - 決定: `FS-QA-02` では repo 直下に `README.md` を追加し、セットアップ / ローカル確認 / Actions・Pages 前提 / docs の読み順をそこで案内する。一方で、仕様・判断理由・traceability の正本は既存の `docs/` 配下に維持する
 - 理由: Phase 5 監査で不足として見えたのは、新機能ではなく入口不足であり、README に利用開始導線を集約しつつ詳細契約は既存 docs へ委ねる方が最小差分で安全なため
 - 影響: 以後の利用者向け導線更新はまず `README.md` を見直し、契約変更を伴う場合のみ `SPEC_V1` / `DECISIONS` / `TRACEABILITY` を対応更新する
+
+## D-064: `FS-QA-03` は既存 quality gate と最小手動確認を acceptance evidence として扱う
+
+- 決定: `FS-QA-03` では新しい MVP 機能を追加せず、既存の tests / workflow / checked-in assets / docs を受け入れ根拠として整理し、完了判定は `pnpm run ci` と `pnpm run pipeline:update`、および `/` / `/categories/` / `/sources/` の最小手動確認で行う
+- 理由: Phase 5 の目的は機能追加ではなく、MVP として公開可能かを安全に判定することであり、すでに揃っている実装と quality gate を受け入れ証跡として束ねる方が最小差分で安全なため
+- 影響: Phase 5 は docs と既存 verification flow の整理で閉じられ、次フェーズでは新しい v2 backlog や運用改善を別タスクとして定義できる
+

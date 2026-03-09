@@ -59,3 +59,4 @@
 | FS-055 | Phase 5 の audit / docs flow / acceptance verification の順序を docs で固定できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `FS-QA-01` / `FS-QA-02` / `FS-QA-03` の責務分割と完了条件が docs で確認できる |
 | FS-056 | `FS-QA-01` の spec 実装差分監査結果を docs に記録できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` | 監査結果として「実装済み領域」「残る docs flow / acceptance gaps」「traceability 更新」が確認できる |
 | FS-057 | repo 直下の README からセットアップ・ローカル確認・主要 docs へ到達できる | `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | README にセットアップ・確認手順・docs の読み順・Actions / Pages 前提が揃っていることを目視確認できる |
+| FS-058 | v1 MVP の受け入れ判定を既存 quality gate と最小手動確認で行える | `PLAN.md` / `README.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `.github/workflows/update-public-data.yml` / `tests/*.test.ts` / `scripts/verifyWebBuild.ts` | `pnpm run ci`、`pnpm run pipeline:update`、`public/` の静的配信確認で受け入れ証跡を揃えられる |

@@ -700,3 +700,25 @@ v2 以降で追加検討可能な項目:
 また、`README.md` は人間の入口として扱う一方、仕様の正本は引き続き `docs/SPEC_V1.md`、判断理由の正本は `docs/DECISIONS.md`、仕様と実装・テストの対応表は `docs/TRACEABILITY.md` として分離する。
 
 これにより、Phase 5 の残タスクは `FS-QA-03` の受け入れ証跡整理へ絞られる。
+
+### 14.7 `FS-QA-03` MVP 受け入れ確認
+
+`FS-QA-03` では、新機能追加ではなく、既存の workflow / tests / checked-in assets / docs を根拠に v1 MVP の受け入れ条件を確認する。
+
+受け入れ根拠として使う既存 evidence:
+
+- データ取得・正規化・dedupe・公開 JSON 契約は `tests/load-feeds.test.ts` で確認する
+- 更新 workflow・partial failure policy・deploy 境界は `.github/workflows/update-public-data.yml` と `tests/update-workflow.test.ts` で確認する
+- 新着 / カテゴリ別 / 媒体別の一覧導線と safe external link handling は `tests/web-home.test.ts` / `tests/web-categories.test.ts` / `tests/web-sources.test.ts` で確認する
+- TypeScript tooling と checked-in browser asset の同期は `tests/typescript-tooling.test.ts` と `scripts/verifyWebBuild.ts` で確認する
+
+最小手動確認は以下とする。
+
+1. 少なくとも 1 件の `enabled: true` feed を用意する
+2. `pnpm run ci` を通す
+3. `pnpm run pipeline:update` で `public/data/articles.json` / `categories.json` / `sources.json` / `meta.json` を生成する
+4. `python -m http.server 4173 --directory public` などで `public/` を静的配信する
+5. `/` / `/categories/` / `/sources/` を開き、一覧表示と絞り込み導線が成立することを確認する
+
+この確認観点に照らして blocking gap が残っていない場合、FeedShelf v1 の MVP は受け入れ条件を満たしたと扱う。
+
