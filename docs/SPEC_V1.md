@@ -733,9 +733,12 @@ v2 以降で追加検討可能な項目:
 Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / failure handling の責務を docs に固定してから進める。
 
 - `FS-DX-01` は Biome の baseline 導入を責務とし、formatting / linting の対象範囲と除外対象を最小差分で固定する
-  - `@biomejs/biome` を devDependency として追加し、`biome.json` で `.diffship/**` / `public/**` / `scripts/**/*.js` を対象外にした上で、hand-authored な TS / JSON を中心に扱う
+  - `@biomejs/biome` を devDependency として追加し、`biome.json` で `.diffship/**` / `public/**` / `scripts/**/*.js` を対象外にした上で、`biome.json` / `package.json` / `tsconfig*.json` / `data/feeds.json` / `src` / `scripts` / `tests` を明示対象として hand-authored な TS / JSON / config を中心に扱う
   - `format` / `format:check` / `lint:biome` を導入するが、既存の `lint` と `pnpm run ci` への統合は `FS-DX-02` まで遅らせる
 - `FS-DX-02` は full gate の単一入口、hook の責務分割、repo 固有 check の位置づけ整理を責務とする
+  - `check:fast` を hand-authored な TS / JSON / config に絞った `format:check` / `lint:biome` と repo 固有 `lint` の束として追加し、`pnpm run ci` は `check:fast` に `typecheck` / `test` / `verify:web-ui` を加えた単一入口とする
+  - `just ci` は `pnpm run ci` の薄いラッパーとし、lefthook は pre-commit=`just check-fast`、pre-push=`just ci` に分担する
+  - 初期 lint gate では既存 runtime の unrelated refactor を避けるため、`biome.json` で `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` に固定する
 - `FS-DX-03` は通常の品質確認 CI workflow を追加し、既存の update / deploy workflow と責務を分ける
 - `FS-DX-04` は tests / docs / workflow の追跡を同期し、tooling 変更を traceability と確認手順へ反映する
 - Phase DX では新しい runtime 機能追加よりも、既存 workflow / docs / package scripts の契約ズレを先に解消することを優先する

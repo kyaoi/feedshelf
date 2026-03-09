@@ -1,7 +1,7 @@
 pre-commit:
   commands:
-    lint:
-      run: mise exec -- just lint
+    check-fast:
+      run: mise exec -- just check-fast
 
 pre-push:
   commands:

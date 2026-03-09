@@ -3,7 +3,9 @@ import { normalizeUrl } from './normalizeFeed.ts';
 
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? Number.POSITIVE_INFINITY : parsed.getTime();
+  return Number.isNaN(parsed.getTime())
+    ? Number.POSITIVE_INFINITY
+    : parsed.getTime();
 }
 
 function countRichFields(article: CanonicalArticle): number {
@@ -32,7 +34,10 @@ function countRichFields(article: CanonicalArticle): number {
   return score;
 }
 
-export function compareArticleRichness(left: CanonicalArticle, right: CanonicalArticle): number {
+export function compareArticleRichness(
+  left: CanonicalArticle,
+  right: CanonicalArticle,
+): number {
   const leftScore = countRichFields(left);
   const rightScore = countRichFields(right);
 
@@ -55,11 +60,17 @@ export function compareArticleRichness(left: CanonicalArticle, right: CanonicalA
   return 0;
 }
 
-function pickWinner(left: CanonicalArticle, right: CanonicalArticle): CanonicalArticle {
+function pickWinner(
+  left: CanonicalArticle,
+  right: CanonicalArticle,
+): CanonicalArticle {
   return compareArticleRichness(left, right) >= 0 ? left : right;
 }
 
-function chooseLongerText(left: string | null, right: string | null): string | null {
+function chooseLongerText(
+  left: string | null,
+  right: string | null,
+): string | null {
   if (!left) {
     return right || null;
   }
@@ -103,7 +114,10 @@ export function getDedupeKey(article: CanonicalArticle): string | null {
   return null;
 }
 
-export function mergeDuplicateArticles(left: CanonicalArticle, right: CanonicalArticle): CanonicalArticle {
+export function mergeDuplicateArticles(
+  left: CanonicalArticle,
+  right: CanonicalArticle,
+): CanonicalArticle {
   const winner = pickWinner(left, right);
   const loser = winner === left ? right : left;
 
@@ -123,7 +137,9 @@ export function mergeDuplicateArticles(left: CanonicalArticle, right: CanonicalA
   };
 }
 
-export function dedupeArticles(articles: CanonicalArticle[]): CanonicalArticle[] {
+export function dedupeArticles(
+  articles: CanonicalArticle[],
+): CanonicalArticle[] {
   const dedupedArticles: CanonicalArticle[] = [];
   const keyToIndex = new Map<string, number>();
 
@@ -141,7 +157,10 @@ export function dedupeArticles(articles: CanonicalArticle[]): CanonicalArticle[]
       continue;
     }
 
-    dedupedArticles[existingIndex] = mergeDuplicateArticles(dedupedArticles[existingIndex], article);
+    dedupedArticles[existingIndex] = mergeDuplicateArticles(
+      dedupedArticles[existingIndex],
+      article,
+    );
   }
 
   return dedupedArticles;

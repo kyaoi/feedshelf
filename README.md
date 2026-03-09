@@ -39,16 +39,19 @@ pnpm install --frozen-lockfile
 ## 主なコマンド
 
 ```bash
-pnpm run ci              # lint / typecheck / test / verify:web-ui
-pnpm run format          # Biome で hand-authored な TS / JSON を整形
-pnpm run format:check    # Biome format の差分確認
-pnpm run lint:biome      # Biome lint の差分確認
+pnpm run ci              # check:fast / typecheck / test / verify:web-ui
+pnpm run check:fast      # format:check / lint:biome / repo 固有 lint を高速に確認
+pnpm run format          # Biome で hand-authored な TS / JSON / config を明示対象だけ整形
+pnpm run format:check    # hand-authored な TS / JSON / config に対する Biome format 差分確認
+pnpm run lint:biome      # hand-authored な TS / JSON / config に対する Biome lint 確認
 pnpm run pipeline:update # RSS / Atom を取得して public/data を生成
 pnpm run build:web-ui    # src/web/app.ts から public/assets/app.js を再生成
 pnpm run verify:web-ui   # checked-in asset と再生成結果の一致確認
 ```
 
-`just ci` でも同じ品質ゲートを実行できます。Biome は `FS-DX-01` 時点では baseline コマンドとして導入のみ行い、full gate への統合は次タスクで扱います。
+`just ci` は `pnpm run ci` の薄いラッパーです。`just check-fast` も用意し、pre-commit では hand-authored な TS / JSON / config に絞った `format:check` / `lint:biome` と repo 固有 lint のみを実行します。pre-push は full gate として `just ci` を実行します。
+
+Biome の初期 gate では、既存 runtime の無関係な書き換えを避けるため、`useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` は `off` に固定しています。
 
 ## ローカル確認の最短手順
 

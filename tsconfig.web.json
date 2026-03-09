@@ -12,12 +12,6 @@
     "resolveJsonModule": false,
     "moduleDetection": "auto"
   },
-  "include": [
-    "src/web/app.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "public/data"
-  ]
+  "include": ["src/web/app.ts"],
+  "exclude": ["node_modules", "dist", "public/data"]
 }

@@ -18,7 +18,10 @@ function isFeedDefinitionRecord(value: unknown): value is FeedDefinitionRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-export function validateFeedDefinition(feed: unknown, index: number): FeedDefinition {
+export function validateFeedDefinition(
+  feed: unknown,
+  index: number,
+): FeedDefinition {
   if (!isFeedDefinitionRecord(feed)) {
     throw new Error(`Feed at index ${index} must be an object.`);
   }
@@ -26,7 +29,9 @@ export function validateFeedDefinition(feed: unknown, index: number): FeedDefini
   for (const field of REQUIRED_STRING_FIELDS) {
     const candidate = feed[field];
     if (typeof candidate !== 'string' || candidate.trim() === '') {
-      throw new Error(`Feed at index ${index} is missing required string field: ${field}`);
+      throw new Error(
+        `Feed at index ${index} is missing required string field: ${field}`,
+      );
     }
   }
 

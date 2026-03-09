@@ -1,6 +1,9 @@
 import crypto from 'node:crypto';
 
-import type { CanonicalArticle, FeedDefinition } from '../../src/shared/contracts.ts';
+import type {
+  CanonicalArticle,
+  FeedDefinition,
+} from '../../src/shared/contracts.ts';
 
 const TRACKING_QUERY_PREFIXES = ['utm_'];
 const TRACKING_QUERY_KEYS = new Set(['fbclid', 'gclid', 'mc_cid', 'mc_eid']);
@@ -52,8 +55,12 @@ function decodeEntities(value: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
     .replace(/&amp;/g, '&')
-    .replace(/&#x([0-9a-f]+);/gi, (_match: string, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_match: string, codePoint: string) => String.fromCodePoint(Number.parseInt(codePoint, 10)));
+    .replace(/&#x([0-9a-f]+);/gi, (_match: string, hex: string) =>
+      String.fromCodePoint(Number.parseInt(hex, 16)),
+    )
+    .replace(/&#(\d+);/g, (_match: string, codePoint: string) =>
+      String.fromCodePoint(Number.parseInt(codePoint, 10)),
+    );
 }
 
 function normalizeWhitespace(value: string): string {
@@ -72,7 +79,10 @@ function stripTags(value: string): string {
 function toDisplayText(value: string): string | null {
   const decoded = decodeEntities(value);
   const stripped = stripTags(decoded);
-  const normalized = normalizeWhitespace(stripped).replace(/\s+([.,!?;:])/g, '$1');
+  const normalized = normalizeWhitespace(stripped).replace(
+    /\s+([.,!?;:])/g,
+    '$1',
+  );
   return normalized === '' ? null : normalized;
 }
 
@@ -82,7 +92,10 @@ function escapeTagName(tagName: string): string {
 
 function extractTagText(block: string, tagNames: string[]): string | null {
   for (const tagName of tagNames) {
-    const pattern = new RegExp(`<${escapeTagName(tagName)}\\b[^>]*>([\\s\\S]*?)<\\/${escapeTagName(tagName)}>`, 'i');
+    const pattern = new RegExp(
+      `<${escapeTagName(tagName)}\\b[^>]*>([\\s\\S]*?)<\\/${escapeTagName(tagName)}>`,
+      'i',
+    );
     const match = block.match(pattern);
     if (!match) {
       continue;
@@ -104,7 +117,10 @@ function extractTagText(block: string, tagNames: string[]): string | null {
 
 function extractRawTagText(block: string, tagNames: string[]): string | null {
   for (const tagName of tagNames) {
-    const pattern = new RegExp(`<${escapeTagName(tagName)}\\b[^>]*>([\\s\\S]*?)<\\/${escapeTagName(tagName)}>`, 'i');
+    const pattern = new RegExp(
+      `<${escapeTagName(tagName)}\\b[^>]*>([\\s\\S]*?)<\\/${escapeTagName(tagName)}>`,
+      'i',
+    );
     const match = block.match(pattern);
     if (!match) {
       continue;
@@ -152,7 +168,8 @@ function extractAtomLink(block: string): string | null {
     }
 
     const attributes = parseAttributes(captured);
-    const href = typeof attributes.href === 'string' ? attributes.href.trim() : '';
+    const href =
+      typeof attributes.href === 'string' ? attributes.href.trim() : '';
     if (href === '') {
       match = linkPattern.exec(block);
       continue;
@@ -192,7 +209,8 @@ function extractImageUrl(block: string): string | null {
     }
 
     const attributes = parseAttributes(captured);
-    const candidate = typeof attributes.url === 'string' ? attributes.url.trim() : '';
+    const candidate =
+      typeof attributes.url === 'string' ? attributes.url.trim() : '';
     if (candidate !== '') {
       return candidate;
     }
@@ -223,7 +241,9 @@ function normalizeFetchedAt(value?: string): string {
   return parsed.toISOString();
 }
 
-export function normalizeUrl(urlValue: string | null | undefined): string | null {
+export function normalizeUrl(
+  urlValue: string | null | undefined,
+): string | null {
   if (typeof urlValue !== 'string') {
     return null;
   }
@@ -244,14 +264,20 @@ export function normalizeUrl(urlValue: string | null | undefined): string | null
   parsed.hostname = parsed.hostname.toLowerCase();
   parsed.hash = '';
 
-  if ((parsed.protocol === 'http:' && parsed.port === '80') || (parsed.protocol === 'https:' && parsed.port === '443')) {
+  if (
+    (parsed.protocol === 'http:' && parsed.port === '80') ||
+    (parsed.protocol === 'https:' && parsed.port === '443')
+  ) {
     parsed.port = '';
   }
 
   const nextParams: Array<[string, string]> = [];
   for (const [key, value] of parsed.searchParams) {
     const lowerKey = key.toLowerCase();
-    if (TRACKING_QUERY_KEYS.has(lowerKey) || TRACKING_QUERY_PREFIXES.some((prefix) => lowerKey.startsWith(prefix))) {
+    if (
+      TRACKING_QUERY_KEYS.has(lowerKey) ||
+      TRACKING_QUERY_PREFIXES.some((prefix) => lowerKey.startsWith(prefix))
+    ) {
       continue;
     }
     nextParams.push([key, value]);
@@ -284,7 +310,13 @@ function normalizeTitleForComparison(value: string): string {
   return normalizeWhitespace(value || '').toLowerCase();
 }
 
-export function buildArticleId({ feedId, url, sourceItemId, title, publishedAt }: ArticleIdentityInput): string {
+export function buildArticleId({
+  feedId,
+  url,
+  sourceItemId,
+  title,
+  publishedAt,
+}: ArticleIdentityInput): string {
   const normalizedUrl = normalizeUrl(url);
   if (normalizedUrl !== null) {
     return hashId(`url:${normalizedUrl}`);
@@ -294,10 +326,22 @@ export function buildArticleId({ feedId, url, sourceItemId, title, publishedAt }
     return hashId(`feed:${feedId}|item:${sourceItemId}`);
   }
 
-  return hashId(`fallback:${feedId}|${normalizeTitleForComparison(title)}|${publishedAt || ''}`);
+  return hashId(
+    `fallback:${feedId}|${normalizeTitleForComparison(title)}|${publishedAt || ''}`,
+  );
 }
 
-function createArticle({ feed, fetchedAt, title, url, summary, publishedAt, author, imageUrl, sourceItemId }: CreateArticleOptions): CanonicalArticle | null {
+function createArticle({
+  feed,
+  fetchedAt,
+  title,
+  url,
+  summary,
+  publishedAt,
+  author,
+  imageUrl,
+  sourceItemId,
+}: CreateArticleOptions): CanonicalArticle | null {
   if (title === null || url === null) {
     return null;
   }
@@ -327,7 +371,11 @@ function createArticle({ feed, fetchedAt, title, url, summary, publishedAt, auth
   };
 }
 
-function normalizeRssItem(feed: FeedDefinition, itemXml: string, fetchedAt?: string): CanonicalArticle | null {
+function normalizeRssItem(
+  feed: FeedDefinition,
+  itemXml: string,
+  fetchedAt?: string,
+): CanonicalArticle | null {
   const title = extractTagText(itemXml, ['title']);
   const url = extractRawTagText(itemXml, ['link']);
 
@@ -336,22 +384,35 @@ function normalizeRssItem(feed: FeedDefinition, itemXml: string, fetchedAt?: str
     fetchedAt,
     title,
     url,
-    summary: extractTagText(itemXml, ['description', 'summary', 'content:encoded', 'content']),
-    publishedAt: normalizePublishedAt(extractRawTagText(itemXml, ['pubDate', 'dc:date'])),
+    summary: extractTagText(itemXml, [
+      'description',
+      'summary',
+      'content:encoded',
+      'content',
+    ]),
+    publishedAt: normalizePublishedAt(
+      extractRawTagText(itemXml, ['pubDate', 'dc:date']),
+    ),
     author: extractTagText(itemXml, ['author', 'dc:creator']),
     imageUrl: extractImageUrl(itemXml),
     sourceItemId: extractRawTagText(itemXml, ['guid']),
   });
 }
 
-function normalizeAtomEntry(feed: FeedDefinition, entryXml: string, fetchedAt?: string): CanonicalArticle | null {
+function normalizeAtomEntry(
+  feed: FeedDefinition,
+  entryXml: string,
+  fetchedAt?: string,
+): CanonicalArticle | null {
   const title = extractTagText(entryXml, ['title']);
   const url = extractAtomLink(entryXml);
   const authorBlock = entryXml.match(/<author\b[^>]*>([\s\S]*?)<\/author>/i);
   const authorBlockContent = authorBlock?.[1];
-  const author = typeof authorBlockContent === 'string'
-    ? (extractTagText(authorBlockContent, ['name']) || toDisplayText(authorBlockContent))
-    : null;
+  const author =
+    typeof authorBlockContent === 'string'
+      ? extractTagText(authorBlockContent, ['name']) ||
+        toDisplayText(authorBlockContent)
+      : null;
 
   return createArticle({
     feed,
@@ -359,14 +420,24 @@ function normalizeAtomEntry(feed: FeedDefinition, entryXml: string, fetchedAt?: 
     title,
     url,
     summary: extractTagText(entryXml, ['summary', 'content', 'description']),
-    publishedAt: normalizePublishedAt(extractRawTagText(entryXml, ['published', 'updated', 'dc:date'])),
+    publishedAt: normalizePublishedAt(
+      extractRawTagText(entryXml, ['published', 'updated', 'dc:date']),
+    ),
     author,
     imageUrl: extractImageUrl(entryXml),
     sourceItemId: extractRawTagText(entryXml, ['id']),
   });
 }
 
-export function normalizeFeedDocument({ feed, xml, fetchedAt }: { feed: FeedDefinition; xml: string; fetchedAt?: string }): CanonicalArticle[] {
+export function normalizeFeedDocument({
+  feed,
+  xml,
+  fetchedAt,
+}: {
+  feed: FeedDefinition;
+  xml: string;
+  fetchedAt?: string;
+}): CanonicalArticle[] {
   if (!feed || typeof feed !== 'object') {
     throw new Error('normalizeFeedDocument requires a feed definition.');
   }

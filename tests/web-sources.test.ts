@@ -13,12 +13,21 @@ const {
 } = require('../public/assets/app.js');
 
 test('buildSourceHrefFromHome and buildSourceHrefFromSourcePage build stable query routes', () => {
-  assert.equal(buildSourceHrefFromHome('itmedia-news'), './sources/?id=itmedia-news');
-  assert.equal(buildSourceHrefFromSourcePage('itmedia-news'), './?id=itmedia-news');
+  assert.equal(
+    buildSourceHrefFromHome('itmedia-news'),
+    './sources/?id=itmedia-news',
+  );
+  assert.equal(
+    buildSourceHrefFromSourcePage('itmedia-news'),
+    './?id=itmedia-news',
+  );
 });
 
 test('getSourceIdFromLocation reads id query parameter', () => {
-  assert.equal(getSourceIdFromLocation({ search: '?id=itmedia-news' }), 'itmedia-news');
+  assert.equal(
+    getSourceIdFromLocation({ search: '?id=itmedia-news' }),
+    'itmedia-news',
+  );
   assert.equal(getSourceIdFromLocation({ search: '' }), '');
   assert.equal(getSourceIdFromLocation(null), '');
   assert.equal(SOURCE_QUERY_PARAM, 'id');
@@ -28,7 +37,15 @@ test('buildSourcePageViewModel returns selection guidance when id is missing', (
   const viewModel = buildSourcePageViewModel({
     sourceId: '',
     articles: [],
-    sources: [{ id: 'itmedia-news', name: 'ITmedia NEWS', articleCount: 0, categoryLabel: '日本IT', language: 'ja' }],
+    sources: [
+      {
+        id: 'itmedia-news',
+        name: 'ITmedia NEWS',
+        articleCount: 0,
+        categoryLabel: '日本IT',
+        language: 'ja',
+      },
+    ],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
 
@@ -41,7 +58,15 @@ test('buildSourcePageViewModel returns warning state when source is unknown', ()
   const viewModel = buildSourcePageViewModel({
     sourceId: 'unknown-source',
     articles: [],
-    sources: [{ id: 'itmedia-news', name: 'ITmedia NEWS', articleCount: 0, categoryLabel: '日本IT', language: 'ja' }],
+    sources: [
+      {
+        id: 'itmedia-news',
+        name: 'ITmedia NEWS',
+        articleCount: 0,
+        categoryLabel: '日本IT',
+        language: 'ja',
+      },
+    ],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
 
@@ -54,7 +79,15 @@ test('buildSourcePageViewModel returns empty-source when selected source has no 
   const viewModel = buildSourcePageViewModel({
     sourceId: 'itmedia-news',
     articles: [],
-    sources: [{ id: 'itmedia-news', name: 'ITmedia NEWS', articleCount: 0, categoryLabel: '日本IT', language: 'ja' }],
+    sources: [
+      {
+        id: 'itmedia-news',
+        name: 'ITmedia NEWS',
+        articleCount: 0,
+        categoryLabel: '日本IT',
+        language: 'ja',
+      },
+    ],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
 
@@ -95,8 +128,20 @@ test('buildSourcePageViewModel filters articles by sourceId and marks selected p
       },
     ],
     sources: [
-      { id: 'itmedia-news', name: 'ITmedia NEWS', articleCount: 1, categoryLabel: '日本IT', language: 'ja' },
-      { id: 'gigazine-science', name: 'GIGAZINE', articleCount: 1, categoryLabel: 'Science', language: 'ja' },
+      {
+        id: 'itmedia-news',
+        name: 'ITmedia NEWS',
+        articleCount: 1,
+        categoryLabel: '日本IT',
+        language: 'ja',
+      },
+      {
+        id: 'gigazine-science',
+        name: 'GIGAZINE',
+        articleCount: 1,
+        categoryLabel: 'Science',
+        language: 'ja',
+      },
     ],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });

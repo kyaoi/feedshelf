@@ -34,6 +34,14 @@ type BiomeConfigLike = {
     enabled?: boolean;
     rules?: {
       recommended?: boolean;
+      complexity?: {
+        useArrowFunction?: string;
+        useLiteralKeys?: string;
+        useOptionalChain?: string;
+      };
+      security?: {
+        noGlobalEval?: string;
+      };
     };
   };
   organizeImports?: {
@@ -49,31 +57,74 @@ type BiomeConfigLike = {
 };
 
 function readJson<T>(relativePath: string): T {
-  return JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', relativePath), 'utf8')) as T;
+  return JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '..', relativePath), 'utf8'),
+  ) as T;
 }
 
-test('package scripts expose the TypeScript execution baseline', () => {
+test('package scripts expose the quality-gate contract', () => {
   const packageJson = readJson<{
     scripts: Record<string, string>;
     devDependencies?: Record<string, string>;
   }>('package.json');
 
-  assert.equal(packageJson.scripts.format, 'biome format . --write');
-  assert.equal(packageJson.scripts['format:check'], 'biome format . --check');
-  assert.equal(packageJson.scripts['lint:biome'], 'biome lint .');
-  assert.equal(packageJson.scripts['pipeline:run'], 'tsx scripts/pipeline/run.js');
-  assert.equal(packageJson.scripts['pipeline:update'], 'tsx scripts/pipeline/update.js');
+  assert.equal(
+    packageJson.scripts.format,
+    'biome format --write biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json src scripts tests',
+  );
+  assert.equal(
+    packageJson.scripts['format:check'],
+    'biome format biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json src scripts tests',
+  );
+  assert.equal(
+    packageJson.scripts['lint:biome'],
+    'biome lint biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json src scripts tests',
+  );
+  assert.equal(
+    packageJson.scripts['check:fast'],
+    'pnpm run format:check && pnpm run lint:biome && pnpm run lint',
+  );
+  assert.equal(
+    packageJson.scripts['pipeline:run'],
+    'tsx scripts/pipeline/run.js',
+  );
+  assert.equal(
+    packageJson.scripts['pipeline:update'],
+    'tsx scripts/pipeline/update.js',
+  );
   assert.equal(packageJson.scripts.lint, 'tsx scripts/lint.ts');
   assert.equal(packageJson.scripts.test, 'tsx --test tests/*.test.ts');
   assert.equal(packageJson.scripts.typecheck, 'tsc --noEmit');
   assert.equal(packageJson.scripts['build:web-ui'], 'tsc -p tsconfig.web.json');
   assert.equal(packageJson.scripts.build, 'pnpm run build:web-ui');
-  assert.equal(packageJson.scripts['verify:web-ui'], 'tsx scripts/verifyWebBuild.ts');
-  assert.match(packageJson.scripts.ci, /pnpm run typecheck/);
-  assert.match(packageJson.scripts.ci, /pnpm run verify:web-ui/);
+  assert.equal(
+    packageJson.scripts['verify:web-ui'],
+    'tsx scripts/verifyWebBuild.ts',
+  );
+  assert.equal(
+    packageJson.scripts.ci,
+    'pnpm run check:fast && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui',
+  );
 
   const devDependencies = packageJson['devDependencies'] || {};
   assert.equal(devDependencies['@biomejs/biome'], '1.9.4');
+});
+
+test('justfile and lefthook delegate to the intended gate entrypoints', () => {
+  const justfile = fs.readFileSync(
+    path.resolve(__dirname, '..', 'justfile'),
+    'utf8',
+  );
+  const lefthookConfig = fs.readFileSync(
+    path.resolve(__dirname, '..', 'lefthook.yml'),
+    'utf8',
+  );
+
+  assert.match(justfile, /check-fast:\n\s+pnpm run check:fast/);
+  assert.match(justfile, /ci:\n\s+pnpm run ci/);
+
+  assert.ok(lefthookConfig.includes('run: mise exec -- just check-fast'));
+  assert.ok(lefthookConfig.includes('run: mise exec -- just ci'));
 });
 
 test('tsconfig keeps JS/TS coexistence enabled while strict mode is enabled', () => {
@@ -117,9 +168,18 @@ test('web UI build and verify config are present', () => {
   assert.ok(Array.isArray(include));
   assert.deepEqual(include, ['src/web/app.ts']);
 
-  assert.equal(fs.existsSync(path.resolve(__dirname, '..', 'src/web/app.ts')), true);
-  assert.equal(fs.existsSync(path.resolve(__dirname, '..', 'scripts/lint.ts')), true);
-  assert.equal(fs.existsSync(path.resolve(__dirname, '..', 'scripts/verifyWebBuild.ts')), true);
+  assert.equal(
+    fs.existsSync(path.resolve(__dirname, '..', 'src/web/app.ts')),
+    true,
+  );
+  assert.equal(
+    fs.existsSync(path.resolve(__dirname, '..', 'scripts/lint.ts')),
+    true,
+  );
+  assert.equal(
+    fs.existsSync(path.resolve(__dirname, '..', 'scripts/verifyWebBuild.ts')),
+    true,
+  );
 });
 
 test('biome baseline config scopes generated files out of formatting and linting', () => {
@@ -135,6 +195,10 @@ test('biome baseline config scopes generated files out of formatting and linting
   assert.equal(biomeConfig.formatter?.indentStyle, 'space');
   assert.equal(biomeConfig.linter?.enabled, true);
   assert.equal(biomeConfig.linter?.rules?.recommended, true);
+  assert.equal(biomeConfig.linter?.rules?.complexity?.useArrowFunction, 'off');
+  assert.equal(biomeConfig.linter?.rules?.complexity?.useLiteralKeys, 'off');
+  assert.equal(biomeConfig.linter?.rules?.complexity?.useOptionalChain, 'off');
+  assert.equal(biomeConfig.linter?.rules?.security?.noGlobalEval, 'off');
   assert.equal(biomeConfig.organizeImports?.enabled, false);
   assert.equal(biomeConfig.javascript?.formatter?.quoteStyle, 'single');
   assert.equal(biomeConfig.javascript?.formatter?.semicolons, 'always');

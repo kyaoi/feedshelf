@@ -16,9 +16,13 @@ async function main(): Promise<void> {
   const rootDir = process.cwd();
 
   for (const relativePath of FILES_TO_CHECK) {
-    execFileSync(process.execPath, ['--check', path.join(rootDir, relativePath)], {
-      stdio: 'inherit',
-    });
+    execFileSync(
+      process.execPath,
+      ['--check', path.join(rootDir, relativePath)],
+      {
+        stdio: 'inherit',
+      },
+    );
   }
 
   await loadFeeds(path.join(rootDir, 'data/feeds.json'));

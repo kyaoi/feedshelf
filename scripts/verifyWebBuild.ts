@@ -5,7 +5,9 @@ const path = require('node:path');
 
 async function main(): Promise<void> {
   const rootDir = process.cwd();
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-web-build-'));
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-web-build-'),
+  );
 
   try {
     const tscCommand = process.platform === 'win32' ? 'tsc.cmd' : 'tsc';
@@ -22,7 +24,9 @@ async function main(): Promise<void> {
     ]);
 
     if (expected !== actual) {
-      throw new Error('public/assets/app.js is out of date. Run `pnpm run build:web-ui` and commit the regenerated asset.');
+      throw new Error(
+        'public/assets/app.js is out of date. Run `pnpm run build:web-ui` and commit the regenerated asset.',
+      );
     }
 
     console.log('[verify:web-ui] OK');

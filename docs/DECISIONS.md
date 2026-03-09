@@ -447,3 +447,11 @@
 - 決定: `FS-DX-01` では `@biomejs/biome` 1.9.4 と `biome.json` を追加し、`.diffship/**` / `public/**` / `scripts/**/*.js` を除外した baseline formatter / linter を導入する
 - 理由: checked-in browser asset や JS wrapper、diffship ローカル運用ファイルまで一度に formatter 対象へ含めると差分が荒れやすく、導入初手としては破壊範囲が大きいため
 - 影響: `package.json` には `format` / `format:check` / `lint:biome` を追加するが、既存の `lint` は repo 固有 check のまま維持し、full gate や hook との統合は `FS-DX-02` で扱う
+
+## D-071: FS-DX-02 では `check:fast` と `pnpm run ci` の 2 層で gate を揃える
+
+- 決定: `FS-DX-02` では `check:fast` を `format:check` / `lint:biome` / repo 固有 `lint` の束として追加し、full gate は `pnpm run ci = check:fast + typecheck + test + verify:web-ui` とする
+- 理由: Biome 導入後も repo 固有 check を分離したまま、pre-commit に載せる高速チェックと pre-push / workflow で使う full gate を同じ script 契約から組み立てた方が、運用と修正ループの両方で見通しがよいため
+- 影響: `package.json` / `justfile` / `lefthook.yml` / `tests/typescript-tooling.test.ts` を更新し、`just ci` は `pnpm run ci` の薄いラッパー、pre-commit は `just check-fast`、pre-push は `just ci` へ揃える
+- 補足: 既存 runtime の unrelated refactor を `FS-DX-02` へ混ぜないため、initial gate の `biome.json` では `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` にして baseline lint を安定化する
+

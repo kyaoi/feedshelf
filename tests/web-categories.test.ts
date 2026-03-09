@@ -13,7 +13,10 @@ const {
 } = require('../public/assets/app.js');
 
 test('buildCategoryHrefFromHome and buildCategoryHrefFromCategoryPage build stable query routes', () => {
-  assert.equal(buildCategoryHrefFromHome('physics'), './categories/?id=physics');
+  assert.equal(
+    buildCategoryHrefFromHome('physics'),
+    './categories/?id=physics',
+  );
   assert.equal(buildCategoryHrefFromCategoryPage('physics'), './?id=physics');
 });
 

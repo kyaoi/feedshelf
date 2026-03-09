@@ -24,20 +24,37 @@ test('buildDataPaths builds public JSON paths under ./data by default', () => {
 test('loadHomePageData loads articles/categories/sources/meta together', async () => {
   const calls: string[] = [];
   const fixtures: Record<string, unknown> = {
-    './data/articles.json': [{
-      id: 'article-1',
-      title: 'Example article',
-      url: 'https://example.com/articles/1',
-      summary: 'Summary',
-      publishedAt: '2026-03-09T00:00:00Z',
-      sortAt: '2026-03-09T00:00:00Z',
-      sourceName: 'Example Source',
-      categoryLabel: 'Example Category',
-      imageUrl: null,
-    }],
-    './data/categories.json': [{ id: 'example', label: 'Example Category', articleCount: 1 }],
-    './data/sources.json': [{ id: 'example-source', name: 'Example Source', categoryLabel: 'Example Category', language: 'en', articleCount: 1 }],
-    './data/meta.json': { generatedAt: '2026-03-09T00:00:00Z', articleCount: 1, sourceCount: 1, categoryCount: 1 },
+    './data/articles.json': [
+      {
+        id: 'article-1',
+        title: 'Example article',
+        url: 'https://example.com/articles/1',
+        summary: 'Summary',
+        publishedAt: '2026-03-09T00:00:00Z',
+        sortAt: '2026-03-09T00:00:00Z',
+        sourceName: 'Example Source',
+        categoryLabel: 'Example Category',
+        imageUrl: null,
+      },
+    ],
+    './data/categories.json': [
+      { id: 'example', label: 'Example Category', articleCount: 1 },
+    ],
+    './data/sources.json': [
+      {
+        id: 'example-source',
+        name: 'Example Source',
+        categoryLabel: 'Example Category',
+        language: 'en',
+        articleCount: 1,
+      },
+    ],
+    './data/meta.json': {
+      generatedAt: '2026-03-09T00:00:00Z',
+      articleCount: 1,
+      sourceCount: 1,
+      categoryCount: 1,
+    },
   };
 
   const fetchImpl = async (url: string) => {
@@ -93,9 +110,24 @@ test('buildHomePageViewModel fills nullable article fields with display-safe val
         imageUrl: null,
       },
     ],
-    categories: [{ id: 'example-category', label: 'Example Category', articleCount: 4 }],
-    sources: [{ id: 'example-source', name: 'Example Source', categoryLabel: 'Example Category', language: 'en', articleCount: 4 }],
-    meta: { generatedAt: '2026-03-09T00:00:00Z', articleCount: 4, sourceCount: 1, categoryCount: 1 },
+    categories: [
+      { id: 'example-category', label: 'Example Category', articleCount: 4 },
+    ],
+    sources: [
+      {
+        id: 'example-source',
+        name: 'Example Source',
+        categoryLabel: 'Example Category',
+        language: 'en',
+        articleCount: 4,
+      },
+    ],
+    meta: {
+      generatedAt: '2026-03-09T00:00:00Z',
+      articleCount: 4,
+      sourceCount: 1,
+      categoryCount: 1,
+    },
   });
 
   assert.equal(viewModel.articles[0].summary, MISSING_SUMMARY_LABEL);
@@ -124,10 +156,15 @@ test('renderArticleItems escapes HTML in titles and summaries', () => {
   assert.doesNotMatch(markup, /<script>alert/);
 });
 
-
 test('normalizeExternalArticleUrl accepts only http and https URLs', () => {
-  assert.equal(normalizeExternalArticleUrl('https://example.com/articles/1'), 'https://example.com/articles/1');
-  assert.equal(normalizeExternalArticleUrl('http://example.com/articles/1'), 'http://example.com/articles/1');
+  assert.equal(
+    normalizeExternalArticleUrl('https://example.com/articles/1'),
+    'https://example.com/articles/1',
+  );
+  assert.equal(
+    normalizeExternalArticleUrl('http://example.com/articles/1'),
+    'http://example.com/articles/1',
+  );
   assert.equal(normalizeExternalArticleUrl('javascript:alert(1)'), null);
   assert.equal(normalizeExternalArticleUrl('mailto:test@example.com'), null);
   assert.equal(normalizeExternalArticleUrl(''), null);
@@ -150,12 +187,20 @@ test('buildHomePageViewModel marks invalid external links as unavailable', () =>
     ],
     categories: [],
     sources: [],
-    meta: { generatedAt: '2026-03-09T00:00:00Z', articleCount: 1, sourceCount: 0, categoryCount: 0 },
+    meta: {
+      generatedAt: '2026-03-09T00:00:00Z',
+      articleCount: 1,
+      sourceCount: 0,
+      categoryCount: 0,
+    },
   });
 
   assert.equal(viewModel.articles[0].url, null);
   assert.equal(viewModel.articles[0].canOpenExternal, false);
-  assert.equal(viewModel.articles[0].externalLinkDescription, INVALID_ARTICLE_LINK_LABEL);
+  assert.equal(
+    viewModel.articles[0].externalLinkDescription,
+    INVALID_ARTICLE_LINK_LABEL,
+  );
 });
 
 test('renderArticleItems disables external link button when article URL is unsafe', () => {

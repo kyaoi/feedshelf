@@ -1,9 +1,9 @@
 "use strict";
-(function (globalScope) {
+((globalScope) => {
     const browserScope = globalScope;
     const commonJsModule = (() => {
         try {
-            return eval('typeof module !== \"undefined\" ? module : undefined');
+            return eval('typeof module !== "undefined" ? module : undefined');
         }
         catch {
             return undefined;
@@ -50,7 +50,7 @@
         }
         return response.json();
     }
-    async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch } = {}) {
+    async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, } = {}) {
         const paths = buildDataPaths(basePath);
         try {
             const [articles, categories, sources, meta] = await Promise.all([
@@ -61,14 +61,23 @@
             ]);
             return {
                 kind: 'ready',
-                articles: Array.isArray(articles) ? articles : [],
-                categories: Array.isArray(categories) ? categories : [],
-                sources: Array.isArray(sources) ? sources : [],
+                articles: Array.isArray(articles)
+                    ? articles
+                    : [],
+                categories: Array.isArray(categories)
+                    ? categories
+                    : [],
+                sources: Array.isArray(sources)
+                    ? sources
+                    : [],
                 meta: meta && typeof meta === 'object' ? meta : {},
             };
         }
         catch (error) {
-            if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+            if (error &&
+                typeof error === 'object' &&
+                'status' in error &&
+                error.status === 404) {
                 return {
                     kind: 'missing-data',
                     message: MISSING_PUBLIC_DATA_ERROR,
@@ -86,7 +95,11 @@
             browserScope.location.protocol === 'file:') {
             return FILE_PROTOCOL_ERROR;
         }
-        if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.trim() !== '') {
+        if (error &&
+            typeof error === 'object' &&
+            'message' in error &&
+            typeof error.message === 'string' &&
+            error.message.trim() !== '') {
             return GENERIC_LOAD_ERROR;
         }
         return GENERIC_LOAD_ERROR;
@@ -115,9 +128,11 @@
     function formatCount(value) {
         return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
     }
-    function buildHomePageViewModel({ articles, categories, sources, meta }) {
+    function buildHomePageViewModel({ articles, categories, sources, meta, }) {
         return {
-            generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+            generatedAtText: meta && meta.generatedAt
+                ? `${formatDateTime(meta.generatedAt)} 更新`
+                : '更新時刻不明',
             stats: [
                 {
                     label: '記事数',
@@ -132,8 +147,12 @@
                     value: formatCount(meta && meta.categoryCount),
                 },
             ],
-            categories: buildCategoryNavigationItems(categories, { hrefBuilder: buildCategoryHrefFromHome }),
-            sources: buildSourceNavigationItems(sources, { hrefBuilder: buildSourceHrefFromHome }),
+            categories: buildCategoryNavigationItems(categories, {
+                hrefBuilder: buildCategoryHrefFromHome,
+            }),
+            sources: buildSourceNavigationItems(sources, {
+                hrefBuilder: buildSourceHrefFromHome,
+            }),
             articles: buildArticleViewModels(articles),
         };
     }
@@ -165,11 +184,13 @@
                 hasSummary: Boolean(article.summary),
                 imageUrl: article.imageUrl || null,
                 canOpenExternal: Boolean(externalUrl),
-                externalLinkDescription: externalUrl ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL,
+                externalLinkDescription: externalUrl
+                    ? '元記事で続きを読む'
+                    : INVALID_ARTICLE_LINK_LABEL,
             };
         });
     }
-    function buildCategoryNavigationItems(categories, { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome } = {}) {
+    function buildCategoryNavigationItems(categories, { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome, } = {}) {
         return categories.map((category) => ({
             id: category.id,
             label: category.label,
@@ -178,17 +199,19 @@
             isSelected: selectedCategoryId === category.id,
         }));
     }
-    function buildSourceNavigationItems(sources, { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome } = {}) {
+    function buildSourceNavigationItems(sources, { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome, } = {}) {
         return sources.map((source) => ({
             id: source.id,
             name: source.name,
             countLabel: `${formatCount(source.articleCount)}件`,
-            metaLabel: [source.categoryLabel, source.language].filter(Boolean).join(' / '),
+            metaLabel: [source.categoryLabel, source.language]
+                .filter(Boolean)
+                .join(' / '),
             href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
             isSelected: selectedSourceId === source.id,
         }));
     }
-    function buildSourcePageViewModel({ sourceId, articles, sources, meta }) {
+    function buildSourcePageViewModel({ sourceId, articles, sources, meta, }) {
         const navigationItems = buildSourceNavigationItems(sources, {
             selectedSourceId: sourceId,
             hrefBuilder: buildSourceHrefFromSourcePage,
@@ -197,7 +220,9 @@
         if (!sourceId) {
             return {
                 kind: 'missing-source',
-                generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+                generatedAtText: meta && meta.generatedAt
+                    ? `${formatDateTime(meta.generatedAt)} 更新`
+                    : '更新時刻不明',
                 navigationItems,
                 title: '媒体を選択してください',
                 description: MISSING_SOURCE_SELECTION_MESSAGE,
@@ -209,7 +234,9 @@
         if (!selectedSource) {
             return {
                 kind: 'unknown-source',
-                generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+                generatedAtText: meta && meta.generatedAt
+                    ? `${formatDateTime(meta.generatedAt)} 更新`
+                    : '更新時刻不明',
                 navigationItems,
                 title: '媒体が見つかりません',
                 description: UNKNOWN_SOURCE_MESSAGE,
@@ -219,13 +246,18 @@
             };
         }
         const selectedArticles = articles.filter((article) => article.sourceId === selectedSource.id);
-        const descriptionParts = [selectedSource.categoryLabel, selectedSource.language].filter(Boolean);
+        const descriptionParts = [
+            selectedSource.categoryLabel,
+            selectedSource.language,
+        ].filter(Boolean);
         const description = descriptionParts.length > 0
             ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。`
             : `${selectedSource.name} の記事だけを新着順で表示しています。`;
         return {
             kind: selectedArticles.length === 0 ? 'empty-source' : 'ready',
-            generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+            generatedAtText: meta && meta.generatedAt
+                ? `${formatDateTime(meta.generatedAt)} 更新`
+                : '更新時刻不明',
             navigationItems,
             title: `${selectedSource.name} の記事一覧`,
             description,
@@ -235,7 +267,7 @@
             selectedSourceName: selectedSource.name,
         };
     }
-    function buildCategoryPageViewModel({ categoryId, articles, categories, meta }) {
+    function buildCategoryPageViewModel({ categoryId, articles, categories, meta, }) {
         const navigationItems = buildCategoryNavigationItems(categories, {
             selectedCategoryId: categoryId,
             hrefBuilder: buildCategoryHrefFromCategoryPage,
@@ -244,7 +276,9 @@
         if (!categoryId) {
             return {
                 kind: 'missing-category',
-                generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+                generatedAtText: meta && meta.generatedAt
+                    ? `${formatDateTime(meta.generatedAt)} 更新`
+                    : '更新時刻不明',
                 navigationItems,
                 title: 'カテゴリを選択してください',
                 description: MISSING_CATEGORY_SELECTION_MESSAGE,
@@ -256,7 +290,9 @@
         if (!selectedCategory) {
             return {
                 kind: 'unknown-category',
-                generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+                generatedAtText: meta && meta.generatedAt
+                    ? `${formatDateTime(meta.generatedAt)} 更新`
+                    : '更新時刻不明',
                 navigationItems,
                 title: 'カテゴリが見つかりません',
                 description: UNKNOWN_CATEGORY_MESSAGE,
@@ -268,7 +304,9 @@
         const selectedArticles = articles.filter((article) => article.categoryId === selectedCategory.id);
         return {
             kind: selectedArticles.length === 0 ? 'empty-category' : 'ready',
-            generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+            generatedAtText: meta && meta.generatedAt
+                ? `${formatDateTime(meta.generatedAt)} 更新`
+                : '更新時刻不明',
             navigationItems,
             title: `${selectedCategory.label} の記事一覧`,
             description: `${selectedCategory.label} に分類された記事だけを新着順で表示しています。`,
@@ -292,9 +330,7 @@
         if (categories.length === 0) {
             return '<p class="placeholder-text">カテゴリはまだありません。</p>';
         }
-        return categories
-            .map((category) => renderCategoryChip(category))
-            .join('');
+        return categories.map((category) => renderCategoryChip(category)).join('');
     }
     function renderCategoryChip(category) {
         const selectedClassName = category.isSelected ? ' chip--selected' : '';
@@ -319,9 +355,7 @@
         if (sources.length === 0) {
             return '<p class="placeholder-text">媒体はまだありません。</p>';
         }
-        return sources
-            .map((source) => renderSourcePill(source))
-            .join('');
+        return sources.map((source) => renderSourcePill(source)).join('');
     }
     function renderSourcePill(source) {
         const selectedClassName = source.isSelected ? ' source-pill--selected' : '';
@@ -346,9 +380,12 @@
     function renderArticleItems(articles) {
         return articles
             .map((article) => {
-            const safeArticleUrl = article.canOpenExternal === false ? null : normalizeExternalArticleUrl(article.url);
+            const safeArticleUrl = article.canOpenExternal === false
+                ? null
+                : normalizeExternalArticleUrl(article.url);
             const canOpenExternal = Boolean(safeArticleUrl);
-            const externalLinkDescription = article.externalLinkDescription || (canOpenExternal ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL);
+            const externalLinkDescription = article.externalLinkDescription ||
+                (canOpenExternal ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL);
             const articleTitleMarkup = canOpenExternal
                 ? `
               <a href="${escapeHtml(safeArticleUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${article.title} を元記事で開く`)}">
@@ -554,7 +591,7 @@
         listElement.innerHTML = renderArticleItems(viewModel.articles);
         return viewModel;
     }
-    async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, documentRef = browserScope.document } = {}) {
+    async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, documentRef = browserScope.document, } = {}) {
         if (!documentRef) {
             return { kind: 'skipped' };
         }
@@ -664,12 +701,17 @@
     browserScope.FeedShelfApp = exported;
     if (browserScope.document) {
         browserScope.addEventListener('DOMContentLoaded', () => {
-            const pathname = browserScope.location && typeof browserScope.location.pathname === 'string'
+            const pathname = browserScope.location &&
+                typeof browserScope.location.pathname === 'string'
                 ? browserScope.location.pathname
                 : '';
             const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
             const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
-            const initializer = isCategoryPage ? initCategoryPage : (isSourcePage ? initSourcePage : initHomePage);
+            const initializer = isCategoryPage
+                ? initCategoryPage
+                : isSourcePage
+                    ? initSourcePage
+                    : initHomePage;
             initializer().catch((error) => {
                 console.error('[feedshelf] failed to initialize page', error);
             });

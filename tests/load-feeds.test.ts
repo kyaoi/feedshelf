@@ -5,9 +5,15 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { loadFeeds } = require('../scripts/pipeline/loadFeeds');
-const { normalizeFeedDocument, normalizeUrl } = require('../scripts/pipeline/normalizeFeed');
+const {
+  normalizeFeedDocument,
+  normalizeUrl,
+} = require('../scripts/pipeline/normalizeFeed');
 const { dedupeArticles } = require('../scripts/pipeline/dedupeArticles');
-const { buildPublicExports, slugifyCategoryLabel } = require('../scripts/pipeline/buildPublicExports');
+const {
+  buildPublicExports,
+  slugifyCategoryLabel,
+} = require('../scripts/pipeline/buildPublicExports');
 const { parseArgs, runPipeline } = require('../scripts/pipeline/run');
 
 const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -77,7 +83,9 @@ test('loadFeeds parses and validates feed definitions', async () => {
 });
 
 test('loadFeeds rejects missing required fields', async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-invalid-'));
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-invalid-'),
+  );
   const feedsPath = path.join(tempDir, 'feeds.json');
 
   await fs.writeFile(
@@ -94,11 +102,20 @@ test('loadFeeds rejects missing required fields', async () => {
     ]),
   );
 
-  await assert.rejects(loadFeeds(feedsPath), /must have boolean field: enabled/);
+  await assert.rejects(
+    loadFeeds(feedsPath),
+    /must have boolean field: enabled/,
+  );
 });
 
 test('parseArgs accepts --feeds, --output-dir, and --dry-run', () => {
-  const parsed = parseArgs(['--feeds', 'fixtures/feeds.json', '--output-dir', 'tmp/public-data', '--dry-run']);
+  const parsed = parseArgs([
+    '--feeds',
+    'fixtures/feeds.json',
+    '--output-dir',
+    'tmp/public-data',
+    '--dry-run',
+  ]);
   assert.equal(parsed.dryRun, true);
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
@@ -520,13 +537,18 @@ test('runPipeline reports public JSON counts in dry-run mode', async () => {
   });
   assert.match(lines.join('\n'), /normalizedArticles=2/);
   assert.match(lines.join('\n'), /dedupedArticles=2 duplicatesCollapsed=0/);
-  assert.match(lines.join('\n'), /publicArticles=2 publicCategories=1 publicSources=2/);
+  assert.match(
+    lines.join('\n'),
+    /publicArticles=2 publicCategories=1 publicSources=2/,
+  );
   assert.match(lines.join('\n'), /FS-PIPE-04 public JSON ready/);
   await assert.rejects(fs.access(outputDir));
 });
 
 test('runPipeline writes public JSON files when dry-run is false', async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-run-write-'));
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-write-'),
+  );
   const feedsPath = path.join(tempDir, 'feeds.json');
   const outputDir = path.join(tempDir, 'public-data');
 
@@ -557,10 +579,18 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
   assert.equal(summary.publicCategories, 1);
   assert.equal(summary.publicSources, 2);
 
-  const articles = JSON.parse(await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'));
-  const categories = JSON.parse(await fs.readFile(path.join(outputDir, 'categories.json'), 'utf8'));
-  const sources = JSON.parse(await fs.readFile(path.join(outputDir, 'sources.json'), 'utf8'));
-  const meta = JSON.parse(await fs.readFile(path.join(outputDir, 'meta.json'), 'utf8'));
+  const articles = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
+  );
+  const categories = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'categories.json'), 'utf8'),
+  );
+  const sources = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'sources.json'), 'utf8'),
+  );
+  const meta = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'meta.json'), 'utf8'),
+  );
 
   assert.equal(articles.length, 2);
   assert.equal(articles[0].title, 'Atom title');

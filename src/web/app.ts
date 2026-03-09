@@ -1,4 +1,3 @@
-
 interface PublicArticleSummaryLike {
   id: string;
   title: string;
@@ -154,15 +153,20 @@ type FeedShelfGlobalScope = typeof globalThis & {
   document?: Document;
   location?: LocationLike;
   fetch?: typeof fetch;
-  addEventListener?: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  addEventListener?: (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+  ) => void;
   FeedShelfApp?: unknown;
 };
 
-(function (globalScope: typeof globalThis) {
+((globalScope: typeof globalThis) => {
   const browserScope = globalScope as FeedShelfGlobalScope;
   const commonJsModule = (() => {
     try {
-      return eval('typeof module !== \"undefined\" ? module : undefined') as { exports?: unknown } | undefined;
+      return eval('typeof module !== "undefined" ? module : undefined') as
+        | { exports?: unknown }
+        | undefined;
     } catch {
       return undefined;
     }
@@ -170,17 +174,26 @@ type FeedShelfGlobalScope = typeof globalThis & {
   const DEFAULT_BASE_PATH = '.';
   const MISSING_SUMMARY_LABEL = '要約はありません。';
   const UNKNOWN_PUBLISHED_AT_LABEL = '公開日時不明';
-  const GENERIC_LOAD_ERROR = '公開データの読み込みに失敗しました。GitHub Pages または静的サーバー経由で開いているか確認してください。';
-  const FILE_PROTOCOL_ERROR = 'file:// 直開きでは JSON を読み込めない場合があります。静的サーバー経由で開いてください。';
-  const MISSING_PUBLIC_DATA_ERROR = '公開データがまだ生成されていません。先に `pnpm run pipeline:run` を実行して `public/data/*.json` を作成してください。';
+  const GENERIC_LOAD_ERROR =
+    '公開データの読み込みに失敗しました。GitHub Pages または静的サーバー経由で開いているか確認してください。';
+  const FILE_PROTOCOL_ERROR =
+    'file:// 直開きでは JSON を読み込めない場合があります。静的サーバー経由で開いてください。';
+  const MISSING_PUBLIC_DATA_ERROR =
+    '公開データがまだ生成されていません。先に `pnpm run pipeline:run` を実行して `public/data/*.json` を作成してください。';
   const CATEGORY_QUERY_PARAM = 'id';
-  const MISSING_CATEGORY_SELECTION_MESSAGE = 'カテゴリが選択されていません。トップページまたはカテゴリ一覧から選んでください。';
-  const UNKNOWN_CATEGORY_MESSAGE = '指定されたカテゴリは見つかりませんでした。別のカテゴリを選んでください。';
-  const EMPTY_CATEGORY_ARTICLES_MESSAGE = 'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
+  const MISSING_CATEGORY_SELECTION_MESSAGE =
+    'カテゴリが選択されていません。トップページまたはカテゴリ一覧から選んでください。';
+  const UNKNOWN_CATEGORY_MESSAGE =
+    '指定されたカテゴリは見つかりませんでした。別のカテゴリを選んでください。';
+  const EMPTY_CATEGORY_ARTICLES_MESSAGE =
+    'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
   const SOURCE_QUERY_PARAM = 'id';
-  const MISSING_SOURCE_SELECTION_MESSAGE = '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
-  const UNKNOWN_SOURCE_MESSAGE = '指定された媒体は見つかりませんでした。別の媒体を選んでください。';
-  const EMPTY_SOURCE_ARTICLES_MESSAGE = 'この媒体の記事はまだありません。次回の生成を待つか、別の媒体を選んでください。';
+  const MISSING_SOURCE_SELECTION_MESSAGE =
+    '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
+  const UNKNOWN_SOURCE_MESSAGE =
+    '指定された媒体は見つかりませんでした。別の媒体を選んでください。';
+  const EMPTY_SOURCE_ARTICLES_MESSAGE =
+    'この媒体の記事はまだありません。次回の生成を待つか、別の媒体を選んでください。';
   const INVALID_ARTICLE_LINK_LABEL = '元記事リンクを確認できません。';
 
   function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
@@ -195,7 +208,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     };
   }
 
-  async function fetchJson<T = unknown>(fetchImpl: typeof fetch | undefined, url: string): Promise<T> {
+  async function fetchJson<T = unknown>(
+    fetchImpl: typeof fetch | undefined,
+    url: string,
+  ): Promise<T> {
     if (typeof fetchImpl !== 'function') {
       throw new Error('Fetch API is not available in this environment.');
     }
@@ -207,7 +223,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
     });
 
     if (!response.ok) {
-      const error = new Error(`Failed to fetch ${url}: ${response.status}`) as Error & { status?: number };
+      const error = new Error(
+        `Failed to fetch ${url}: ${response.status}`,
+      ) as Error & { status?: number };
       error.status = response.status;
       throw error;
     }
@@ -215,7 +233,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return response.json() as Promise<T>;
   }
 
-  async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch }: HomePageInitOptions = {}): Promise<HomePageDataResult> {
+  async function loadHomePageData({
+    basePath = DEFAULT_BASE_PATH,
+    fetchImpl = browserScope.fetch,
+  }: HomePageInitOptions = {}): Promise<HomePageDataResult> {
     const paths = buildDataPaths(basePath);
 
     try {
@@ -228,13 +249,24 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
       return {
         kind: 'ready',
-        articles: Array.isArray(articles) ? (articles as PublicArticleSummaryLike[]) : [],
-        categories: Array.isArray(categories) ? (categories as PublicCategorySummaryLike[]) : [],
-        sources: Array.isArray(sources) ? (sources as PublicSourceSummaryLike[]) : [],
+        articles: Array.isArray(articles)
+          ? (articles as PublicArticleSummaryLike[])
+          : [],
+        categories: Array.isArray(categories)
+          ? (categories as PublicCategorySummaryLike[])
+          : [],
+        sources: Array.isArray(sources)
+          ? (sources as PublicSourceSummaryLike[])
+          : [],
         meta: meta && typeof meta === 'object' ? (meta as PublicMetaLike) : {},
       };
     } catch (error) {
-      if (error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 404) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as { status?: number }).status === 404
+      ) {
         return {
           kind: 'missing-data',
           message: MISSING_PUBLIC_DATA_ERROR,
@@ -257,7 +289,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
       return FILE_PROTOCOL_ERROR;
     }
 
-    if (error && typeof error === 'object' && 'message' in error && typeof (error as { message?: string }).message === 'string' && (error as { message: string }).message.trim() !== '') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as { message?: string }).message === 'string' &&
+      (error as { message: string }).message.trim() !== ''
+    ) {
       return GENERIC_LOAD_ERROR;
     }
 
@@ -293,9 +331,17 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
   }
 
-  function buildHomePageViewModel({ articles, categories, sources, meta }: ReadyPayload): HomePageViewModel {
+  function buildHomePageViewModel({
+    articles,
+    categories,
+    sources,
+    meta,
+  }: ReadyPayload): HomePageViewModel {
     return {
-      generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+      generatedAtText:
+        meta && meta.generatedAt
+          ? `${formatDateTime(meta.generatedAt)} 更新`
+          : '更新時刻不明',
       stats: [
         {
           label: '記事数',
@@ -310,13 +356,19 @@ type FeedShelfGlobalScope = typeof globalThis & {
           value: formatCount(meta && meta.categoryCount),
         },
       ],
-      categories: buildCategoryNavigationItems(categories, { hrefBuilder: buildCategoryHrefFromHome }),
-      sources: buildSourceNavigationItems(sources, { hrefBuilder: buildSourceHrefFromHome }),
+      categories: buildCategoryNavigationItems(categories, {
+        hrefBuilder: buildCategoryHrefFromHome,
+      }),
+      sources: buildSourceNavigationItems(sources, {
+        hrefBuilder: buildSourceHrefFromHome,
+      }),
       articles: buildArticleViewModels(articles),
     };
   }
 
-  function normalizeExternalArticleUrl(value: string | null | undefined): string | null {
+  function normalizeExternalArticleUrl(
+    value: string | null | undefined,
+  ): string | null {
     if (typeof value !== 'string' || value.trim() === '') {
       return null;
     }
@@ -333,7 +385,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
     }
   }
 
-  function buildArticleViewModels(articles: PublicArticleSummaryLike[]): ArticleViewModel[] {
+  function buildArticleViewModels(
+    articles: PublicArticleSummaryLike[],
+  ): ArticleViewModel[] {
     return articles.map((article) => {
       const externalUrl = normalizeExternalArticleUrl(article.url);
 
@@ -347,14 +401,22 @@ type FeedShelfGlobalScope = typeof globalThis & {
         hasSummary: Boolean(article.summary),
         imageUrl: article.imageUrl || null,
         canOpenExternal: Boolean(externalUrl),
-        externalLinkDescription: externalUrl ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL,
+        externalLinkDescription: externalUrl
+          ? '元記事で続きを読む'
+          : INVALID_ARTICLE_LINK_LABEL,
       };
     });
   }
 
   function buildCategoryNavigationItems(
     categories: PublicCategorySummaryLike[],
-    { selectedCategoryId = null, hrefBuilder = buildCategoryHrefFromHome }: { selectedCategoryId?: string | null; hrefBuilder?: ((categoryId: string) => string) | null } = {},
+    {
+      selectedCategoryId = null,
+      hrefBuilder = buildCategoryHrefFromHome,
+    }: {
+      selectedCategoryId?: string | null;
+      hrefBuilder?: ((categoryId: string) => string) | null;
+    } = {},
   ): CategoryNavigationItem[] {
     return categories.map((category) => ({
       id: category.id,
@@ -367,29 +429,51 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
   function buildSourceNavigationItems(
     sources: PublicSourceSummaryLike[],
-    { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome }: { selectedSourceId?: string | null; hrefBuilder?: ((sourceId: string) => string) | null } = {},
+    {
+      selectedSourceId = null,
+      hrefBuilder = buildSourceHrefFromHome,
+    }: {
+      selectedSourceId?: string | null;
+      hrefBuilder?: ((sourceId: string) => string) | null;
+    } = {},
   ): SourceNavigationItem[] {
     return sources.map((source) => ({
       id: source.id,
       name: source.name,
       countLabel: `${formatCount(source.articleCount)}件`,
-      metaLabel: [source.categoryLabel, source.language].filter(Boolean).join(' / '),
+      metaLabel: [source.categoryLabel, source.language]
+        .filter(Boolean)
+        .join(' / '),
       href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
       isSelected: selectedSourceId === source.id,
     }));
   }
 
-  function buildSourcePageViewModel({ sourceId, articles, sources, meta }: { sourceId: string; articles: PublicArticleSummaryLike[]; sources: PublicSourceSummaryLike[]; meta: PublicMetaLike }): SourcePageViewModel {
+  function buildSourcePageViewModel({
+    sourceId,
+    articles,
+    sources,
+    meta,
+  }: {
+    sourceId: string;
+    articles: PublicArticleSummaryLike[];
+    sources: PublicSourceSummaryLike[];
+    meta: PublicMetaLike;
+  }): SourcePageViewModel {
     const navigationItems = buildSourceNavigationItems(sources, {
       selectedSourceId: sourceId,
       hrefBuilder: buildSourceHrefFromSourcePage,
     });
-    const selectedSource = sources.find((source) => source.id === sourceId) || null;
+    const selectedSource =
+      sources.find((source) => source.id === sourceId) || null;
 
     if (!sourceId) {
       return {
         kind: 'missing-source',
-        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        generatedAtText:
+          meta && meta.generatedAt
+            ? `${formatDateTime(meta.generatedAt)} 更新`
+            : '更新時刻不明',
         navigationItems,
         title: '媒体を選択してください',
         description: MISSING_SOURCE_SELECTION_MESSAGE,
@@ -402,7 +486,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     if (!selectedSource) {
       return {
         kind: 'unknown-source',
-        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        generatedAtText:
+          meta && meta.generatedAt
+            ? `${formatDateTime(meta.generatedAt)} 更新`
+            : '更新時刻不明',
         navigationItems,
         title: '媒体が見つかりません',
         description: UNKNOWN_SOURCE_MESSAGE,
@@ -412,36 +499,60 @@ type FeedShelfGlobalScope = typeof globalThis & {
       };
     }
 
-    const selectedArticles = articles.filter((article) => article.sourceId === selectedSource.id);
-    const descriptionParts = [selectedSource.categoryLabel, selectedSource.language].filter(Boolean);
-    const description = descriptionParts.length > 0
-      ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。`
-      : `${selectedSource.name} の記事だけを新着順で表示しています。`;
+    const selectedArticles = articles.filter(
+      (article) => article.sourceId === selectedSource.id,
+    );
+    const descriptionParts = [
+      selectedSource.categoryLabel,
+      selectedSource.language,
+    ].filter(Boolean);
+    const description =
+      descriptionParts.length > 0
+        ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。`
+        : `${selectedSource.name} の記事だけを新着順で表示しています。`;
 
     return {
       kind: selectedArticles.length === 0 ? 'empty-source' : 'ready',
-      generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+      generatedAtText:
+        meta && meta.generatedAt
+          ? `${formatDateTime(meta.generatedAt)} 更新`
+          : '更新時刻不明',
       navigationItems,
       title: `${selectedSource.name} の記事一覧`,
       description,
       articlesCountText: `${selectedArticles.length} 件`,
       articles: buildArticleViewModels(selectedArticles),
-      statusMessage: selectedArticles.length === 0 ? EMPTY_SOURCE_ARTICLES_MESSAGE : '',
+      statusMessage:
+        selectedArticles.length === 0 ? EMPTY_SOURCE_ARTICLES_MESSAGE : '',
       selectedSourceName: selectedSource.name,
     };
   }
 
-  function buildCategoryPageViewModel({ categoryId, articles, categories, meta }: { categoryId: string; articles: PublicArticleSummaryLike[]; categories: PublicCategorySummaryLike[]; meta: PublicMetaLike }): CategoryPageViewModel {
+  function buildCategoryPageViewModel({
+    categoryId,
+    articles,
+    categories,
+    meta,
+  }: {
+    categoryId: string;
+    articles: PublicArticleSummaryLike[];
+    categories: PublicCategorySummaryLike[];
+    meta: PublicMetaLike;
+  }): CategoryPageViewModel {
     const navigationItems = buildCategoryNavigationItems(categories, {
       selectedCategoryId: categoryId,
       hrefBuilder: buildCategoryHrefFromCategoryPage,
     });
-    const selectedCategory = categories.find((category) => category.id === categoryId) || null;
+    const selectedCategory =
+      categories.find((category) => category.id === categoryId) || null;
 
     if (!categoryId) {
       return {
         kind: 'missing-category',
-        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        generatedAtText:
+          meta && meta.generatedAt
+            ? `${formatDateTime(meta.generatedAt)} 更新`
+            : '更新時刻不明',
         navigationItems,
         title: 'カテゴリを選択してください',
         description: MISSING_CATEGORY_SELECTION_MESSAGE,
@@ -454,7 +565,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     if (!selectedCategory) {
       return {
         kind: 'unknown-category',
-        generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+        generatedAtText:
+          meta && meta.generatedAt
+            ? `${formatDateTime(meta.generatedAt)} 更新`
+            : '更新時刻不明',
         navigationItems,
         title: 'カテゴリが見つかりません',
         description: UNKNOWN_CATEGORY_MESSAGE,
@@ -464,17 +578,23 @@ type FeedShelfGlobalScope = typeof globalThis & {
       };
     }
 
-    const selectedArticles = articles.filter((article) => article.categoryId === selectedCategory.id);
+    const selectedArticles = articles.filter(
+      (article) => article.categoryId === selectedCategory.id,
+    );
 
     return {
       kind: selectedArticles.length === 0 ? 'empty-category' : 'ready',
-      generatedAtText: meta && meta.generatedAt ? `${formatDateTime(meta.generatedAt)} 更新` : '更新時刻不明',
+      generatedAtText:
+        meta && meta.generatedAt
+          ? `${formatDateTime(meta.generatedAt)} 更新`
+          : '更新時刻不明',
       navigationItems,
       title: `${selectedCategory.label} の記事一覧`,
       description: `${selectedCategory.label} に分類された記事だけを新着順で表示しています。`,
       articlesCountText: `${selectedArticles.length} 件`,
       articles: buildArticleViewModels(selectedArticles),
-      statusMessage: selectedArticles.length === 0 ? EMPTY_CATEGORY_ARTICLES_MESSAGE : '',
+      statusMessage:
+        selectedArticles.length === 0 ? EMPTY_CATEGORY_ARTICLES_MESSAGE : '',
       selectedCategoryLabel: selectedCategory.label,
     };
   }
@@ -497,9 +617,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       return '<p class="placeholder-text">カテゴリはまだありません。</p>';
     }
 
-    return categories
-      .map((category) => renderCategoryChip(category))
-      .join('');
+    return categories.map((category) => renderCategoryChip(category)).join('');
   }
 
   function renderCategoryChip(category: CategoryNavigationItem): string {
@@ -529,9 +647,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       return '<p class="placeholder-text">媒体はまだありません。</p>';
     }
 
-    return sources
-      .map((source) => renderSourcePill(source))
-      .join('');
+    return sources.map((source) => renderSourcePill(source)).join('');
   }
 
   function renderSourcePill(source: SourceNavigationItem): string {
@@ -560,9 +676,14 @@ type FeedShelfGlobalScope = typeof globalThis & {
   function renderArticleItems(articles: ArticleViewModel[]): string {
     return articles
       .map((article) => {
-        const safeArticleUrl = article.canOpenExternal === false ? null : normalizeExternalArticleUrl(article.url);
+        const safeArticleUrl =
+          article.canOpenExternal === false
+            ? null
+            : normalizeExternalArticleUrl(article.url);
         const canOpenExternal = Boolean(safeArticleUrl);
-        const externalLinkDescription = article.externalLinkDescription || (canOpenExternal ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL);
+        const externalLinkDescription =
+          article.externalLinkDescription ||
+          (canOpenExternal ? '元記事で続きを読む' : INVALID_ARTICLE_LINK_LABEL);
         const articleTitleMarkup = canOpenExternal
           ? `
               <a href="${escapeHtml(safeArticleUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${article.title} を元記事で開く`)}">
@@ -624,7 +745,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return `./?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
   }
 
-  function getCategoryIdFromLocation(locationRef: LocationLike | null | undefined = browserScope.location): string {
+  function getCategoryIdFromLocation(
+    locationRef: LocationLike | null | undefined = browserScope.location,
+  ): string {
     if (!locationRef || typeof locationRef.search !== 'string') {
       return '';
     }
@@ -633,7 +756,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return params.get(CATEGORY_QUERY_PARAM) || '';
   }
 
-  function getSourceIdFromLocation(locationRef: LocationLike | null | undefined = browserScope.location): string {
+  function getSourceIdFromLocation(
+    locationRef: LocationLike | null | undefined = browserScope.location,
+  ): string {
     if (!locationRef || typeof locationRef.search !== 'string') {
       return '';
     }
@@ -642,7 +767,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return params.get(SOURCE_QUERY_PARAM) || '';
   }
 
-  function setStatus(documentRef: Document, { kind, message }: StatusOptions): void {
+  function setStatus(
+    documentRef: Document,
+    { kind, message }: StatusOptions,
+  ): void {
     const statusElement = documentRef.getElementById('articles-status');
     const listElement = documentRef.getElementById('articles-list');
 
@@ -694,7 +822,8 @@ type FeedShelfGlobalScope = typeof globalThis & {
     if (viewModel.articles.length === 0) {
       setStatus(documentRef, {
         kind: 'warning',
-        message: '記事はまだありません。`public/data/articles.json` が空か、取得対象 feed が未設定の可能性があります。',
+        message:
+          '記事はまだありません。`public/data/articles.json` が空か、取得対象 feed が未設定の可能性があります。',
       });
       return;
     }
@@ -704,7 +833,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
     listElement.innerHTML = renderArticleItems(viewModel.articles);
   }
 
-  function renderCategoryPage(documentRef: Document, payload: ReadyPayload, { categoryId }: { categoryId?: string } = {}): CategoryPageViewModel {
+  function renderCategoryPage(
+    documentRef: Document,
+    payload: ReadyPayload,
+    { categoryId }: { categoryId?: string } = {},
+  ): CategoryPageViewModel {
     const viewModel = buildCategoryPageViewModel({
       categoryId: categoryId || '',
       articles: payload.articles,
@@ -714,7 +847,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
     const generatedAtElement = documentRef.getElementById('generated-at');
     const navElement = documentRef.getElementById('category-nav');
     const titleElement = documentRef.getElementById('category-page-title');
-    const descriptionElement = documentRef.getElementById('category-page-description');
+    const descriptionElement = documentRef.getElementById(
+      'category-page-description',
+    );
     const articlesCountElement = documentRef.getElementById('articles-count');
     const statusElement = documentRef.getElementById('articles-status');
     const listElement = documentRef.getElementById('articles-list');
@@ -757,7 +892,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return viewModel;
   }
 
-  function renderSourcePage(documentRef: Document, payload: ReadyPayload, { sourceId }: { sourceId?: string } = {}): SourcePageViewModel {
+  function renderSourcePage(
+    documentRef: Document,
+    payload: ReadyPayload,
+    { sourceId }: { sourceId?: string } = {},
+  ): SourcePageViewModel {
     const viewModel = buildSourcePageViewModel({
       sourceId: sourceId || '',
       articles: payload.articles,
@@ -767,7 +906,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
     const generatedAtElement = documentRef.getElementById('generated-at');
     const navElement = documentRef.getElementById('source-nav');
     const titleElement = documentRef.getElementById('source-page-title');
-    const descriptionElement = documentRef.getElementById('source-page-description');
+    const descriptionElement = documentRef.getElementById(
+      'source-page-description',
+    );
     const articlesCountElement = documentRef.getElementById('articles-count');
     const statusElement = documentRef.getElementById('articles-status');
     const listElement = documentRef.getElementById('articles-list');
@@ -810,7 +951,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return viewModel;
   }
 
-  async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, documentRef = browserScope.document }: HomePageInitOptions = {}): Promise<HomePageDataResult | { kind: 'skipped' }> {
+  async function initHomePage({
+    basePath = DEFAULT_BASE_PATH,
+    fetchImpl = browserScope.fetch,
+    documentRef = browserScope.document,
+  }: HomePageInitOptions = {}): Promise<
+    HomePageDataResult | { kind: 'skipped' }
+  > {
     if (!documentRef) {
       return { kind: 'skipped' };
     }
@@ -839,7 +986,12 @@ type FeedShelfGlobalScope = typeof globalThis & {
     fetchImpl = browserScope.fetch,
     documentRef = browserScope.document,
     locationRef = browserScope.location,
-  }: CategoryPageInitOptions = {}): Promise<CategoryPageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }> {
+  }: CategoryPageInitOptions = {}): Promise<
+    | CategoryPageViewModel
+    | MissingDataPayload
+    | ErrorPayload
+    | { kind: 'skipped' }
+  > {
     if (!documentRef) {
       return { kind: 'skipped' };
     }
@@ -869,7 +1021,12 @@ type FeedShelfGlobalScope = typeof globalThis & {
     fetchImpl = browserScope.fetch,
     documentRef = browserScope.document,
     locationRef = browserScope.location,
-  }: SourcePageInitOptions = {}): Promise<SourcePageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }> {
+  }: SourcePageInitOptions = {}): Promise<
+    | SourcePageViewModel
+    | MissingDataPayload
+    | ErrorPayload
+    | { kind: 'skipped' }
+  > {
     if (!documentRef) {
       return { kind: 'skipped' };
     }
@@ -948,12 +1105,18 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
   if (browserScope.document) {
     browserScope.addEventListener('DOMContentLoaded', () => {
-      const pathname = browserScope.location && typeof browserScope.location.pathname === 'string'
-        ? browserScope.location.pathname
-        : '';
+      const pathname =
+        browserScope.location &&
+        typeof browserScope.location.pathname === 'string'
+          ? browserScope.location.pathname
+          : '';
       const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
       const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
-      const initializer = isCategoryPage ? initCategoryPage : (isSourcePage ? initSourcePage : initHomePage);
+      const initializer = isCategoryPage
+        ? initCategoryPage
+        : isSourcePage
+          ? initSourcePage
+          : initHomePage;
 
       initializer().catch((error: unknown) => {
         console.error('[feedshelf] failed to initialize page', error);

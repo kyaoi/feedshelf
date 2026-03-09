@@ -21,7 +21,9 @@ function toIsoTimestamp(value: string): string {
 
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? Number.NEGATIVE_INFINITY : parsed.getTime();
+  return Number.isNaN(parsed.getTime())
+    ? Number.NEGATIVE_INFINITY
+    : parsed.getTime();
 }
 
 function compareByNewestTime(left: string, right: string): number {
@@ -51,7 +53,9 @@ export function slugifyCategoryLabel(label: string): string {
   return normalized;
 }
 
-function buildCategoryRegistry(articles: CanonicalArticle[]): Map<string, string> {
+function buildCategoryRegistry(
+  articles: CanonicalArticle[],
+): Map<string, string> {
   const categories = new Map<string, string>();
 
   for (const article of articles) {
@@ -60,7 +64,9 @@ function buildCategoryRegistry(articles: CanonicalArticle[]): Map<string, string
     const existing = categories.get(id);
 
     if (existing && existing !== label) {
-      throw new Error(`Category slug collision: ${existing} vs ${label} -> ${id}`);
+      throw new Error(
+        `Category slug collision: ${existing} vs ${label} -> ${id}`,
+      );
     }
 
     categories.set(id, label);
@@ -73,7 +79,10 @@ function selectSortAt(article: CanonicalArticle): string {
   return article.publishedAt || article.fetchedAt;
 }
 
-function comparePublicArticles(left: PublicArticleSummary, right: PublicArticleSummary): number {
+function comparePublicArticles(
+  left: PublicArticleSummary,
+  right: PublicArticleSummary,
+): number {
   const timeOrder = compareByNewestTime(left.sortAt, right.sortAt);
   if (timeOrder !== 0) {
     return timeOrder;
@@ -87,7 +96,9 @@ function comparePublicArticles(left: PublicArticleSummary, right: PublicArticleS
   return left.id.localeCompare(right.id, 'en');
 }
 
-function buildPublicArticles(articles: CanonicalArticle[]): PublicArticleSummary[] {
+function buildPublicArticles(
+  articles: CanonicalArticle[],
+): PublicArticleSummary[] {
   return articles
     .map((article) => ({
       id: article.id,
@@ -128,7 +139,10 @@ function buildCategories(
   }
 
   return Array.from(stats.values()).sort((left, right) => {
-    const timeOrder = compareByNewestTime(left.latestSortAt, right.latestSortAt);
+    const timeOrder = compareByNewestTime(
+      left.latestSortAt,
+      right.latestSortAt,
+    );
     if (timeOrder !== 0) {
       return timeOrder;
     }
@@ -142,13 +156,17 @@ function buildSources(
   feeds: FeedDefinition[],
   categoryRegistry: Map<string, string>,
 ): PublicSourceSummary[] {
-  const feedMap = new Map<string, FeedDefinition>(feeds.map((feed) => [feed.id, feed]));
+  const feedMap = new Map<string, FeedDefinition>(
+    feeds.map((feed) => [feed.id, feed]),
+  );
   const stats = new Map<string, PublicSourceSummary>();
 
   for (const article of publicArticles) {
     const feed = feedMap.get(article.sourceId);
     if (!feed) {
-      throw new Error(`Unknown sourceId for public export: ${article.sourceId}`);
+      throw new Error(
+        `Unknown sourceId for public export: ${article.sourceId}`,
+      );
     }
 
     const categoryId = slugifyCategoryLabel(feed.category);
@@ -172,7 +190,10 @@ function buildSources(
   }
 
   return Array.from(stats.values()).sort((left, right) => {
-    const timeOrder = compareByNewestTime(left.latestSortAt, right.latestSortAt);
+    const timeOrder = compareByNewestTime(
+      left.latestSortAt,
+      right.latestSortAt,
+    );
     if (timeOrder !== 0) {
       return timeOrder;
     }
@@ -224,9 +245,21 @@ export async function writePublicExports({
   await fs.mkdir(resolvedOutputDir, { recursive: true });
 
   await Promise.all([
-    writeJsonFile(path.join(resolvedOutputDir, 'articles.json'), publicExports.articles),
-    writeJsonFile(path.join(resolvedOutputDir, 'categories.json'), publicExports.categories),
-    writeJsonFile(path.join(resolvedOutputDir, 'sources.json'), publicExports.sources),
-    writeJsonFile(path.join(resolvedOutputDir, 'meta.json'), publicExports.meta),
+    writeJsonFile(
+      path.join(resolvedOutputDir, 'articles.json'),
+      publicExports.articles,
+    ),
+    writeJsonFile(
+      path.join(resolvedOutputDir, 'categories.json'),
+      publicExports.categories,
+    ),
+    writeJsonFile(
+      path.join(resolvedOutputDir, 'sources.json'),
+      publicExports.sources,
+    ),
+    writeJsonFile(
+      path.join(resolvedOutputDir, 'meta.json'),
+      publicExports.meta,
+    ),
   ]);
 }

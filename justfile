@@ -4,19 +4,29 @@ bootstrap:
 	pnpm install
 	lefthook install
 
+format-check:
+	pnpm run format:check
+
+lint-biome:
+	pnpm run lint:biome
+
 lint:
-    pnpm lint
+	pnpm run lint
+
+check-fast:
+	pnpm run check:fast
 
 typecheck:
-    pnpm typecheck
+	pnpm run typecheck
 
 test:
-    pnpm test
+	pnpm run test
 
 build:
-    pnpm build
+	pnpm run build
 
 verify-web-ui:
-    pnpm verify:web-ui
+	pnpm run verify:web-ui
 
-ci: lint typecheck test verify-web-ui
+ci:
+	pnpm run ci

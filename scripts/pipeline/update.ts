@@ -36,7 +36,8 @@ export interface FetchEnabledFeedDocumentsResult {
 }
 
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
-const FEED_ACCEPT_HEADER = 'application/atom+xml, application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1';
+const FEED_ACCEPT_HEADER =
+  'application/atom+xml, application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1';
 const FEED_USER_AGENT = 'FeedShelf/0.1 (+https://github.com/kyaoi/feedshelf)';
 
 export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
@@ -102,7 +103,9 @@ export async function fetchFeedDocument(
   });
 
   if (!response.ok) {
-    throw new Error(`Feed ${feed.id} fetch failed: ${response.status} ${response.statusText}`.trim());
+    throw new Error(
+      `Feed ${feed.id} fetch failed: ${response.status} ${response.statusText}`.trim(),
+    );
   }
 
   const xml = await response.text();
@@ -134,14 +137,16 @@ export function shouldPublishFromFetchedDocuments({
   if (enabledFeeds.length === 0) {
     return {
       ok: false,
-      reason: 'No enabled feeds were configured; refusing to publish an empty update.',
+      reason:
+        'No enabled feeds were configured; refusing to publish an empty update.',
     };
   }
 
   if (feedDocuments.length === 0) {
     return {
       ok: false,
-      reason: 'All enabled feeds failed to fetch; deploy will be skipped to preserve the previous site.',
+      reason:
+        'All enabled feeds failed to fetch; deploy will be skipped to preserve the previous site.',
     };
   }
 
@@ -194,15 +199,18 @@ export async function fetchEnabledFeedDocuments({
   };
 }
 
-export async function runUpdatePipeline(options: RunUpdatePipelineOptions): Promise<UpdatePipelineSummary> {
+export async function runUpdatePipeline(
+  options: RunUpdatePipelineOptions,
+): Promise<UpdatePipelineSummary> {
   const logger: PipelineLogger = options.logger || console;
   const generatedAt = new Date(options.generatedAt || Date.now()).toISOString();
-  const { enabledFeeds, feedDocuments, failedFetches } = await fetchEnabledFeedDocuments({
-    feedsPath: options.feedsPath,
-    logger,
-    fetchImpl: options.fetchImpl,
-    generatedAt,
-  });
+  const { enabledFeeds, feedDocuments, failedFetches } =
+    await fetchEnabledFeedDocuments({
+      feedsPath: options.feedsPath,
+      logger,
+      fetchImpl: options.fetchImpl,
+      generatedAt,
+    });
 
   const publishDecision = shouldPublishFromFetchedDocuments({
     enabledFeeds,
@@ -231,17 +239,25 @@ export async function runUpdatePipeline(options: RunUpdatePipelineOptions): Prom
     failedFetches,
   };
 
-  logger.log(`[update] fetchedDocuments=${summary.fetchedDocuments} failedFeeds=${summary.failedFeeds}`);
+  logger.log(
+    `[update] fetchedDocuments=${summary.fetchedDocuments} failedFeeds=${summary.failedFeeds}`,
+  );
   if (summary.failedFeeds > 0) {
-    const failedFeedIds = summary.failedFetches.map((failure) => failure.feedId).join(', ');
-    logger.log(`[update] partial-failure: continuing with fetched feeds only (${failedFeedIds})`);
+    const failedFeedIds = summary.failedFetches
+      .map((failure) => failure.feedId)
+      .join(', ');
+    logger.log(
+      `[update] partial-failure: continuing with fetched feeds only (${failedFeedIds})`,
+    );
   }
   logger.log('[update] FS-OPS-03 partial failure policy applied');
 
   return summary;
 }
 
-export async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
+export async function main(
+  argv: string[] = process.argv.slice(2),
+): Promise<void> {
   const args = parseUpdateArgs(argv);
   await runUpdatePipeline(args);
 }

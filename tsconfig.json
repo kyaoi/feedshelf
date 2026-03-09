@@ -3,14 +3,8 @@
     "target": "ES2023",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "node"
-    ],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
@@ -28,9 +22,5 @@
     "scripts/**/*.js",
     "tests/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "public/data"
-  ]
+  "exclude": ["node_modules", "dist", "public/data"]
 }
