@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "build:web-ui": "tsc -p tsconfig.web.json",
     "build": "pnpm run build:web-ui",
-    "verify:web-ui": "tsx scripts/verifyWebBuild.ts"
+    "verify:web-ui": "tsx scripts/verifyWebBuild.ts",
+    "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui"
   },
   "devDependencies": {
     "@types/node": "^25.0.2",

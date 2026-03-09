@@ -60,3 +60,9 @@
 | FS-056 | `FS-QA-01` の spec 実装差分監査結果を docs に記録できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` | 監査結果として「実装済み領域」「残る docs flow / acceptance gaps」「traceability 更新」が確認できる |
 | FS-057 | repo 直下の README からセットアップ・ローカル確認・主要 docs へ到達できる | `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | README にセットアップ・確認手順・docs の読み順・Actions / Pages 前提が揃っていることを目視確認できる |
 | FS-058 | v1 MVP の受け入れ判定を既存 quality gate と最小手動確認で行える | `PLAN.md` / `README.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `.github/workflows/update-public-data.yml` / `tests/*.test.ts` / `scripts/verifyWebBuild.ts` | `pnpm run ci`、`pnpm run pipeline:update`、`public/` の静的配信確認で受け入れ証跡を揃えられる |
+
+| FS-059 | Biome を formatter / linter の baseline として段階導入できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `FS-DX-00` では対象範囲と責務分割が docs で確認でき、実装は `FS-DX-01` の `package.json` / `biome.json*` 反映へ受け渡せる |
+| FS-060 | full quality gate を単一入口コマンドとして固定できる | `package.json` / `justfile` / `lefthook.yml` / `.github/workflows/*.yml` | `FS-DX-00` では `pnpm run ci` を正本候補として記録し、実装は `FS-DX-02` で scripts / hooks / workflow 契約を揃えて確認する |
+| FS-061 | 定期更新 / deploy workflow と通常 CI workflow の責務を分離できる | `.github/workflows/update-public-data.yml` / `.github/workflows/ci.yml` / `docs/SPEC_V1.md` | `FS-DX-00` では分離方針が docs で確認でき、実装は `FS-DX-03` で workflow 追加と追跡更新を行う |
+| FS-062 | repo 固有 check を汎用 formatter / linter と分離して扱える | `scripts/lint.ts` / `package.json` / `docs/DECISIONS.md` | `FS-DX-00` では Biome と custom check の役割分割が docs で確認でき、実装は `FS-DX-02` で gate 構成へ反映する |
+| FS-063 | pre-commit / CI failure 時に working tree を保持したまま diffship 修正ループへ渡せる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `FS-DX-00` では stash 前提にしない運用と `git rev-parse HEAD` / failure log の受け渡しが docs で確認できる |

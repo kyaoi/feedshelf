@@ -618,6 +618,12 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 - フィード追加・削除が設定ファイル中心で行えること
 - UI と収集処理を分離できること
 
+### 13.5 開発運用 / 品質ゲート
+- formatting / lint / typecheck / test / checked-in asset verify をローカルと GitHub Actions の両方で再現できること
+- full quality gate は単一入口コマンドから実行できること
+- 定期更新 / deploy workflow と通常の品質確認 CI workflow の責務を分離できること
+- repo 固有 check は汎用 formatter / linter と混同せず分離できること
+
 ---
 
 ## 14. 受け入れ条件
@@ -721,4 +727,18 @@ v2 以降で追加検討可能な項目:
 5. `/` / `/categories/` / `/sources/` を開き、一覧表示と絞り込み導線が成立することを確認する
 
 この確認観点に照らして blocking gap が残っていない場合、FeedShelf v1 の MVP は受け入れ条件を満たしたと扱う。
+
+### 14.8 Phase DX の docs-first planning
+
+Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / failure handling の責務を docs に固定してから進める。
+
+- `FS-DX-01` は Biome の baseline 導入を責務とし、formatting / linting の対象範囲と除外対象を最小差分で固定する
+- `FS-DX-02` は full gate の単一入口、hook の責務分割、repo 固有 check の位置づけ整理を責務とする
+- `FS-DX-03` は通常の品質確認 CI workflow を追加し、既存の update / deploy workflow と責務を分ける
+- `FS-DX-04` は tests / docs / workflow の追跡を同期し、tooling 変更を traceability と確認手順へ反映する
+- Phase DX では新しい runtime 機能追加よりも、既存 workflow / docs / package scripts の契約ズレを先に解消することを優先する
+
+既知の契約差として、workflow / README / tests は `pnpm run ci` を前提にしている。`FS-DX-00` では verify failure を避けるため `package.json` に最小の `ci` script を補完し、hook / workflow / repo 固有 check の統合は `FS-DX-02` で行う。
+
+運用上は、pre-commit や CI が失敗した場合でも原則 stash を前提にせず、失敗した変更を working tree に保持したまま exact HEAD と failure log を diffship 修正ループへ渡せるようにする。
 

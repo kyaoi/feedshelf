@@ -412,3 +412,32 @@
 - 理由: Phase 5 の目的は機能追加ではなく、MVP として公開可能かを安全に判定することであり、すでに揃っている実装と quality gate を受け入れ証跡として束ねる方が最小差分で安全なため
 - 影響: Phase 5 は docs と既存 verification flow の整理で閉じられ、次フェーズでは新しい v2 backlog や運用改善を別タスクとして定義できる
 
+## D-065: Phase DX は `FS-DX-00` の docs-first planning から始める
+
+- 決定: Biome / quality gate / CI 導入は、まず `FS-DX-00` で責務分割と実装順を docs に固定してから進める
+- 理由: 既存の workflow / README / tests / package scripts に quality gate 契約のズレがあり、いきなり実装へ入ると formatter 導入・hook 変更・CI 追加が一度に混ざって差分が荒れやすいため
+- 影響: `PLAN.md` / `docs/SPEC_V1.md` / `docs/TRACEABILITY.md` を先に更新し、その後の `FS-DX-01` 以降はこの境界に従って進める
+
+## D-066: Biome は baseline formatter / linter とし、repo 固有 check は分離して扱う
+
+- 決定: Biome は formatting / linting の共通基盤として導入し、repository 固有の整合確認は既存の custom script に残す前提で計画する
+- 理由: `scripts/lint.ts` には単なる整形・静的解析以外の repo 事情が混ざりうるため、Biome へ責務を寄せすぎると導入時の差分と破壊範囲が大きくなるため
+- 影響: `FS-DX-01` は Biome config と対象範囲の追加に集中し、repo 固有 check の整理や統合は `FS-DX-02` で扱う
+
+## D-067: full gate の単一入口は `pnpm run ci` とし、hook は軽量化して分担する
+
+- 決定: full quality gate は `pnpm run ci` を単一入口として扱い、pre-commit は高速で局所的な検査、pre-push と GitHub Actions は full gate を担う方針で進める
+- 理由: formatter / lint / typecheck / test / verify を毎回 pre-commit に寄せると開発体験が重くなり、commit 失敗時の修正ループも不安定になりやすいため
+- 影響: `FS-DX-00` では verify failure を避けるため `package.json` に最小の `ci` script を補完し、`FS-DX-02` では `justfile` / `lefthook.yml` / repo 固有 check を含む full gate 契約全体を揃える
+
+## D-068: 通常 CI workflow と定期更新 / deploy workflow は分離する
+
+- 決定: Biome / typecheck / test / verify などの通常品質確認は専用 CI workflow へ分離し、既存の `update-public-data` workflow は定期更新と Pages deploy の責務へ寄せる
+- 理由: 更新 workflow に通常 CI の責務まで背負わせると、定期実行・手動更新・公開境界の確認と、日常的な品質確認の意図が混ざって追跡しづらくなるため
+- 影響: `FS-DX-03` では `.github/workflows/ci.yml` を追加し、`FS-DX-04` では tests / docs / traceability もこの分割へ合わせて更新する
+
+## D-069: pre-commit / CI failure 時は原則 stash せず、working tree を保持して diffship 修正ループへ渡す
+
+- 決定: hook や CI が失敗した場合、原則として失敗したタスクの変更は stash せず working tree に残し、exact HEAD と failure log を添えて diffship 修正ループへ渡す
+- 理由: 失敗状態の差分とログをそのまま材料にした方が、AI へ渡す修正対象が明確で、stash / 再適用による unrelated diff 混入も避けやすいため
+- 影響: `FS-DX-00` では運用方針を docs に固定し、後続の実装タスクでは hook / CI 失敗時の修正依頼に必要な情報として `git rev-parse HEAD` と failure log を渡す前提を採る
