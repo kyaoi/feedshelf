@@ -10,6 +10,7 @@
   "scripts": {
     "bootstrap": "pnpm install --frozen-lockfile=false",
     "pipeline:run": "tsx scripts/pipeline/run.js",
+    "pipeline:update": "tsx scripts/pipeline/update.js",
     "lint": "tsx scripts/lint.ts",
     "test": "tsx --test tests/*.test.ts",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui",

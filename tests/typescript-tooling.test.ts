@@ -29,6 +29,7 @@ test('package scripts expose the TypeScript execution baseline', () => {
   const packageJson = readJson<{ scripts: Record<string, string> }>('package.json');
 
   assert.equal(packageJson.scripts['pipeline:run'], 'tsx scripts/pipeline/run.js');
+  assert.equal(packageJson.scripts['pipeline:update'], 'tsx scripts/pipeline/update.js');
   assert.equal(packageJson.scripts.lint, 'tsx scripts/lint.ts');
   assert.equal(packageJson.scripts.test, 'tsx --test tests/*.test.ts');
   assert.equal(packageJson.scripts.typecheck, 'tsc --noEmit');

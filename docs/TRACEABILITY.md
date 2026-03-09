@@ -8,7 +8,7 @@
 | FS-004 | 各記事から元記事へ遷移できる | 記事カードリンク / safe external URL handling | `http/https` のみ外部URLへ遷移し、unsafe URL は非活性表示へ落ちる |
 | FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.js` | RSS / Atom fixture が canonical article object へ変換される |
 | FS-006 | 重複記事を抑制できる | `scripts/pipeline/dedupeArticles.js` | 同一記事の多重表示を抑制 |
-| FS-007 | GitHub Actions で定期更新できる | `PLAN.md` / `docs/SPEC_V1.md` / update workflow | schedule / manual trigger / concurrency / pipeline invocation の境界が確認できる |
+| FS-007 | GitHub Actions で定期更新できる | `.github/workflows/update-public-data.yml` / `scripts/pipeline/update.ts` / `PLAN.md` | `tests/update-workflow.test.ts` で schedule / manual trigger / concurrency / quality gate / pipeline invocation / artifact upload の境界が確認できる |
 | FS-008 | GitHub Pages で公開できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / Pages artifact + deploy workflow | 成功した update artifact からのみ deploy する方針が確認できる |
 | FS-009 | 単一フィード失敗で全体を止めない | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / per-feed failure handling | 一部失敗の収集・publish 条件・継続条件が docs で確認できる |
 | FS-010 | 記事本文を保持しない | 設計方針 / UI | 本文表示を実装しない |

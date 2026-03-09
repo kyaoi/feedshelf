@@ -361,3 +361,9 @@
 - 理由: 正規化・dedupe・public export の core 処理と、外部 I/O を含む取得責務を分けた方がテストしやすく、既存の pipeline 契約も壊しにくいため
 - 影響: `FS-OPS-01` では workflow 追加だけでなく、必要なら feed fetch helper を最小差分で追加する前提を許容する
 
+## D-057: `FS-OPS-01` は `public/` を Pages artifact 境界として固定する
+
+- 決定: `FS-OPS-01` では `.github/workflows/update-public-data.yml` と `scripts/pipeline/update.ts` を追加し、quality gate 通過後に `public/data/` を更新したうえで `public/` 全体を `actions/upload-pages-artifact@v4` に渡す
+- 理由: deploy job をまだ導入しない段階でも、Pages へ渡す artifact boundary を先に固定しておくと `FS-OPS-02` で deploy を足しやすく、checked-in static assets と生成 JSON の責務も明確になるため
+- 影響: `FS-OPS-02` はこの artifact を deploy する job の追加に集中でき、`FS-OPS-03` は update job の失敗条件と deploy skip 条件の実装に集中できる
+
