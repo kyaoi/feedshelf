@@ -149,3 +149,18 @@ export async function main(
   const args = parseArgs(argv);
   await runPipeline(args);
 }
+
+function isDirectExecution(): boolean {
+  return (
+    typeof process.argv[1] === 'string' &&
+    path.resolve(process.argv[1]) ===
+      path.resolve(process.cwd(), 'scripts/pipeline/run.ts')
+  );
+}
+
+if (isDirectExecution()) {
+  main().catch((error: unknown) => {
+    console.error('[pipeline] failed', error);
+    process.exit(1);
+  });
+}

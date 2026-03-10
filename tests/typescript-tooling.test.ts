@@ -86,11 +86,11 @@ test('package scripts expose the quality-gate contract', () => {
   );
   assert.equal(
     packageJson.scripts['pipeline:run'],
-    'tsx scripts/pipeline/run.js',
+    'tsx scripts/pipeline/run.ts',
   );
   assert.equal(
     packageJson.scripts['pipeline:update'],
-    'tsx scripts/pipeline/update.js',
+    'tsx scripts/pipeline/update.ts',
   );
   assert.equal(packageJson.scripts.lint, 'tsx scripts/lint.ts');
   assert.equal(packageJson.scripts.test, 'tsx --test tests/*.test.ts');
@@ -108,6 +108,30 @@ test('package scripts expose the quality-gate contract', () => {
 
   const devDependencies = packageJson['devDependencies'] || {};
   assert.equal(devDependencies['@biomejs/biome'], '1.9.4');
+});
+
+test('pipeline TypeScript entrypoints execute main() when launched via tsx', () => {
+  const runEntrypoint = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const updateEntrypoint = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/update.ts'),
+    'utf8',
+  );
+
+  assert.match(runEntrypoint, /function isDirectExecution\(\): boolean/);
+  assert.match(
+    runEntrypoint,
+    /path\.resolve\(process\.argv\[1\]\)\s*===\s*path\.resolve\(process\.cwd\(\), 'scripts\/pipeline\/run\.ts'\)/,
+  );
+  assert.match(runEntrypoint, /console\.error\('\[pipeline\] failed'/);
+  assert.match(updateEntrypoint, /function isDirectExecution\(\): boolean/);
+  assert.match(
+    updateEntrypoint,
+    /path\.resolve\(process\.argv\[1\]\)\s*===\s*path\.resolve\(process\.cwd\(\), 'scripts\/pipeline\/update\.ts'\)/,
+  );
+  assert.match(updateEntrypoint, /console\.error\('\[update\] failed'/);
 });
 
 test('justfile and lefthook delegate to the intended gate entrypoints', () => {
