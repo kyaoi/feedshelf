@@ -687,3 +687,31 @@
 - 理由: Shelf-first extension は route、検索、tag 集計、contributor flow が互いに参照し合うため、コードだけ先に曲げると他タスクとの整合が崩れ、後からバグや docs 欠落として現れやすいため
 - 影響: 実装中の方針変更は「その場でコードだけ直す」のではなく、「影響分析 -> docs 更新 -> 実装更新」の順で進める
 - 影響: traceability と acceptance 条件も変更対象に含め、周辺 task へ波及する場合は `PLAN` の next steps と task 分割を見直す
+
+## D-107: tag identity は raw label ではなく compare key / URL-safe `tagId` で安定化する
+
+- 決定: `sourceTags` / `entryTags` の raw label は UI 表示に使ってよいが、tag の identity は NFKC・trim・空白縮約などを通した compare key を正本にし、公開 `tagId` はそこから決定的に導出する URL-safe key とする
+- 理由: 日本語・英語・大文字小文字・空白揺れが混在するため、raw label や英字 slug 前提のままでは tag detail の一致判定や URL が壊れやすいため
+- 影響: `tags.json.id` は必ずしも human-readable slug に固定しない
+- 影響: UI / pipeline は tag label の見た目と tag identity を分けて扱う
+
+## D-108: tag detail は `tags.json` summary と `articles.json` union filter だけで解決する
+
+- 決定: `/tags/?id=<tagId>` の summary は `tags.json` を正本にし、article 一覧は `articles.json` の `sourceTags` / `entryTags` を同じ compare rule で絞り込んだ union として構築する
+- 理由: per-tag article export を増やさなくても、tag list / tag detail / article card tag 表示を同じ公開 JSON 群で一貫して実装できるため
+- 影響: 1 件の記事が両由来で一致しても detail では 1 件として扱う
+- 影響: invalid `tagId` や 0 件の tag でも `/tags/` 自体は壊さず、tag directory と棚・search への戻り導線を表示する
+
+## D-109: `entryTags` は feed metadata 限定の best-effort 抽出とし、推測生成しない
+
+- 決定: `entryTags` は RSS / Atom の category / tag 相当 metadata から取れる場合のみ生成し、本文全文解析、AI keyword extraction、手動 article override は v1 で行わない
+- 理由: tag 契約を deterministic に保ち、source ごとの欠損差を受け入れた方が pipeline の挙動と docs の整合を保ちやすいため
+- 影響: `entryTags` 欠損は正常系として扱い、tag page / search / article card は `sourceTags` と組み合わせて成立する必要がある
+- 影響: 実装は parser から取れる metadata に閉じ、free text inference は後続フェーズへ送る
+
+## D-110: tag directory は件数と freshness を優先し、棚より上位の IA にしない
+
+- 決定: `/tags/` の directory は `articleCount` 降順、同点なら `latestSortAt` 降順、さらに同点なら `label` 昇順を基本とし、page は tag から棚・search へ戻る補助導線を常に持つ
+- 理由: tag discovery の入口としては件数と鮮度が分かる方が有用だが、tag 自体を primary dashboard にすると shelf-first IA が崩れるため
+- 影響: tag page header / detail では tag summary と recent articles を主役にし、棚への戻り CTA を secondary に置く
+- 影響: UI 実装は tag popularity と freshness を見せつつ、root や shelf を置き換えない構成を守る

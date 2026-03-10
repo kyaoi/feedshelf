@@ -177,14 +177,15 @@ Phase 6 の進め方:
 
 #### 6-C. Tag
 
-- [ ] `FS-TAG-00` `sourceTags` と `entryTags` の責務、由来、UI での扱いを docs に固定する
-- [ ] `FS-TAG-01` `/tags/` とタグ別一覧導線の route / data contract / UX を定義する
-- [ ] `FS-TAG-02` RSS / Atom metadata からの `entryTags` 抽出を best-effort 方針で実装計画化する
+- [x] `FS-TAG-00` `sourceTags` と `entryTags` の責務、由来、UI での扱いを docs に固定する
+- [x] `FS-TAG-01` `/tags/` とタグ別一覧導線の route / data contract / UX を定義する
+- [x] `FS-TAG-02` RSS / Atom metadata からの `entryTags` 抽出を best-effort 方針で実装計画化する
 
 完了条件:
 - feed に対する手動タグと、記事 metadata 由来タグの違いが docs で明確になっている
-- tag list / tag detail の route と表示要件が固定されている
+- tag list / tag detail の route、`tagId` / `label` / sorting / fallback の挙動が固定されている
 - `entryTags` が欠ける feed でも UI / search / tag pages が成立する前提が定義されている
+- per-tag export を増やさず `tags.json` + `articles.json` の再利用で実装へ進める状態になっている
 
 #### 6-D. Search
 
@@ -232,7 +233,7 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- `FS-TAG-00` として、`sourceTags` と `entryTags` の責務・由来・UI 上の扱いを docs で固定する
+- 6-D Search docs sweep として、`FS-SEARCH-00` / `FS-SEARCH-01` / `FS-SEARCH-02` をまとめて閉じる
 - Phase 6 docs task がすべて閉じるまでは `FS-UX-10` 以降の実装タスクへ進まない
 
 ## メモ
@@ -247,6 +248,7 @@ Phase 6 の進め方:
 - `FS-UX-02` では、記事カードを title → tags → source の discovery-first な優先度で再定義し、visible tag は `entryTags` 優先 + `sourceTags` 補完で軽量導出する。棚ページでは current shelf / category の繰り返し表示を必須にしない
 - `FS-UX-03` では、`/sources/` を source directory / profile として補助導線へ寄せ、root では compact な source CTA に留め、source detail から関連棚・tag・recent articles へ戻れる構成を前提にする
 - `FS-UX-04` では、narrow viewport の 1 カラム縮退、loading / empty / error の status surface、long title / long tag の wrap / clamp 方針を固定し、実装着手前に edge case を docs で閉じる
+- 6-C Tag docs sweep では、`sourceTags` と `entryTags` の責務分離、`tagId` / `label` / compare key、`/tags/` の一覧・detail・fallback、`entryTags` best-effort 抽出の境界をまとめて固定し、Tag 実装が `tags.json` + `articles.json` の再利用だけで開始できる状態にした
 - `FS-PHASE6-00` では、Phase 6 を「docs task を先に全部完了させ、その後に `*-10` 系の implementation task へ進む」運用として固定する
 - Phase 6 の最初のコード実装は docs freeze 完了後の `FS-UX-10` とし、まず route shell / root・shelf・source bridge の UI 骨格を最小差分で置き換える方針とする
 - 実装中に方向性変更が必要になった場合は、その場で実装を押し切らず、affected task / SPEC / DECISIONS / TRACEABILITY / tests / public JSON 契約への影響を確認してから docs task を挟む
