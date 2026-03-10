@@ -665,3 +665,25 @@
 - 理由: FeedShelf は日本語・英語・複合語・固有名詞が混在しやすく、タグや記事名が短い前提で設計するとモバイルで崩れやすいため
 - 影響: single-line 固定 chip や nowrap 前提 title を正本にせず、必要に応じて 2〜3 件の visible tag と複数行 title で discovery を維持する
 - 影響: 横スクロールや off-canvas overflow を許容する代わりに情報を増やす設計は採らない
+
+
+## D-104: Phase 6 は docs freeze 完了後に `*-10` 系 implementation task へ進む
+
+- 決定: Phase 6 では、まず `FS-IA-*` / `FS-UX-*` / `FS-TAG-*` / `FS-SEARCH-*` / `FS-FEED-*` / `FS-QA-*` の docs task を最後まで完了させ、その後に `FS-UX-10` / `FS-TAG-10` / `FS-SEARCH-10` / `FS-FEED-10` / `FS-QA-10` の implementation task へ進む
+- 理由: Shelf-first UI / tags / search / contributor flow は相互依存が強く、途中で実装を始めると route、public JSON、UI 優先度、acceptance 条件のズレが広がりやすいため
+- 影響: `PLAN.md` では docs task と implementation task を明確に分離し、Phase 6 の最初のコード実装は docs freeze 完了後の `FS-UX-10` とする
+- 影響: docs freeze 中は runtime / pipeline / checked-in public asset 変更を必須にしない
+
+## D-105: Phase 6 の実装順は `UX -> TAG -> SEARCH -> FEED -> QA` を基本とする
+
+- 決定: docs freeze 後の Phase 6 実装順は、`FS-UX-10`、`FS-TAG-10`、`FS-SEARCH-10`、`FS-FEED-10`、`FS-QA-10` を基本とする
+- 理由: まず棚-first な route shell と主要閲覧 surface を成立させてから、tag / search の発見導線を重ね、その後に input registry と public JSON export、最後に acceptance と migration を締めた方が差分を小さく保てるため
+- 影響: `FS-IA-*` は docs で固定した契約を後続 implementation task が消費する位置づけとし、IA 専用の先行実装タスクは必須にしない
+- 影響: `FS-FEED-10` では `data/shelves.yaml` / `data/feeds.json` / generated public JSON が Phase 6 契約に追随していることを確認する
+
+## D-106: Phase 6 実装中の方向転換は影響分析と docs 更新を先に行う
+
+- 決定: Phase 6 実装中に仕様変更や方向転換が必要になった場合は、先に affected task、`SPEC_V1`、`DECISIONS`、`TRACEABILITY`、tests、public JSON 契約、互換導線への影響を分析し、必要なら docs task を挟んでから implementation task へ戻る
+- 理由: Shelf-first extension は route、検索、tag 集計、contributor flow が互いに参照し合うため、コードだけ先に曲げると他タスクとの整合が崩れ、後からバグや docs 欠落として現れやすいため
+- 影響: 実装中の方針変更は「その場でコードだけ直す」のではなく、「影響分析 -> docs 更新 -> 実装更新」の順で進める
+- 影響: traceability と acceptance 条件も変更対象に含め、周辺 task へ波及する場合は `PLAN` の next steps と task 分割を見直す

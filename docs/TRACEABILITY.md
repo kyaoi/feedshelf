@@ -97,3 +97,7 @@
 | FS-101 | Phase 6 の主要閲覧 surface を narrow viewport で 1 カラムへ安全に縮退できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | root / shelf / source / tag / search が横スクロール前提ではなく、mobile で縦積みへ崩せる方針が docs で確認できる |
 | FS-102 | loading / empty / error を区別した status surface 契約を持てる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | empty と error の copy / 次アクションが分かれ、pipeline 未実行や fetch failure を誤認しない方針が docs で確認できる |
 | FS-103 | long title / long tag を card hierarchy を壊さず吸収できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | wrap / clamp / visible tag 数制限などで card や chip list が横溢れしない方針が docs で確認できる |
+
+| FS-104 | Phase 6 の docs task と implementation task を `PLAN` 上で分離できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | docs freeze 完了前は `*-10` 系実装へ進まないことが docs で確認できる |
+| FS-105 | docs freeze 後の Phase 6 実装順を `UX -> TAG -> SEARCH -> FEED -> QA` として追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `FS-UX-10` から `FS-QA-10` までの順序と責務が docs で確認できる |
+| FS-106 | Phase 6 実装中の方向転換時に影響分析と docs 更新を先に行う運用を追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` | affected task / docs / tests / public JSON 契約への影響確認が必要条件として docs で確認できる |
