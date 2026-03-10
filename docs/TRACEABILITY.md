@@ -67,3 +67,16 @@
 | FS-063 | pre-commit / CI failure 時に working tree を保持したまま diffship 修正ループへ渡せる | `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `tests/dx-docs-sync.test.ts` | `tests/dx-docs-sync.test.ts` で stash 前提にしない運用、`git rev-parse HEAD`、failure log、README からの導線が同期していることを確認できる |
 | FS-064 | DX の docs / workflow / traceability 契約を継続的に同期できる | `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` / `.github/workflows/ci.yml` / `.github/workflows/update-public-data.yml` / `tests/dx-docs-sync.test.ts` | `tests/dx-docs-sync.test.ts` で routine CI と update / deploy の境界、`pnpm run ci` / `check:fast`、failure handling の docs 契約、Phase DX 完了状態が確認できる |
 | FS-065 | `tsx` で直接起動する pipeline CLI が no-op にならず `main()` を実行できる | `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / `tests/typescript-tooling.test.ts` / `docs/DECISIONS.md` | TS entrypoint 自身に direct-execution guard があり、script 契約と self-execution が tests で確認できる |
+| FS-066 | FeedShelf を shelf-first な読み物棚として再定義できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | Phase 6 planning に「新着ダッシュボードではなく discovery-first な読み物棚」と明記されている |
+| FS-067 | GitHub Pages 単一サイトの中で棚ページを root-level route として提供できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `PLAN.md` | `/<shelfId>/` と固定補助 route (`/tags/`, `/search/`, `/sources/`) の方針が docs で確認できる |
+| FS-068 | 棚定義と source 定義を別 registry として管理できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `PLAN.md` | `data/shelves.yaml` と `data/feeds.json` の責務分離が docs で確認できる |
+| FS-069 | source を複数棚へ所属させる契約を `shelfIds[]` として定義できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `category` ではなく配列の `shelfIds[]` を採る方針が docs で確認できる |
+| FS-070 | source に手動タグを付与して discovery に活用できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `feeds.json.tags` が curator-managed tag として定義されている |
+| FS-071 | RSS / Atom metadata 由来の記事タグを best-effort で扱える | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `PLAN.md` | `entryTags` が optional / best-effort metadata として定義されている |
+| FS-072 | ルート `/` を棚カタログとして再設計できる | `PLAN.md` / `docs/SPEC_V1.md` | ルートの表示責務が棚一覧・説明・検索導線に移ることが docs で確認できる |
+| FS-073 | `/<shelfId>/` を棚別の主要導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページの責務（概要・記事一覧・関連 tag / source 導線）が docs で確認できる |
+| FS-074 | `/tags/` を tag discovery 導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | tag list / tag detail の方針が docs で確認できる |
+| FS-075 | `/search/` で title / sourceName / tags を対象に静的検索できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | build-time search index + client-side 検索の方針が docs で確認できる |
+| FS-076 | tag / search / shelf を支える公開 JSON 契約を追加定義できる | `docs/SPEC_V1.md` / `PLAN.md` | `shelves.json` / `tags.json` / `search-index.json` の候補 shape と責務が docs で確認できる |
+| FS-077 | 有料APIや外部AIに依存せず Phase 6 を完了できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 無料運用制約と非採用項目が docs で確認できる |
+| FS-078 | 将来の contributor が source 追加・新棚追加・tag付与を docs から辿れる | `PLAN.md` / `docs/SPEC_V1.md` | Phase 6 に contribution rule と QA 観点を残すタスクが含まれている |

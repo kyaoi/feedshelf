@@ -472,3 +472,70 @@
 - 決定: `package.json` から `tsx scripts/pipeline/run.ts` / `tsx scripts/pipeline/update.ts` を直接起動する entrypoint は、各 `.ts` ファイル自身が `process.argv[1]` と自分の相対パスを比較する direct-execution guard を持ち、CLI 実行時だけ `main()` を呼ぶ
 - 理由: exported `main()` だけを持つ module のままだと `tsx <file>.ts` 実行時に no-op となり、`public/data` が生成されない不具合を防げないため。`import.meta` や `require.main` への固定は現行の TypeScript / runtime 組み合わせと相性差分があるため避ける
 - 影響: require 用の `.js` wrapper に依存しなくても、CLI の正本挙動は `.ts` entrypoint 単体で完結している必要がある。guard は current tsconfig と `tsx` / Node 実行の両方で安全に評価できる形に保つ
+
+
+## D-075: V1 の残スコープは shelf-first な読み物棚体験へ拡張する
+
+- 決定: 旧MVPで成立している「新着 / カテゴリ / 媒体」中心の静的RSSリーダーを、Phase 6 では「興味を惹かれる記事へ出会いやすい読み物棚」へ拡張する
+- 理由: 今後の V1 では速報性や一覧効率よりも、惹かれる記事を見つけやすい discovery-first な体験を優先したいため
+- 影響: ルート `/` の役割、主要 route、公開 JSON、tag / search、contributor flow まで含めて再設計対象になる
+
+## D-076: GitHub Pages は単一サイト構成を維持し、棚ページはその内部 route として提供する
+
+- 決定: GitHub Pages は 1 repo / 1 site を前提とし、`/<shelfId>/` を root-level shelf route、`/tags/` / `/search/` / `/sources/` を固定補助 route として提供する
+- 理由: 無料・低運用負荷を維持しつつ、棚ごとの閲覧体験を分けたいが、repo 分割や複数 Pages site 運用は採らないため
+- 影響: 棚追加は新しい Pages site 追加ではなく、単一 build artifact 内の route 追加として扱う
+
+## D-077: 棚定義と source 定義は `data/shelves.yaml` と `data/feeds.json` に責務分離する
+
+- 決定: 棚定義は `data/shelves.yaml`、source 定義は `data/feeds.json` に置き、両者の責務を分離する
+- 理由: 棚の説明と route policy、source の取得設定と所属情報を分けた方が contributor が扱いやすく、将来の拡張にも耐えやすいため
+- 影響: `feeds.json` に UI 文章や custom path を混ぜず、`shelves.yaml` は site / shelf の説明だけを持つ
+
+## D-078: 棚 route は `shelfId` から決定し、v1 では custom path を持たない
+
+- 決定: v1 の棚 route は `/<shelfId>/` とし、`path` のような自由入力フィールドは導入しない
+- 理由: GitHub Pages 単一サイト構成と相性がよく、route 競合や設定ミスを避けやすいため
+- 影響: `shelfId` は安定した ASCII kebab-case とし、reserved ids との衝突を docs で管理する
+
+## D-079: source の棚所属は `category` ではなく `shelfIds[]` で表現する
+
+- 決定: source の棚所属は `category` 文字列ではなく `shelfIds[]` 配列で持つ
+- 理由: 1 source が複数棚に属する余地を残しつつ、`category` という語の曖昧さを避けたいため
+- 影響: loader / contract / UI / search は `shelfIds[]` を前提に設計する。単数・複数の union は導入しない
+
+## D-080: `feeds.json.tags` は source に対する手動キュレーションタグとする
+
+- 決定: `data/feeds.json` の `tags` は feed / source に手で付与する curator-managed tag とする
+- 理由: source の性格や棚の雰囲気を安定して表現でき、source 追加時の意図共有にも使いやすいため
+- 影響: UI では source 補助情報、tag page、search 対象の 1 つとして扱える
+
+## D-081: 記事ごとの `entryTags` は RSS / Atom metadata から best-effort で抽出する
+
+- 決定: 記事ごとのタグは RSS / Atom metadata に category / tag 相当がある場合のみ `entryTags` として保持し、取れない場合は空配列とする
+- 理由: 一部 feed では metadata が利用できる一方で、全 feed での一貫性は保証できないため
+- 影響: tag page と search は `entryTags` 欠損に依存せず成立する必要がある
+
+## D-082: Phase 6 でも無料運用を維持し、有料API・外部AI・外部検索基盤は採用しない
+
+- 決定: Phase 6 の棚・tag・search 拡張でも、有料API、外部AI、外部検索基盤、常設バックエンドは導入しない
+- 理由: GitHub Pages + GitHub Actions の無料寄り・低運用負荷という v1 の前提を崩さないため
+- 影響: tag 生成は手動または RSS / Atom metadata 由来に限定し、検索は build-time index + client-side で実装する
+
+## D-083: 検索は title / sourceName / sourceTags / entryTags を対象にした静的検索とする
+
+- 決定: v1 の検索対象は title / sourceName / sourceTags / entryTags を基本とし、build-time に search index を生成して client-side で検索する
+- 理由: 棚や tag から辿る discovery 体験を補完しつつ、無料・静的運用を維持できるため
+- 影響: title 一致を主とし、tag / source 名一致は補助スコアとして扱う設計候補を取る
+
+## D-084: tag page は sourceTags と entryTags の両方を discovery 導線として扱う
+
+- 決定: v1 の tag page では source 手動タグと記事 metadata 由来タグの両方を導線に載せてよい
+- 理由: tag の由来は異なっても、ユーザーにとっては「興味軸から辿る入口」として統合されている方が使いやすいため
+- 影響: tag summary では両由来タグを集計してよいが、実装上は sourceTags / entryTags を別フィールドで保持する
+
+## D-085: source 導線は残すが、主役は shelf / tag / search とする
+
+- 決定: `/sources/` は補助導線として維持してよいが、V1 extension 後の主役導線は `/`, `/<shelfId>/`, `/tags/`, `/search/` とする
+- 理由: 既存実装の価値を保ちながらも、読み物棚としての体験中心を明確にしたいため
+- 影響: source page は残ってもよいが、トップや棚ページの情報設計では source 一覧を主役にしない
