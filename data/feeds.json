@@ -1,14 +1,5 @@
 [
   {
-    "id": "mainichi-select",
-    "name": "毎日新聞 セレクトRSS",
-    "category": "日本ニュース",
-    "feedUrl": "https://mainichi.jp/rss/etc/select.rss",
-    "siteUrl": "https://mainichi.jp/",
-    "language": "ja",
-    "enabled": true
-  },
-  {
     "id": "itmedia-news",
     "name": "ITmedia NEWS 新着",
     "category": "日本IT",
@@ -27,29 +18,11 @@
     "enabled": true
   },
   {
-    "id": "internet-watch",
-    "name": "INTERNET Watch",
-    "category": "日本IT",
-    "feedUrl": "https://internet.watch.impress.co.jp/data/rss/1.0/iw/feed.rdf",
-    "siteUrl": "https://internet.watch.impress.co.jp/",
-    "language": "ja",
-    "enabled": true
-  },
-  {
     "id": "openai-news",
     "name": "OpenAI News",
     "category": "AI",
     "feedUrl": "https://openai.com/news/rss.xml",
     "siteUrl": "https://openai.com/news/",
-    "language": "en",
-    "enabled": true
-  },
-  {
-    "id": "science-news",
-    "name": "Science News",
-    "category": "科学",
-    "feedUrl": "https://www.science.org/rss/news_current.xml",
-    "siteUrl": "https://www.science.org/news",
     "language": "en",
     "enabled": true
   },
