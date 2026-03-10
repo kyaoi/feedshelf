@@ -644,3 +644,24 @@
 - 決定: `/sources/` の directory / profile は `sources.json` の summary object を正本にし、source detail の article 一覧は `articles.json` の `sourceId` 絞り込みで解決する
 - 理由: source page のためだけに `sources/<id>.json` や curated source registry を増やすより、既存 public JSON の責務を保った方が最小差分で安全なため
 - 影響: source page 実装は既存の公開 JSON 契約だけで進められ、pipeline 追加変更を初期必須にしなくてよい
+
+## D-101: Phase 6 の主要閲覧 surface は narrow viewport で 1 カラムへ安全に縮退する
+
+- 決定: root / shelf / source / tag / search の主要閲覧 surface は narrow viewport では 1 カラムを基本とし、複数カラムや横並び要素は縦積みへ安全に縮退できる前提を取る
+- 理由: discovery-first な UI はモバイルでも成立する必要があり、横スクロールや固定幅カード前提のままでは棚・tag・検索導線が破綻しやすいため
+- 影響: article card の image / meta / tag / stats は narrow viewport で縦積みへ送ってよく、touch target と可読性を優先する
+- 影響: v1 では desktop 専用の dense dashboard を正本にせず、まず 1 カラムで読みやすいことを満たす
+
+## D-102: loading / empty / error は同一 status surface 契約で扱い、empty と error を混同しない
+
+- 決定: fetch 中、0件、fetch 失敗、pipeline 未実行は同一の status surface 契約で表現してよいが、empty と error は copy / visual tone / 次アクションを分ける
+- 理由: 静的サイトでは「データがまだない」のか「壊れている」のかが分かりにくくなりやすく、誤った文言は UX と運用判断の両方を悪化させるため
+- 影響: empty state では別棚・別tag・別source への回遊や次回生成待ちを案内し、error state では再読込や pipeline / static server 確認へ誘導する
+- 影響: loading は layout shift を抑えた軽量な status / skeleton で十分とし、派手な演出を必須にしない
+
+## D-103: long title / long tag は横溢れさせず、card の優先順位を守る
+
+- 決定: article card や chip list では long title / long tag を wrap / clamp / compact chip 数制限で吸収し、1 件の長文が panel 幅を押し広げたり、重要な supporting info を画面外へ押し出したりしないようにする
+- 理由: FeedShelf は日本語・英語・複合語・固有名詞が混在しやすく、タグや記事名が短い前提で設計するとモバイルで崩れやすいため
+- 影響: single-line 固定 chip や nowrap 前提 title を正本にせず、必要に応じて 2〜3 件の visible tag と複数行 title で discovery を維持する
+- 影響: 横スクロールや off-canvas overflow を許容する代わりに情報を増やす設計は採らない

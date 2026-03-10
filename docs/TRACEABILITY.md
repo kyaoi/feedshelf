@@ -94,3 +94,6 @@
 | FS-098 | `/sources/` を source directory / profile として補助導線に位置づけられる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | source page が棚・tag・検索の補助 route であり、探索の開始地点ではないことを docs で確認できる |
 | FS-099 | source detail から関連棚・tag・recent articles へ戻れる UI を設計できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `/sources/?id=...` が source identity 確認だけで終わらず、`shelfIds` / `tags` / recent articles を通じて再探索できることを docs で確認できる |
 | FS-100 | source page を既存 `sources.json` / `articles.json` だけで構成できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | per-source detail JSON を増やさず、summary と article filter の再利用で `/sources/` を実装できることを docs で確認できる |
+| FS-101 | Phase 6 の主要閲覧 surface を narrow viewport で 1 カラムへ安全に縮退できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | root / shelf / source / tag / search が横スクロール前提ではなく、mobile で縦積みへ崩せる方針が docs で確認できる |
+| FS-102 | loading / empty / error を区別した status surface 契約を持てる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | empty と error の copy / 次アクションが分かれ、pipeline 未実行や fetch failure を誤認しない方針が docs で確認できる |
+| FS-103 | long title / long tag を card hierarchy を壊さず吸収できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | wrap / clamp / visible tag 数制限などで card や chip list が横溢れしない方針が docs で確認できる |
