@@ -576,3 +576,17 @@
 - 理由: 無料・静的運用のまま検索を成立させつつ、検索専用 JSON に full article payload を二重保持しないため
 - 影響: client-side search は `search-index.json` で match / score / sort 候補を作り、`articleId` をキーに `articles.json` へ解決する
 - 影響: v1 では外部検索基盤や server-side query API を導入しない
+
+## D-091: ルート `/` は全体新着ページではなく棚カタログを主役にする
+
+- 決定: ルート `/` の主役は「全記事の新着一覧」ではなく、site intro と棚カード一覧から成る棚カタログとする
+- 理由: Phase 6 で優先したいのは速報性より discovery-first な導線であり、最初の画面で「どの棚を見るべきか」が伝わる方が product 価値に合うため
+- 影響: root の source 一覧・全体新着一覧は残してもよいが、情報階層上は棚カード一覧より下位の補助セクションとして扱う
+- 影響: root の first view では検索導線と主要棚を優先し、「カテゴリ / 媒体 / 新着を全部並べる dashboard」へ戻さない
+
+## D-092: root の棚カタログは `shelves.yaml` 順の棚カードを正本にする
+
+- 決定: root の棚カード順は件数順や freshest 順ではなく `data/shelves.yaml` の棚定義順を基本とし、各カードは `title` / `description` / `articleCount` / `sourceCount` / `latestSortAt` / optional `sampleTags` を表示候補とする
+- 理由: FeedShelf の棚は単なる集計結果ではなく curator が意図を持って並べる導線であり、root は「今多い順」より「どう巡るとよいか」を伝えるカタログであるべきため
+- 影響: `shelves.json` は root の棚カードを直接描画できる summary を持つ前提でよく、`sampleTags` のような雰囲気補助情報を optional に含めてよい
+- 影響: 棚ごとの専用画像や重い演出 asset は v1 の必須要件にせず、文章・count・freshness・tag で雰囲気を表現する

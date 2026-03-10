@@ -73,12 +73,14 @@
 | FS-069 | source を複数棚へ所属させる契約を `shelfIds[]` として定義できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `category` ではなく配列の `shelfIds[]` を採る方針が docs で確認できる |
 | FS-070 | source に手動タグを付与して discovery に活用できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `feeds.json.tags` が curator-managed tag として定義されている |
 | FS-071 | RSS / Atom metadata 由来の記事タグを best-effort で扱える | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `PLAN.md` | `entryTags` が optional / best-effort metadata として定義されている |
-| FS-072 | ルート `/` を棚カタログとして再設計できる | `PLAN.md` / `docs/SPEC_V1.md` | ルートの表示責務が棚一覧・説明・検索導線に移ることが docs で確認できる |
+| FS-072 | ルート `/` を棚カタログとして再設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | ルートの主役が全体新着ではなく site intro + 棚カード一覧になることが docs で確認できる |
 | FS-073 | `/<shelfId>/` を棚別の主要導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページの責務（概要・記事一覧・関連 tag / source 導線）が docs で確認できる |
 | FS-074 | `/tags/` を tag discovery 導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | tag list / tag detail の方針が docs で確認できる |
 | FS-075 | `/search/` で title / sourceName / tags を対象に静的検索できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | build-time search index + client-side 検索の方針が docs で確認できる |
 | FS-076 | tag / search / shelf を支える公開 JSON 契約を追加定義できる | `docs/SPEC_V1.md` / `PLAN.md` | `shelves.json` / `tags.json` / `search-index.json` の候補 shape と責務が docs で確認できる |
 | FS-081 | `articles.json` を canonical public listing とし、tag / search は lightweight summary / index で補助できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | tag detail / search result が `articles.json` を正本にし、`tags.json` / `search-index.json` が補助契約として扱われることを docs で確認できる |
+| FS-082 | root の棚カードを curator-managed な棚順で表示できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `shelves.yaml` 順を基本にした棚カード順、`articleCount` / `sourceCount` / `latestSortAt` / optional `sampleTags` が docs で確認できる |
+| FS-083 | root で tag / search / source の導線優先度を整理できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | search / tags が補助 discovery 導線、sources / 全体新着がより下位の補助導線として定義されている |
 | FS-077 | 有料APIや外部AIに依存せず Phase 6 を完了できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 無料運用制約と非採用項目が docs で確認できる |
 | FS-078 | 将来の contributor が source 追加・新棚追加・tag付与を docs から辿れる | `PLAN.md` / `docs/SPEC_V1.md` | Phase 6 に contribution rule と QA 観点を残すタスクが含まれている |
 | FS-079 | contributor が棚追加・source追加・tag付与の編集先を迷わず判断できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `shelves.yaml` と `feeds.json` の owner boundary、禁止項目、`entryTags` の derived 扱いが docs で確認できる |
