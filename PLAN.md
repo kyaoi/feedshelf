@@ -144,11 +144,13 @@ Phase 6 の進め方:
 #### 6-0. Phase 6 実行ルール
 
 - [x] `FS-PHASE6-00` Phase 6 の docs freeze / implementation split / change-management rule を docs に固定する
+- [x] `FS-PHASE6-01` Phase 6 docs の最終同期を行い、public JSON / acceptance / section structure の不整合を解消する
 
 完了条件:
 - Phase 6 の docs task と implementation task が `PLAN` 上で明確に分離されている
 - docs task 完了前は実装へ入らない運用が明記されている
 - 実装中の方向転換時に、影響分析 → docs更新 → 実装再開の順で進めるルールが残っている
+- Phase 6 の primary public JSON と acceptance の説明が `SPEC` 全体で矛盾なく同期している
 
 #### 6-A. 情報設計 / データ契約
 
@@ -234,7 +236,7 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- Phase 6 docs sweep は完了したので、最初の implementation task として `FS-UX-10` に進む
+- `FS-PHASE6-01` で Phase 6 docs の最終同期まで完了し、次の task は `FS-UX-10` とする
 - 実装中に Phase 6 契約の変更が必要になった場合は、先に affected task / docs / tests / public JSON 契約への影響を分析し、必要なら docs task を挟む
 
 ## メモ
@@ -254,6 +256,7 @@ Phase 6 の進め方:
 - 6-E Feed docs sweep では、`shelves.yaml` と `feeds.json` の編集境界、初期棚セット (`it` / `ai` / `science`)、curated source 選定基準、feed 拡張時の QA 観点をまとめて固定し、将来の contributor が registry 変更だけで安全に棚・source を増やせる状態にした
 - 6-F acceptance docs sweep では、旧MVP acceptance を baseline としつつ、最終的な v1 完了判定を shelf-first 拡張込みへ更新した。`/categories/` は compatibility route として扱い、`categories.json` は必要なら互換 export に留め、Phase 6 の primary public JSON は `articles/shelves/sources/tags/search-index/meta` を正本にする
 - `FS-PHASE6-00` では、Phase 6 を「docs task を先に全部完了させ、その後に `*-10` 系の implementation task へ進む」運用として固定する
+- `FS-PHASE6-01` では、実装前の最終点検として primary public JSON の列挙、旧MVP acceptance と最終 v1 acceptance の関係、章構造の整合を同期した
 - Phase 6 の最初のコード実装は docs freeze 完了後の `FS-UX-10` とし、まず route shell / root・shelf・source bridge の UI 骨格を最小差分で置き換える方針とする
 - 実装中に方向性変更が必要になった場合は、その場で実装を押し切らず、affected task / SPEC / DECISIONS / TRACEABILITY / tests / public JSON 契約への影響を確認してから docs task を挟む
 - GitHub Pages は単一サイト構成を維持し、棚ページは `/<shelfId>/`、タグ導線は固定 route (`/tags/`, `/search/`) で提供する前提とする
