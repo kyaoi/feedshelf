@@ -542,3 +542,17 @@
 - 決定: `/sources/` は補助導線として維持してよいが、V1 extension 後の主役導線は `/`, `/<shelfId>/`, `/tags/`, `/search/` とする
 - 理由: 既存実装の価値を保ちながらも、読み物棚としての体験中心を明確にしたいため
 - 影響: source page は残ってもよいが、トップや棚ページの情報設計では source 一覧を主役にしない
+
+## D-086: v1 の URL namespace は root-level shelf route と固定補助 route に限定する
+
+- 決定: v1 の canonical route は `/`, `/<shelfId>/`, `/tags/`, `/search/`, `/sources/` を基本とし、tag / search / source の detail state は各固定ページ上の query parameter (`?id=` / `?q=`) で表現する
+- 理由: GitHub Pages の単一サイト・静的ホスティングと相性がよく、route 木を増やしすぎずに情報設計を安定させやすいため
+- 影響: v1 では per-tag / per-source / per-article の root-level route を追加しない
+- 影響: internal link は trailing slash 付き directory route を canonical とする
+
+## D-087: `shelfId` は reserved ids と衝突させない
+
+- 決定: `shelfId` には少なくとも `tags`, `search`, `sources`, `categories`, `assets`, `data`, `index` を予約語として確保し、棚 ID に使わない
+- 理由: 固定 route、静的 asset path、公開 JSON path と棚 route の衝突を防ぎ、GitHub Pages 単一サイト前提の URL 空間を保守しやすくするため
+- 影響: 既存の `/categories/` を互換導線として残す場合も reserved route として扱う
+- 影響: 将来 root-level route を追加する場合は reserved ids 一覧と docs を同時更新する

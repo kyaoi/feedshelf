@@ -109,7 +109,7 @@ MVP として最低限必要な機能は以下とする。
 ### 6.3 タグ導線 `/tags/`
 
 - タグ一覧ページを持つ
-- v1 では詳細表示は `/tags/?id=<tagId>` のような query parameter 方式、または同等の static hosting と相性のよい固定 route で提供してよい
+- v1 の tag detail は `/tags/?id=<tagId>` を canonical とし、固定ページ + query parameter 方式で提供する
 - sourceTags と entryTags のどちらから来たタグでも一覧導線に載せてよい
 - `id` 未指定または不正な場合は、タグ選択導線と案内メッセージを表示する
 
@@ -117,13 +117,13 @@ MVP として最低限必要な機能は以下とする。
 
 - v1 の検索は client-side 実装とする
 - 検索対象は title / sourceName / sourceTags / entryTags を基本とする
-- query parameter で検索語を保持してよい
+- 検索語は `/search/?q=<query>` を canonical とする query parameter で保持する
 - 外部API、外部検索基盤、ベクトル検索、AI semantic search は導入しない
 
 ### 6.5 source 導線 `/sources/`
 
 - source 別一覧は v1 でも残してよいが、棚・タグ・検索の補助導線として位置づける
-- `?id=<sourceId>` で対象 source を切り替える方式を継続してよい
+- source detail は `/sources/?id=<sourceId>` を canonical とする query parameter 方式で継続する
 - `id` 未指定または不正な場合は、source 選択導線と案内メッセージを表示する
 
 ### 6.6 Phase 6 の実装境界
@@ -132,7 +132,10 @@ MVP として最低限必要な機能は以下とする。
 - GitHub Pages は単一サイト構成を維持し、棚ページは root-level route とする
 - v1 では棚の custom path は持たず、route は `shelfId` から決定する
 - `shelfId` と固定 route の衝突を避けるため、reserved ids を仕様で固定する
+- canonical な内部 route は trailing slash 付き directory route (`/`, `/<shelfId>/`, `/tags/`, `/search/`, `/sources/`) を基本とする
+- tag / search / source の detail state は root-level の追加 route を増やさず、固定ページ上の query parameter (`/tags/?id=...`, `/search/?q=...`, `/sources/?id=...`) で表現する
 - `/tags/` と `/search/` は補助導線だが、検索・タグページの有無に依存せず棚ページだけでも最低限の探索が成立するようにする
+- 既存の `/categories/` は互換導線として残す場合も reserved route として扱い、shelf 用には再利用しない
 - 既存の source 導線は補助的に維持してよい
 
 ### 6.7 TypeScript 移行方針
@@ -207,6 +210,38 @@ site には以下を持たせる。
 - 棚ごとの custom path / route override
 
 棚を新設したいときは、まず `shelves.yaml` に棚定義を追加し、その後必要な source 側の `shelfIds[]` を更新する。
+
+### 7.2.2 `shelfId` と URL 設計
+
+棚 route の canonical URL は `/<shelfId>/` とする。
+
+GitHub Pages 単一サイト前提で、v1 の root-level route namespace は次を基本とする。
+
+- `/`
+- `/<shelfId>/`
+- `/tags/`
+- `/search/`
+- `/sources/`
+- `/categories/`（互換導線として残す場合）
+- `/assets/`
+- `/data/`
+
+棚 ID に対する reserved ids は少なくとも以下を固定する。
+
+- `tags`
+- `search`
+- `sources`
+- `categories`
+- `assets`
+- `data`
+- `index`
+
+制約:
+
+- internal link は trailing slash 付き directory route を canonical とする
+- `shelfId` から route を自動決定し、custom path / alias は持たない
+- tag / search / source の detail state は固定ページ上の query parameter で表現し、v1 では per-tag / per-source の root-level route を増やさない
+- 将来 root-level route を追加する場合は reserved ids と docs を同時に更新する
 
 ### 7.3 `data/feeds.json`
 

@@ -81,3 +81,4 @@
 | FS-077 | 有料APIや外部AIに依存せず Phase 6 を完了できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 無料運用制約と非採用項目が docs で確認できる |
 | FS-078 | 将来の contributor が source 追加・新棚追加・tag付与を docs から辿れる | `PLAN.md` / `docs/SPEC_V1.md` | Phase 6 に contribution rule と QA 観点を残すタスクが含まれている |
 | FS-079 | contributor が棚追加・source追加・tag付与の編集先を迷わず判断できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `shelves.yaml` と `feeds.json` の owner boundary、禁止項目、`entryTags` の derived 扱いが docs で確認できる |
+| FS-080 | GitHub Pages 単一サイト前提の route namespace と reserved ids を固定できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `/<shelfId>/`、固定補助 route、trailing slash、query parameter 方針、reserved ids が docs で確認できる |
