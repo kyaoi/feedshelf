@@ -626,3 +626,21 @@
 - 理由: 限られたカード面積では「どんな記事か」が一瞬で掴めることが重要で、欠損 placeholder や dense meta row は視線を散らしやすいため
 - 影響: summary や image は optional な補助情報として扱い、欠けても title / tags / source の階層だけでカードが成立する前提になる
 - 影響: long title / long tag などの edge case は `FS-UX-04` で崩れ対策を詰める
+
+## D-098: `/sources/` は source directory / profile とし、探索の開始地点にはしない
+
+- 決定: `/sources/` は source 一覧と source profile を確認するための補助 route とし、FeedShelf の primary entry は引き続き `/`, `/<shelfId>/`, `/tags/`, `/search/` に置く
+- 理由: source 名から逆引きしたい needs は残る一方、棚-first な発見体験を source directory が再び上書きしないようにする必要があるため
+- 影響: root や棚ページで source 導線を見せる場合も、full directory を主役表示するのではなく compact CTA / short list に留める
+
+## D-099: source detail は関連 shelf / tag / recent articles へ戻れる bridge とする
+
+- 決定: `/sources/?id=<sourceId>` では source の identity を示すだけで終わらせず、その source が属する `shelfIds`、関連 `tags`、recent articles を通じて shelf-first な探索へ戻れる構成を取る
+- 理由: source page が孤立した終点になると、棚・tag・検索と分断された旧来の source-first IA に戻りやすいため
+- 影響: source profile では `shelfIds` と `tags` を visible に使ってよく、棚へのリンクを主要な secondary CTA 候補とする
+
+## D-100: source page 専用の detail JSON は追加せず、`sources.json` と `articles.json` を再利用する
+
+- 決定: `/sources/` の directory / profile は `sources.json` の summary object を正本にし、source detail の article 一覧は `articles.json` の `sourceId` 絞り込みで解決する
+- 理由: source page のためだけに `sources/<id>.json` や curated source registry を増やすより、既存 public JSON の責務を保った方が最小差分で安全なため
+- 影響: source page 実装は既存の公開 JSON 契約だけで進められ、pipeline 追加変更を初期必須にしなくてよい

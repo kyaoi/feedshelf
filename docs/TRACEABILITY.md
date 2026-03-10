@@ -91,3 +91,6 @@
 | FS-087 | 記事カードで title / visible tags / source の優先度を metadata より上に置ける | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | discovery-first な card hierarchy が docs で確認できる |
 | FS-088 | visible tag chips を既存 `entryTags` / `sourceTags` から導出できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `cardTags` のような専用公開 field を追加せず、0〜3件程度の tag 表示を構成できることが docs で確認できる |
 | FS-089 | 棚ページの記事カードで冗長な棚 / category 表示を減らし、summary 欠損時も読みやすさを保てる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページでは current shelf / category の繰り返し表示を必須にせず、summary / image が optional でも card hierarchy が成立することを docs で確認できる |
+| FS-098 | `/sources/` を source directory / profile として補助導線に位置づけられる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | source page が棚・tag・検索の補助 route であり、探索の開始地点ではないことを docs で確認できる |
+| FS-099 | source detail から関連棚・tag・recent articles へ戻れる UI を設計できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `/sources/?id=...` が source identity 確認だけで終わらず、`shelfIds` / `tags` / recent articles を通じて再探索できることを docs で確認できる |
+| FS-100 | source page を既存 `sources.json` / `articles.json` だけで構成できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | per-source detail JSON を増やさず、summary と article filter の再利用で `/sources/` を実装できることを docs で確認できる |
