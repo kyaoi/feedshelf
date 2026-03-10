@@ -300,9 +300,16 @@ test('update workflow keeps build and deploy boundaries explicit', () => {
   assert.match(workflow, /build-public-data:/);
   assert.match(workflow, /deploy-github-pages:/);
   assert.match(workflow, /actions\/checkout@v6/);
+  assert.match(workflow, /pnpm\/action-setup@v4/);
   assert.match(workflow, /actions\/setup-node@v6/);
   assert.match(workflow, /actions\/configure-pages@v5/);
   assert.match(workflow, /pnpm run ci/);
+
+  const pnpmSetupIndex = workflow.indexOf('pnpm/action-setup@v4');
+  const nodeSetupIndex = workflow.indexOf('actions/setup-node@v6');
+  assert.notEqual(pnpmSetupIndex, -1);
+  assert.notEqual(nodeSetupIndex, -1);
+  assert.equal(pnpmSetupIndex < nodeSetupIndex, true);
   assert.match(workflow, /pnpm run pipeline:update/);
   assert.match(workflow, /actions\/upload-pages-artifact@v4/);
   assert.match(workflow, /needs: build-public-data/);

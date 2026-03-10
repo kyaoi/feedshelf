@@ -19,10 +19,17 @@ test('CI workflow keeps routine quality checks separate from update and deploy f
   assert.match(workflow, /permissions:\n\s+contents: read/);
   assert.match(workflow, /quality-gate:/);
   assert.match(workflow, /actions\/checkout@v6/);
+  assert.match(workflow, /pnpm\/action-setup@v4/);
   assert.match(workflow, /actions\/setup-node@v6/);
   assert.match(workflow, /corepack enable/);
   assert.match(workflow, /pnpm install --frozen-lockfile/);
   assert.match(workflow, /pnpm run ci/);
+
+  const pnpmSetupIndex = workflow.indexOf('pnpm/action-setup@v4');
+  const nodeSetupIndex = workflow.indexOf('actions/setup-node@v6');
+  assert.notEqual(pnpmSetupIndex, -1);
+  assert.notEqual(nodeSetupIndex, -1);
+  assert.equal(pnpmSetupIndex < nodeSetupIndex, true);
 
   assert.doesNotMatch(workflow, /actions\/configure-pages@v5/);
   assert.doesNotMatch(workflow, /pnpm run pipeline:update/);
