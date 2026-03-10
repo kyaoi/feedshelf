@@ -556,3 +556,23 @@
 - 理由: 固定 route、静的 asset path、公開 JSON path と棚 route の衝突を防ぎ、GitHub Pages 単一サイト前提の URL 空間を保守しやすくするため
 - 影響: 既存の `/categories/` を互換導線として残す場合も reserved route として扱う
 - 影響: 将来 root-level route を追加する場合は reserved ids 一覧と docs を同時更新する
+
+## D-088: `articles.json` を article card 表示用の canonical public listing とする
+
+- 決定: Phase 6 の公開 JSON では `articles.json` を article card 表示用の canonical public listing とし、`tags.json` と `search-index.json` は補助 summary / index として扱う
+- 理由: article title / summary / image / source などの表示 payload を複数 JSON に二重保持すると、静的生成物の契約ズレが起きやすいため
+- 影響: 棚ページ・tag detail・search result の最終的な article card 表示は `articles.json` を正本として構築する
+
+## D-089: `tags.json` は tag list summary とし、tag detail 本体は `articles.json` から解決する
+
+- 決定: `tags.json` は tag 一覧や tag 導線向け summary に留め、tag detail の article 一覧は `articles.json` の `sourceTags` / `entryTags` を使って解決する
+- 理由: tag summary と article card payload の責務を分け、tag ごとの重複データや route ごとの専用 JSON を増やしすぎないため
+- 影響: v1 では `tags/<id>.json` のような per-tag article export を必須にしない
+- 影響: sourceTags と entryTags は集計上統合してよいが、将来は由来別 count を拡張できるようにしてよい
+
+## D-090: `search-index.json` は lightweight ranking index とし、結果表示は `articles.json` へ解決する
+
+- 決定: `search-index.json` は title / sourceName / sourceTags / entryTags に対する build-time 検索用の lightweight ranking index とし、検索結果の article card 表示 payload は `articles.json` を正本とする
+- 理由: 無料・静的運用のまま検索を成立させつつ、検索専用 JSON に full article payload を二重保持しないため
+- 影響: client-side search は `search-index.json` で match / score / sort 候補を作り、`articleId` をキーに `articles.json` へ解決する
+- 影響: v1 では外部検索基盤や server-side query API を導入しない

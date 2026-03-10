@@ -576,7 +576,9 @@ Phase 6 では次の公開 JSON を基本候補とする。
 
 - build 出力ディレクトリは引き続き `public/data/` とする
 - v1 では route ごとの shard は必須ではない
-- `articles.json` を正本としつつ、棚・タグ・検索の補助 summary / index を追加生成してよい
+- `articles.json` を article card 表示用の canonical public listing とし、棚・タグ・検索は summary / lightweight index でこれを補助する
+- `tags.json` は tag list 用 summary、`search-index.json` は検索用 summary / ranking index とし、full article card payload の正本にはしない
+- v1 の tag detail と search result は `articles.json` を主に使い、`tags.json` と `search-index.json` は導線・絞り込み・スコアリング補助に使う
 
 ### 11.3 `articles.json`
 
@@ -667,6 +669,8 @@ Phase 6 では次の公開 JSON を基本候補とする。
 - v1 では sourceTags と entryTags を同じ tag summary へ統合してよい
 - `id` は安定 slug とする
 - `label` は表示用文字列とする
+- tag detail で article 一覧を出すときは、`tags.json` 自体に full article list を持たせず、`articles.json` の `sourceTags` / `entryTags` から絞り込む前提を取ってよい
+- ただし集計上は `sourceTagArticleCount` / `entryTagArticleCount` のような由来別 count を将来拡張できる余地を残してよい
 
 ### 11.7 `search-index.json`
 
@@ -691,6 +695,8 @@ Phase 6 では次の公開 JSON を基本候補とする。
 - build 時に検索対象文字列を前処理してよい
 - v1 では client-side 検索を前提とし、検索 index は外部サービスに依存しない
 - title の一致を最優先し、tag / source 名一致は補助スコアとして扱う設計候補を採る
+- search result 表示時は `articleId` をキーに `articles.json` へ解決し、カード表示に必要な summary / image / URL などの正本は `articles.json` から取る
+- `search-index.json` は ranking / matching 用の lightweight index とし、article card 表示用の full payload を二重管理しない
 
 ### 11.8 `meta.json`
 
@@ -717,6 +723,8 @@ Phase 6 では次の公開 JSON を基本候補とする。
 ### 11.10 UI 消費側の前提
 
 - v1 の UI は `articles.json` / `shelves.json` / `sources.json` / `tags.json` / `search-index.json` / `meta.json` を基本として棚・タグ・検索を実装する
+- 棚ページと tag detail は `articles.json` を中心に組み立て、`shelves.json` / `tags.json` / `sources.json` は一覧導線や summary 表示に使う
+- search UI は `search-index.json` で match / score / sort 候補を作り、その後 `articles.json` を参照して article card を描画する
 - `summary` / `publishedAt` / `imageUrl` / `entryTags` など nullable または optional な公開項目が欠けても UI が壊れないようにする
 - UI は fetch 中、0件、fetch 失敗時の最低限表示を持つ
 - `public/data/*.json` がまだ生成されていない場合は pipeline 未実行が分かる案内を表示してよい
