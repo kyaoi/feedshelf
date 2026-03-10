@@ -590,3 +590,18 @@
 - 理由: FeedShelf の棚は単なる集計結果ではなく curator が意図を持って並べる導線であり、root は「今多い順」より「どう巡るとよいか」を伝えるカタログであるべきため
 - 影響: `shelves.json` は root の棚カードを直接描画できる summary を持つ前提でよく、`sampleTags` のような雰囲気補助情報を optional に含めてよい
 - 影響: 棚ごとの専用画像や重い演出 asset は v1 の必須要件にせず、文章・count・freshness・tag で雰囲気を表現する
+
+
+## D-093: 棚ページの first view は「概要 → 注目」を優先する
+
+- 決定: `/<shelfId>/` の first view は、少なくとも棚概要と注目記事で構成し、新着一覧や source 一覧より先に「この棚は何を見る場所か」を伝える
+- 理由: shelf-first な UI では、棚ページを開いた直後に記事の雰囲気が掴めることが discovery 体験の中心になるため
+- 影響: 棚ページは単なる source 別一覧の焼き直しではなく、概要・代表記事・新着の 3 層で構成する前提になる
+- 影響: `source` 一覧は残してよいが、棚ページの first view や主要 CTA を占有しない
+
+## D-094: 棚ページの注目記事は既存公開 JSON から導出し、専用 curated contract を必須にしない
+
+- 決定: 棚ページの注目記事は、その棚に属する `articles.json` の範囲から build-time または client-side に導出してよく、v1 では手動 curated list や per-shelf detail JSON を必須にしない
+- 理由: `FS-UX-01` の段階で新たな registry や保存契約を増やすより、既存の `articles.json` / `shelves.json` / `sources.json` を再利用する方が最小差分で安全なため
+- 影響: 注目は freshness に加えて summary / image / tag richness を使った軽量な優先付けで十分とする
+- 影響: 後続タスクは UI 実装に集中でき、棚ページのためだけの追加 JSON 生成や手動運用を初期必須にしなくてよい
