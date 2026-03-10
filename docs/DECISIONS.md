@@ -605,3 +605,24 @@
 - 理由: `FS-UX-01` の段階で新たな registry や保存契約を増やすより、既存の `articles.json` / `shelves.json` / `sources.json` を再利用する方が最小差分で安全なため
 - 影響: 注目は freshness に加えて summary / image / tag richness を使った軽量な優先付けで十分とする
 - 影響: 後続タスクは UI 実装に集中でき、棚ページのためだけの追加 JSON 生成や手動運用を初期必須にしなくてよい
+
+## D-095: 記事カードは title → tags → source の順で認知される階層を正本にする
+
+- 決定: Phase 6 の article card は metadata-first ではなく、title / visible tags / source name を主軸に構成し、公開日時や category は補助情報へ下げる
+- 理由: 棚・tag・search の主目的は詳細比較よりも「開いてみたい記事を見つける」ことであり、カード先頭に metadata pills が密集すると discovery の視線が分散しやすいため
+- 影響: title が最も強い visual weight を持ち、source / freshness は supporting info として扱う
+- 影響: 棚ページでは current shelf / category の繰り返し表示を必須にしない
+
+## D-096: 記事カードの visible tags は `entryTags` 優先 + `sourceTags` 補完で導出し、専用 field を増やさない
+
+- 決定: 記事カードに出す visible tag chips は `entryTags` を優先し、足りなければ `sourceTags` で補う軽量導出とし、`cardTags` のような専用公開 field は v1 で追加しない
+- 理由: 既存 public JSON を再利用したまま記事ごとの topical cue を確保でき、source の性格タグも discovery 補助として自然に再利用できるため
+- 影響: tag chips は 0〜3 件程度の compact 表示でよく、重複は除外する
+- 影響: pipeline / UI は既存 `articles.json` だけで article card の tag 表示を構築できる
+
+## D-097: discovery-first な記事カードでは余白を情報階層のために使い、summary 欠損を大きく目立たせない
+
+- 決定: article card では title block / tag block / supporting meta の余白を確保し、summary が欠ける場合に大きな placeholder 文でカード面積を埋めることを必須にしない
+- 理由: 限られたカード面積では「どんな記事か」が一瞬で掴めることが重要で、欠損 placeholder や dense meta row は視線を散らしやすいため
+- 影響: summary や image は optional な補助情報として扱い、欠けても title / tags / source の階層だけでカードが成立する前提になる
+- 影響: long title / long tag などの edge case は `FS-UX-04` で崩れ対策を詰める

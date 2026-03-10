@@ -88,3 +88,6 @@
 | FS-084 | `/<shelfId>/` の first view で棚概要と注目記事を優先表示できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページの情報階層が「概要 → 注目 → 新着 → source 導線」として docs で確認できる |
 | FS-085 | 棚ページの注目記事を既存公開 JSON から導出できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `articles.json` / `shelves.json` を再利用し、注目専用 JSON や手動 curated list を初期必須にしないことが docs で確認できる |
 | FS-086 | 棚ページの source 導線を補助セクションとして位置づけられる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | source 一覧が棚ページ下位の補助導線であり、棚概要・注目・新着を主役にする方針が docs で確認できる |
+| FS-087 | 記事カードで title / visible tags / source の優先度を metadata より上に置ける | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | discovery-first な card hierarchy が docs で確認できる |
+| FS-088 | visible tag chips を既存 `entryTags` / `sourceTags` から導出できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `cardTags` のような専用公開 field を追加せず、0〜3件程度の tag 表示を構成できることが docs で確認できる |
+| FS-089 | 棚ページの記事カードで冗長な棚 / category 表示を減らし、summary 欠損時も読みやすさを保てる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページでは current shelf / category の繰り返し表示を必須にせず、summary / image が optional でも card hierarchy が成立することを docs で確認できる |
