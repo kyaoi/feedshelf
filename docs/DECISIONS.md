@@ -772,3 +772,30 @@
 - 影響: `FS-FEED-10` と `FS-QA-10` は pipeline / UI / tests でこの checklist を実装へ落とし込む必要がある
 - 影響: contributor 向け docs は「何を編集するか」だけでなく「追加後にどこが壊れやすいか」まで示す
 
+## D-119: 最終的な FeedShelf v1 完了判定は旧MVPではなく shelf-first extension 込みで行う
+
+- 決定: Phase 5 で成立した旧MVP acceptance は baseline として維持するが、最終的な FeedShelf v1 完了判定は Phase 6 の shelf-first UI / tags / search / feed contribution flow / compatibility handling を含めて行う
+- 理由: Product の目的を「静的RSSリーダー」から「興味を惹かれる記事へ出会いやすい読み物棚」へ拡張した以上、旧MVP 完了だけでは最終 v1 の完成条件を表せないため
+- 影響: `FS-QA-05` と `FS-QA-10` では、旧MVP evidence を再利用しつつ、棚カタログ・棚ページ・tag / search・source bridge・public JSON 更新を追加 acceptance として扱う
+- 影響: README や docs でも「Phase 5 でMVP完了済み」と「最終 v1 は Phase 6 込み」を区別して表現する
+
+## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
+
+- 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない
+- 理由: 既存 README・tests・公開リンク・利用者の認知がカテゴリ導線を前提にしているため、一度に route を消すと回帰や broken link が見えにくくなるため
+- 影響: `/categories/?id=<legacyCategoryId>` は legacy listing を維持しても migration helper state に寄せてもよいが、少なくとも shelf / search / sources へ戻る CTA を持つ
+- 影響: 互換導線は primary navigation へ戻さず、root や棚ページの主役を置き換えない
+
+## D-121: Phase 6 の primary public JSON は `articles/shelves/sources/tags/search-index/meta` とし、`categories.json` は互換用途に留める
+
+- 決定: shelf-first extension 後の primary public JSON は `articles.json` / `shelves.json` / `sources.json` / `tags.json` / `search-index.json` / `meta.json` を正本とし、`categories.json` は必要な場合だけ `/categories/` compatibility route を支える補助 export として残してよい
+- 理由: categories-first な export を主契約に残すと root / shelf / tag / search の source of truth が二重化し、Phase 6 実装と受け入れ確認が揺れやすくなるため
+- 影響: `FS-FEED-10` と `FS-QA-10` では、pipeline / tests / docs が primary export と compatibility export を区別して扱う必要がある
+- 影響: checked-in generated data を前提にせず、pipeline 後の `public/data/` を acceptance の確認対象とする
+
+## D-122: compatibility behavior や migration 方針を確定した task では docs / traceability / tests を同時更新する
+
+- 決定: Phase 6 実装で `/categories/` の最終的な helper state・互換 export の有無・migration copy を確定させた task では、同じ task で `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` / tests / checked-in assets を同期する
+- 理由: compatibility layer は UI・route・public JSON・README・テストの複数面へ波及するため、どれか 1 つだけ先行して変えると「実装は動くが docs と受け入れ条件が古い」状態になりやすいため
+- 影響: `FS-QA-10` は新しい shelf-first surface の受け入れ確認だけでなく、必要なら `/categories/` compatibility behavior の継続確認も担う
+- 影響: 将来 compatibility route を廃止する場合も、まず影響分析と docs 更新を行ってから実装へ進む
