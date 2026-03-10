@@ -191,6 +191,23 @@ site には以下を持たせる。
 - `id` は ASCII kebab-case を基本とする
 - reserved ids（例: `tags`, `search`, `sources`, `assets`, `data`, `index`）とは衝突させない
 
+### 7.2.1 `shelves.yaml` の責務境界
+
+`data/shelves.yaml` は棚 taxonomy と棚を紹介する文章だけを持つ。
+
+`data/shelves.yaml` に持たせるもの:
+
+- site の `title` / `description` / `intro`
+- 各 shelf の `id` / `title` / `description`
+
+`data/shelves.yaml` に持たせないもの:
+
+- `feedUrl` / `siteUrl` / `enabled` のような取得設定
+- source ごとの手動タグや記事タグ
+- 棚ごとの custom path / route override
+
+棚を新設したいときは、まず `shelves.yaml` に棚定義を追加し、その後必要な source 側の `shelfIds[]` を更新する。
+
 ### 7.3 `data/feeds.json`
 
 `data/feeds.json` は JSON 配列とし、各要素は 1 source 定義オブジェクトとする。
@@ -206,6 +223,35 @@ site には以下を持たせる。
 - `shelfIds`: 所属する棚 ID の配列
 - `tags`: source に手で付けるキュレーションタグ配列
 
+### 7.3.1 `feeds.json` の責務境界
+
+`data/feeds.json` は source registry であり、取得設定と source 単位の discovery metadata を持つ。
+
+`data/feeds.json` に持たせるもの:
+
+- `id` / `name` / `feedUrl` / `siteUrl` / `language` / `enabled`
+- source が属する `shelfIds[]`
+- source に対して手で付ける `tags[]`
+
+`data/feeds.json` に持たせないもの:
+
+- shelf の説明文や site の導入文
+- `path` のような route override
+- 記事ごとの手動 `entryTags` や article-level override
+
+source を追加・無効化・棚へ紐付け・source tag を調整したい場合は `feeds.json` を編集する。
+
+### 7.3.2 registry 間の join ルール
+
+`shelves.yaml` と `feeds.json` は `shelfIds[]` を介して join する。
+
+- 1 source は 1 つ以上の shelf に属する
+- 1 shelf は 0 個以上の source を持ちうる
+- `feeds.json.shelfIds[]` の各値は `shelves.yaml` に存在しなければならない
+- shelf を削除または rename する場合は、参照する全 source の `shelfIds[]` も同時に更新する
+
+`entryTags` は input registry ではなく、RSS / Atom metadata から pipeline が生成する article metadata として扱う。
+
 ### 7.4 スキーマ制約
 
 - `id` は ASCII の kebab-case を推奨し、URL や生成物キーに再利用できる安定値とする
@@ -217,6 +263,7 @@ site には以下を持たせる。
 - `shelfIds` は必須の配列とし、空配列を許容しない
 - `shelfIds[]` の各値は `shelves.yaml` に存在しなければならない
 - `tags` は任意の配列とし、source の性格を表す手動タグとして扱う
+- `entryTags` は `feeds.json` に手入力せず、pipeline で RSS / Atom metadata から best-effort 生成する
 - v1 では `category` のような単数ラベルではなく `shelfIds[]` を正式仕様候補とする
 
 ### 7.5 例
@@ -251,6 +298,16 @@ shelves:
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["日本IT", "開発", "クラウド"]
+  },
+  {
+    "id": "hacker-news",
+    "name": "Hacker News",
+    "feedUrl": "https://hnrss.org/frontpage",
+    "siteUrl": "https://news.ycombinator.com/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it", "science"],
+    "tags": ["海外IT", "スタートアップ"]
   }
 ]
 ```

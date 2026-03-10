@@ -80,3 +80,4 @@
 | FS-076 | tag / search / shelf を支える公開 JSON 契約を追加定義できる | `docs/SPEC_V1.md` / `PLAN.md` | `shelves.json` / `tags.json` / `search-index.json` の候補 shape と責務が docs で確認できる |
 | FS-077 | 有料APIや外部AIに依存せず Phase 6 を完了できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 無料運用制約と非採用項目が docs で確認できる |
 | FS-078 | 将来の contributor が source 追加・新棚追加・tag付与を docs から辿れる | `PLAN.md` / `docs/SPEC_V1.md` | Phase 6 に contribution rule と QA 観点を残すタスクが含まれている |
+| FS-079 | contributor が棚追加・source追加・tag付与の編集先を迷わず判断できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `shelves.yaml` と `feeds.json` の owner boundary、禁止項目、`entryTags` の derived 扱いが docs で確認できる |

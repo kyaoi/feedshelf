@@ -491,6 +491,8 @@
 - 決定: 棚定義は `data/shelves.yaml`、source 定義は `data/feeds.json` に置き、両者の責務を分離する
 - 理由: 棚の説明と route policy、source の取得設定と所属情報を分けた方が contributor が扱いやすく、将来の拡張にも耐えやすいため
 - 影響: `feeds.json` に UI 文章や custom path を混ぜず、`shelves.yaml` は site / shelf の説明だけを持つ
+- 影響: `shelves.yaml` に `feedUrl` / `siteUrl` / `enabled` / source tag のような取得設定を持たせない
+- 影響: contributor は「棚追加は `shelves.yaml`、source 追加・棚紐付け・source tag 更新は `feeds.json`」という編集境界を前提にする
 
 ## D-078: 棚 route は `shelfId` から決定し、v1 では custom path を持たない
 
@@ -515,6 +517,7 @@
 - 決定: 記事ごとのタグは RSS / Atom metadata に category / tag 相当がある場合のみ `entryTags` として保持し、取れない場合は空配列とする
 - 理由: 一部 feed では metadata が利用できる一方で、全 feed での一貫性は保証できないため
 - 影響: tag page と search は `entryTags` 欠損に依存せず成立する必要がある
+- 影響: `entryTags` は `feeds.json` や `shelves.yaml` に手入力する項目ではなく、pipeline が best-effort で導出する metadata として扱う
 
 ## D-082: Phase 6 でも無料運用を維持し、有料API・外部AI・外部検索基盤は採用しない
 
