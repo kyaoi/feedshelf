@@ -743,3 +743,32 @@
 - 理由: score の根拠を field weight ごとに決めつつ、summary / image / URL まで検索 index に複製すると JSON 契約が二重化して壊れやすいため
 - 影響: client-side search は index 上で candidate selection と scoring を行い、表示時のみ `articles.json` を参照する
 - 影響: per-query export や server-side API を導入せずに、build-time index だけで title / source / tag weighting を実装できる
+
+## D-115: contributor は棚追加・source追加・tag付与を registry 境界に沿って分離して行う
+
+- 決定: 棚追加や棚説明の更新は `data/shelves.yaml`、source 追加・無効化・棚紐付け・source manual tag 更新は `data/feeds.json` で行い、記事ごとの手動 `entryTags` や ad-hoc field は v1 で追加しない
+- 理由: contributor flow を registry 境界に沿って固定しておくと、棚 taxonomy と source 設定が混ざらず、後から見ても編集先と影響範囲を判断しやすいため
+- 影響: 一時的な feed 停止は削除より `enabled=false` を優先してよく、field 追加が必要な場合は先に docs / traceability を更新する
+- 影響: 実装は `shelves.yaml` と `feeds.json` の join 契約を前提に進め、article-level manual metadata を input registry へ逆流させない
+
+## D-116: v1 extension の初期 shelf set は `it` / `ai` / `science` の少数 broad shelf とする
+
+- 決定: Phase 6 の初期棚セットは `it`、`ai`、`science` を正本候補とし、棚数を小さく保ったまま shelf-first IA を検証する
+- 理由: 既存 source 群を無理なく移行でき、empty shelf や過剰な多重所属を避けつつ discovery-first UI のバランスを確認しやすいため
+- 影響: `itmedia-news` / `publickey` は `it`、`openai-news` は `ai`、`sciencedaily-technology` / `nasa-news` は `science` へ寄せる初期割り当てが自然となる
+- 影響: 新棚追加は tag の焼き直しではなく独立した読み方が必要な場合に限定し、少なくとも複数 source 候補か近い追加計画を持つことを推奨する
+
+## D-117: curated source 追加は stable public feed / 明確な棚適合 / duplicate 回避を優先する
+
+- 決定: 新しい source は、公開 RSS / Atom が安定しており、媒体 identity が明確で、既存 source と実質 duplicate でなく、対象 shelf の読み口に継続的に合うものを優先する
+- 理由: FeedShelf は source 数の多さよりも「棚として読めること」が重要であり、低信号や duplicate な feed を増やすと UI / search / tag summary の品質が同時に悪化しやすいため
+- 影響: 初期 curated set は 1 棚あたり少数 source から始めてよく、短期話題だけを理由に source を増やしすぎない
+- 影響: `feeds.json.tags[]` は broad tag に留め、棚名や一過性イベント名だけで埋める運用を避ける
+
+## D-118: feed expansion の QA は registry 整合性・public JSON・search / tag・UI 崩れまで確認する
+
+- 決定: 新棚 / 新source / tag 調整を行ったときの QA は、registry 整合性、duplicate feed 兆候、`shelves.json` / `sources.json` / `tags.json` / `search-index.json` への反映、tag / search 導線、long title / long tag / empty state を含む UI 崩れまで確認対象にする
+- 理由: Feed 拡張は input registry の変更に見えても、実際には public JSON と discovery surface 全体へ波及するため、source を足しただけのつもりでも検索やタグ、棚カードでバグが出やすいため
+- 影響: `FS-FEED-10` と `FS-QA-10` は pipeline / UI / tests でこの checklist を実装へ落とし込む必要がある
+- 影響: contributor 向け docs は「何を編集するか」だけでなく「追加後にどこが壊れやすいか」まで示す
+
