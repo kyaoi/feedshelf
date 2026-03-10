@@ -104,3 +104,7 @@
 | FS-108 | `/tags/?id=...` の detail を `tags.json` と `articles.json` の再利用だけで解決できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | per-tag detail export を増やさず、union filter と invalid / empty fallback を持つ tag page 契約が docs で確認できる |
 | FS-109 | `entryTags` を feed metadata 限定の best-effort 抽出として扱える | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | AI 推測や手動 article override を使わず、category / tag metadata だけで `entryTags` を生成する前提が docs で確認できる |
 | FS-110 | tag directory を件数・鮮度ベースで並べつつ shelf-first IA を保てる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `/tags/` が件数順と freshness を使う discovery 補助導線であり、棚より上位の primary IA ではないことが docs で確認できる |
+| FS-111 | 検索 query と index matching を deterministic な正規化 + 空白区切り AND 条件で追跡できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | NFKC / trim / 空白縮約 / ASCII-Latin case 差吸収と multi-term AND 条件が search 契約として docs で確認できる |
+| FS-112 | 検索順位を `title > sourceName > tags > freshness` として追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | title relevance を主軸とし、source / tags を補助 signal、同点時は freshness で解決する search ranking が docs で確認できる |
+| FS-113 | `/search/` の empty / no-result state を article dump にせず helper state として扱える | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `q` 未指定時は検索ヒントと fallback CTA を出し、0件時も page を壊さない search UI 契約が docs で確認できる |
+| FS-114 | `search-index.json` を field-separated な lightweight candidate index として再利用できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | search index が field 別比較文字列と `articleId` / `sortAt` だけを持ち、card payload は `articles.json` で解決することが docs で確認できる |

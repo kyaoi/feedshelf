@@ -715,3 +715,31 @@
 - 理由: tag discovery の入口としては件数と鮮度が分かる方が有用だが、tag 自体を primary dashboard にすると shelf-first IA が崩れるため
 - 影響: tag page header / detail では tag summary と recent articles を主役にし、棚への戻り CTA を secondary に置く
 - 影響: UI 実装は tag popularity と freshness を見せつつ、root や shelf を置き換えない構成を守る
+
+## D-111: 検索 query と index matching は deterministic な正規化 + 空白区切り AND 検索を基本とする
+
+- 決定: `/search/` の query と `search-index.json` の比較文字列は、少なくとも Unicode 正規化（NFKC）、前後空白除去、連続空白縮約、ASCII / Latin の case 差吸収を行い、multi-term query は空白区切り term の AND 条件を基本とする
+- 理由: 日本語と英語が混在する静的サイトで、言語依存 tokenizer や外部検索基盤に頼らず deterministic に実装できる最小仕様が必要なため
+- 影響: v1 の検索は形態素解析や semantic search を必須にしない
+- 影響: query が長くても field ごとの部分一致で判定でき、pipeline と UI が同じ compare rule を共有する必要がある
+
+## D-112: 検索順位は `title > sourceName > tags > freshness` を正本にする
+
+- 決定: v1 の search ranking は title 一致を最優先し、sourceName 一致を次点、sourceTags / entryTags 一致を補助 signal とし、同点時は `sortAt` 降順で解決する
+- 理由: FeedShelf の検索は「開いてみたい記事を見つける」ことが目的であり、topic 名や source 名で探しても最終的には title relevance が最も重要な判断材料になるため
+- 影響: query 未指定時や低品質な曖昧一致で fresh article を全面に押し上げすぎない
+- 影響: UI / tests / pipeline は score tie-break を deterministic に共有する
+
+## D-113: empty query / no result でも `/search/` は article dump にせず helper state を正本にする
+
+- 決定: `/search/` は `q` 未指定時に全 article を一覧表示せず、検索ヒントと棚 / tag / source への戻り導線を示す helper state を正本にし、no result 時も page を壊さず query 再編集導線を出す
+- 理由: 検索ページが実質的な「全記事新着一覧」になると shelf-first IA と責務が衝突し、初回表示の負荷と認知コストも上がるため
+- 影響: empty state と no result state は `status surface` の一種として扱えるが、文言と次アクションは分ける
+- 影響: source / tag / shelf からの deep link でも、query が消えた場合は helper state へ安全に戻せる
+
+## D-114: `search-index.json` は field-separated な比較文字列を持つ lightweight candidate index とする
+
+- 決定: `search-index.json` は `articleId` と `sortAt` に加え、title / sourceName / tags 用の比較文字列を field-separated に保持する lightweight candidate index とし、検索結果 card payload の正本は引き続き `articles.json` とする
+- 理由: score の根拠を field weight ごとに決めつつ、summary / image / URL まで検索 index に複製すると JSON 契約が二重化して壊れやすいため
+- 影響: client-side search は index 上で candidate selection と scoring を行い、表示時のみ `articles.json` を参照する
+- 影響: per-query export や server-side API を導入せずに、build-time index だけで title / source / tag weighting を実装できる

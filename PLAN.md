@@ -189,9 +189,9 @@ Phase 6 の進め方:
 
 #### 6-D. Search
 
-- [ ] `FS-SEARCH-00` 無料・静的運用前提の検索仕様を docs に固定する
-- [ ] `FS-SEARCH-01` title / sourceName / sourceTags / entryTags を対象にする build-time search index 契約を定義する
-- [ ] `FS-SEARCH-02` クライアント側検索 UI の route / query parameter / scoring の最小仕様を決める
+- [x] `FS-SEARCH-00` 無料・静的運用前提の検索仕様を docs に固定する
+- [x] `FS-SEARCH-01` title / sourceName / sourceTags / entryTags を対象にする build-time search index 契約を定義する
+- [x] `FS-SEARCH-02` クライアント側検索 UI の route / query parameter / scoring の最小仕様を決める
 
 完了条件:
 - 検索機能が paid API / external service / AI なしで成立することが docs で追跡できる
@@ -233,7 +233,7 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- 6-D Search docs sweep として、`FS-SEARCH-00` / `FS-SEARCH-01` / `FS-SEARCH-02` をまとめて閉じる
+- 6-E Feed expansion / contributor flow docs sweep として、`FS-FEED-00` / `FS-FEED-01` / `FS-FEED-02` をまとめて閉じる
 - Phase 6 docs task がすべて閉じるまでは `FS-UX-10` 以降の実装タスクへ進まない
 
 ## メモ
@@ -249,6 +249,7 @@ Phase 6 の進め方:
 - `FS-UX-03` では、`/sources/` を source directory / profile として補助導線へ寄せ、root では compact な source CTA に留め、source detail から関連棚・tag・recent articles へ戻れる構成を前提にする
 - `FS-UX-04` では、narrow viewport の 1 カラム縮退、loading / empty / error の status surface、long title / long tag の wrap / clamp 方針を固定し、実装着手前に edge case を docs で閉じる
 - 6-C Tag docs sweep では、`sourceTags` と `entryTags` の責務分離、`tagId` / `label` / compare key、`/tags/` の一覧・detail・fallback、`entryTags` best-effort 抽出の境界をまとめて固定し、Tag 実装が `tags.json` + `articles.json` の再利用だけで開始できる状態にした
+- 6-D Search docs sweep では、`/search/` の helper state / no-result state、deterministic な query 正規化、field-separated `search-index.json`、`title > sourceName > tags > freshness` の ranking をまとめて固定し、Search 実装が `search-index.json` + `articles.json` の再利用だけで開始できる状態にした
 - `FS-PHASE6-00` では、Phase 6 を「docs task を先に全部完了させ、その後に `*-10` 系の implementation task へ進む」運用として固定する
 - Phase 6 の最初のコード実装は docs freeze 完了後の `FS-UX-10` とし、まず route shell / root・shelf・source bridge の UI 骨格を最小差分で置き換える方針とする
 - 実装中に方向性変更が必要になった場合は、その場で実装を押し切らず、affected task / SPEC / DECISIONS / TRACEABILITY / tests / public JSON 契約への影響を確認してから docs task を挟む
