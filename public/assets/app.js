@@ -37,6 +37,7 @@
         const prefix = trimmed === '.' ? './data' : `${trimmed}/data`;
         return {
             articles: `${prefix}/articles.json`,
+            shelves: `${prefix}/shelves.json`,
             categories: `${prefix}/categories.json`,
             sources: `${prefix}/sources.json`,
             tags: `${prefix}/tags.json`,
@@ -63,21 +64,34 @@
     async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, } = {}) {
         const paths = buildDataPaths(basePath);
         try {
-            const [articles, categories, sources, tags, meta] = await Promise.all([
+            const [articles, shelvesResult, categories, sources, tags, meta] = await Promise.all([
                 fetchJson(fetchImpl, paths.articles),
+                fetchJson(fetchImpl, paths.shelves).catch(() => []),
                 fetchJson(fetchImpl, paths.categories),
                 fetchJson(fetchImpl, paths.sources),
                 fetchJson(fetchImpl, paths.tags),
                 fetchJson(fetchImpl, paths.meta),
             ]);
+            const parsedCategories = Array.isArray(categories)
+                ? categories
+                : [];
+            const parsedShelves = Array.isArray(shelvesResult) && shelvesResult.length > 0
+                ? shelvesResult
+                : parsedCategories.map((category) => ({
+                    id: category.id,
+                    title: category.label,
+                    description: '',
+                    articleCount: category.articleCount,
+                    sourceCount: 0,
+                    latestSortAt: category.latestSortAt,
+                }));
             return {
                 kind: 'ready',
                 articles: Array.isArray(articles)
                     ? articles
                     : [],
-                categories: Array.isArray(categories)
-                    ? categories
-                    : [],
+                shelves: parsedShelves,
+                categories: parsedCategories,
                 sources: Array.isArray(sources)
                     ? sources
                     : [],
@@ -188,7 +202,7 @@
         }
         return 0;
     }
-    function buildHomePageViewModel({ articles, categories, sources, tags, meta, }) {
+    function buildHomePageViewModel({ articles, shelves, categories, sources, tags, meta, }) {
         return {
             generatedAtText: meta && meta.generatedAt
                 ? `${formatDateTime(meta.generatedAt)} 更新`
@@ -204,13 +218,11 @@
                 },
                 {
                     label: '棚数',
-                    value: formatCount(meta && meta.categoryCount),
+                    value: formatCount(meta && (meta.shelfCount || meta.categoryCount)),
                 },
             ],
             shelves: buildShelfCards({
-                categories,
-                sources,
-                articles,
+                shelves,
             }),
             tags: buildTagNavigationItems(tags, {
                 hrefBuilder: buildTagHrefFromHome,
@@ -341,7 +353,7 @@
                 title: article.title,
                 url: externalUrl,
                 sourceName: article.sourceName,
-                categoryLabel: article.categoryLabel,
+                categoryLabel: article.categoryLabel || '',
                 publishedAtLabel: formatDateTime(article.publishedAt || article.sortAt),
                 summary: article.summary || MISSING_SUMMARY_LABEL,
                 hasSummary: Boolean(article.summary),
@@ -363,26 +375,25 @@
             isSelected: selectedCategoryId === category.id,
         }));
     }
-    function buildShelfCards({ categories, sources, articles, }) {
-        return categories.map((category) => {
-            const relatedSources = sources.filter((source) => source.categoryId
-                ? source.categoryId === category.id
-                : source.categoryLabel === category.label);
-            const latestArticle = articles.find((article) => article.categoryId === category.id);
-            const latestSortAt = latestArticle?.sortAt || category.latestSortAt || null;
-            const sourceCount = relatedSources.length;
+    function buildShelfCards({ shelves, }) {
+        return shelves.map((shelf) => {
+            const sampleTags = Array.isArray(shelf.sampleTags)
+                ? shelf.sampleTags.slice(0, 3)
+                : [];
+            const descriptionParts = [shelf.description];
+            if (sampleTags.length > 0) {
+                descriptionParts.push(`注目タグ: ${sampleTags.join(' / ')}`);
+            }
             return {
-                id: category.id,
-                title: category.label,
-                description: sourceCount > 0
-                    ? `${sourceCount} 媒体から ${category.label} の記事をまとめて追えます。現在は互換ルート経由で一覧を開きます。`
-                    : `${category.label} の記事をまとめて確認できます。現在は互換ルート経由で一覧を開きます。`,
-                countLabel: `${formatCount(category.articleCount)} 件`,
-                sourceCountLabel: `${formatCount(sourceCount)} 媒体`,
-                freshnessLabel: latestSortAt
-                    ? `${formatDateTime(latestSortAt)} 更新`
+                id: shelf.id,
+                title: shelf.title,
+                description: descriptionParts.filter(Boolean).join(' '),
+                countLabel: `${formatCount(shelf.articleCount)} 件`,
+                sourceCountLabel: `${formatCount(shelf.sourceCount)} 媒体`,
+                freshnessLabel: shelf.latestSortAt
+                    ? `${formatDateTime(shelf.latestSortAt)} 更新`
                     : '更新時刻不明',
-                href: buildCategoryHrefFromHome(category.id),
+                href: buildCategoryHrefFromHome(shelf.id),
             };
         });
     }
@@ -391,7 +402,10 @@
             id: source.id,
             name: source.name,
             countLabel: `${formatCount(source.articleCount)}件`,
-            metaLabel: [source.categoryLabel, source.language]
+            metaLabel: [
+                `${formatCount(Array.isArray(source.shelfIds) ? source.shelfIds.length : source.categoryLabel ? 1 : 0)} 棚`,
+                source.language,
+            ]
                 .filter(Boolean)
                 .join(' / '),
             href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
@@ -407,7 +421,7 @@
             isSelected: selectedTagId === tag.id,
         }));
     }
-    function buildSourcePageViewModel({ sourceId, articles, sources, categories, meta, }) {
+    function buildSourcePageViewModel({ sourceId, articles, sources, shelves, meta, }) {
         const navigationItems = buildSourceNavigationItems(sources, {
             selectedSourceId: sourceId,
             hrefBuilder: buildSourceHrefFromSourcePage,
@@ -443,15 +457,25 @@
             };
         }
         const selectedArticles = articles.filter((article) => article.sourceId === selectedSource.id);
-        const relatedCategories = categories.filter((category) => selectedSource.categoryId
-            ? category.id === selectedSource.categoryId
-            : category.label === selectedSource.categoryLabel);
-        const relatedShelves = buildCategoryNavigationItems(relatedCategories, {
+        const relatedShelves = buildCategoryNavigationItems(shelves
+            .filter((shelf) => Array.isArray(selectedSource.shelfIds)
+            ? selectedSource.shelfIds.includes(shelf.id)
+            : selectedSource.categoryId
+                ? shelf.id === selectedSource.categoryId
+                : shelf.title === selectedSource.categoryLabel)
+            .map((shelf) => ({
+            id: shelf.id,
+            label: shelf.title,
+            articleCount: shelf.articleCount,
+            latestSortAt: shelf.latestSortAt || '',
+        })), {
             hrefBuilder: buildCategoryHrefFromSourcePage,
         });
         const descriptionParts = [
-            selectedSource.categoryLabel,
             selectedSource.language,
+            Array.isArray(selectedSource.tags) && selectedSource.tags.length > 0
+                ? `タグ: ${selectedSource.tags.join(' / ')}`
+                : '',
         ].filter(Boolean);
         const description = descriptionParts.length > 0
             ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。関連する棚から一覧へ戻れます。`
@@ -503,7 +527,9 @@
                 statusMessage: UNKNOWN_CATEGORY_MESSAGE,
             };
         }
-        const selectedArticles = articles.filter((article) => article.categoryId === selectedCategory.id);
+        const selectedArticles = articles.filter((article) => Array.isArray(article.shelfIds)
+            ? article.shelfIds.includes(selectedCategory.id)
+            : article.categoryId === selectedCategory.id);
         return {
             kind: selectedArticles.length === 0 ? 'empty-category' : 'ready',
             generatedAtText: meta && meta.generatedAt
@@ -934,7 +960,7 @@
             sourceId: sourceId || '',
             articles: payload.articles,
             sources: payload.sources,
-            categories: payload.categories,
+            shelves: payload.shelves,
             meta: payload.meta,
         });
         const generatedAtElement = documentRef.getElementById('generated-at');

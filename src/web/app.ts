@@ -1,3 +1,13 @@
+interface PublicShelfSummaryLike {
+  id: string;
+  title: string;
+  description: string;
+  articleCount: number;
+  sourceCount: number;
+  latestSortAt?: string;
+  sampleTags?: string[];
+}
+
 interface PublicArticleSummaryLike {
   id: string;
   title: string;
@@ -7,8 +17,9 @@ interface PublicArticleSummaryLike {
   sortAt: string;
   sourceId: string;
   sourceName: string;
-  categoryId: string;
-  categoryLabel: string;
+  shelfIds?: string[];
+  categoryId?: string;
+  categoryLabel?: string;
   imageUrl: string | null;
   sourceTags?: string[];
   entryTags?: string[];
@@ -25,9 +36,10 @@ interface PublicSourceSummaryLike {
   id: string;
   name: string;
   articleCount: number;
-  categoryLabel: string;
   language: string;
   siteUrl?: string;
+  shelfIds?: string[];
+  categoryLabel?: string;
   categoryId?: string;
   latestSortAt?: string;
   tags?: string[];
@@ -59,6 +71,7 @@ interface PublicMetaLike {
   generatedAt?: string;
   articleCount?: number;
   sourceCount?: number;
+  shelfCount?: number;
   categoryCount?: number;
   tagCount?: number;
   searchIndexCount?: number;
@@ -67,6 +80,7 @@ interface PublicMetaLike {
 interface ReadyPayload {
   kind: 'ready';
   articles: PublicArticleSummaryLike[];
+  shelves: PublicShelfSummaryLike[];
   categories: PublicCategorySummaryLike[];
   sources: PublicSourceSummaryLike[];
   tags: PublicTagSummaryLike[];
@@ -289,6 +303,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
     return {
       articles: `${prefix}/articles.json`,
+      shelves: `${prefix}/shelves.json`,
       categories: `${prefix}/categories.json`,
       sources: `${prefix}/sources.json`,
       tags: `${prefix}/tags.json`,
@@ -329,22 +344,38 @@ type FeedShelfGlobalScope = typeof globalThis & {
     const paths = buildDataPaths(basePath);
 
     try {
-      const [articles, categories, sources, tags, meta] = await Promise.all([
-        fetchJson<unknown>(fetchImpl, paths.articles),
-        fetchJson<unknown>(fetchImpl, paths.categories),
-        fetchJson<unknown>(fetchImpl, paths.sources),
-        fetchJson<unknown>(fetchImpl, paths.tags),
-        fetchJson<unknown>(fetchImpl, paths.meta),
-      ]);
+      const [articles, shelvesResult, categories, sources, tags, meta] =
+        await Promise.all([
+          fetchJson<unknown>(fetchImpl, paths.articles),
+          fetchJson<unknown>(fetchImpl, paths.shelves).catch(() => []),
+          fetchJson<unknown>(fetchImpl, paths.categories),
+          fetchJson<unknown>(fetchImpl, paths.sources),
+          fetchJson<unknown>(fetchImpl, paths.tags),
+          fetchJson<unknown>(fetchImpl, paths.meta),
+        ]);
+
+      const parsedCategories = Array.isArray(categories)
+        ? (categories as PublicCategorySummaryLike[])
+        : [];
+      const parsedShelves =
+        Array.isArray(shelvesResult) && shelvesResult.length > 0
+          ? (shelvesResult as PublicShelfSummaryLike[])
+          : parsedCategories.map((category) => ({
+              id: category.id,
+              title: category.label,
+              description: '',
+              articleCount: category.articleCount,
+              sourceCount: 0,
+              latestSortAt: category.latestSortAt,
+            }));
 
       return {
         kind: 'ready',
         articles: Array.isArray(articles)
           ? (articles as PublicArticleSummaryLike[])
           : [],
-        categories: Array.isArray(categories)
-          ? (categories as PublicCategorySummaryLike[])
-          : [],
+        shelves: parsedShelves,
+        categories: parsedCategories,
         sources: Array.isArray(sources)
           ? (sources as PublicSourceSummaryLike[])
           : [],
@@ -495,6 +526,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
   function buildHomePageViewModel({
     articles,
+    shelves,
     categories,
     sources,
     tags,
@@ -516,13 +548,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
         },
         {
           label: '棚数',
-          value: formatCount(meta && meta.categoryCount),
+          value: formatCount(meta && (meta.shelfCount || meta.categoryCount)),
         },
       ],
       shelves: buildShelfCards({
-        categories,
-        sources,
-        articles,
+        shelves,
       }),
       tags: buildTagNavigationItems(tags, {
         hrefBuilder: buildTagHrefFromHome,
@@ -707,7 +737,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
         title: article.title,
         url: externalUrl,
         sourceName: article.sourceName,
-        categoryLabel: article.categoryLabel,
+        categoryLabel: article.categoryLabel || '',
         publishedAtLabel: formatDateTime(article.publishedAt || article.sortAt),
         summary: article.summary || MISSING_SUMMARY_LABEL,
         hasSummary: Boolean(article.summary),
@@ -741,40 +771,30 @@ type FeedShelfGlobalScope = typeof globalThis & {
   }
 
   function buildShelfCards({
-    categories,
-    sources,
-    articles,
+    shelves,
   }: {
-    categories: PublicCategorySummaryLike[];
-    sources: PublicSourceSummaryLike[];
-    articles: PublicArticleSummaryLike[];
+    shelves: PublicShelfSummaryLike[];
   }): ShelfCardViewModel[] {
-    return categories.map((category) => {
-      const relatedSources = sources.filter((source) =>
-        source.categoryId
-          ? source.categoryId === category.id
-          : source.categoryLabel === category.label,
-      );
-      const latestArticle = articles.find(
-        (article) => article.categoryId === category.id,
-      );
-      const latestSortAt =
-        latestArticle?.sortAt || category.latestSortAt || null;
-      const sourceCount = relatedSources.length;
+    return shelves.map((shelf) => {
+      const sampleTags = Array.isArray(shelf.sampleTags)
+        ? shelf.sampleTags.slice(0, 3)
+        : [];
+      const descriptionParts = [shelf.description];
+
+      if (sampleTags.length > 0) {
+        descriptionParts.push(`注目タグ: ${sampleTags.join(' / ')}`);
+      }
 
       return {
-        id: category.id,
-        title: category.label,
-        description:
-          sourceCount > 0
-            ? `${sourceCount} 媒体から ${category.label} の記事をまとめて追えます。現在は互換ルート経由で一覧を開きます。`
-            : `${category.label} の記事をまとめて確認できます。現在は互換ルート経由で一覧を開きます。`,
-        countLabel: `${formatCount(category.articleCount)} 件`,
-        sourceCountLabel: `${formatCount(sourceCount)} 媒体`,
-        freshnessLabel: latestSortAt
-          ? `${formatDateTime(latestSortAt)} 更新`
+        id: shelf.id,
+        title: shelf.title,
+        description: descriptionParts.filter(Boolean).join(' '),
+        countLabel: `${formatCount(shelf.articleCount)} 件`,
+        sourceCountLabel: `${formatCount(shelf.sourceCount)} 媒体`,
+        freshnessLabel: shelf.latestSortAt
+          ? `${formatDateTime(shelf.latestSortAt)} 更新`
           : '更新時刻不明',
-        href: buildCategoryHrefFromHome(category.id),
+        href: buildCategoryHrefFromHome(shelf.id),
       };
     });
   }
@@ -793,7 +813,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       id: source.id,
       name: source.name,
       countLabel: `${formatCount(source.articleCount)}件`,
-      metaLabel: [source.categoryLabel, source.language]
+      metaLabel: [
+        `${formatCount(Array.isArray(source.shelfIds) ? source.shelfIds.length : source.categoryLabel ? 1 : 0)} 棚`,
+        source.language,
+      ]
         .filter(Boolean)
         .join(' / '),
       href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
@@ -824,13 +847,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     sourceId,
     articles,
     sources,
-    categories,
+    shelves,
     meta,
   }: {
     sourceId: string;
     articles: PublicArticleSummaryLike[];
     sources: PublicSourceSummaryLike[];
-    categories: PublicCategorySummaryLike[];
+    shelves: PublicShelfSummaryLike[];
     meta: PublicMetaLike;
   }): SourcePageViewModel {
     const navigationItems = buildSourceNavigationItems(sources, {
@@ -875,17 +898,30 @@ type FeedShelfGlobalScope = typeof globalThis & {
     const selectedArticles = articles.filter(
       (article) => article.sourceId === selectedSource.id,
     );
-    const relatedCategories = categories.filter((category) =>
-      selectedSource.categoryId
-        ? category.id === selectedSource.categoryId
-        : category.label === selectedSource.categoryLabel,
+    const relatedShelves = buildCategoryNavigationItems(
+      shelves
+        .filter((shelf) =>
+          Array.isArray(selectedSource.shelfIds)
+            ? selectedSource.shelfIds.includes(shelf.id)
+            : selectedSource.categoryId
+              ? shelf.id === selectedSource.categoryId
+              : shelf.title === selectedSource.categoryLabel,
+        )
+        .map((shelf) => ({
+          id: shelf.id,
+          label: shelf.title,
+          articleCount: shelf.articleCount,
+          latestSortAt: shelf.latestSortAt || '',
+        })),
+      {
+        hrefBuilder: buildCategoryHrefFromSourcePage,
+      },
     );
-    const relatedShelves = buildCategoryNavigationItems(relatedCategories, {
-      hrefBuilder: buildCategoryHrefFromSourcePage,
-    });
     const descriptionParts = [
-      selectedSource.categoryLabel,
       selectedSource.language,
+      Array.isArray(selectedSource.tags) && selectedSource.tags.length > 0
+        ? `タグ: ${selectedSource.tags.join(' / ')}`
+        : '',
     ].filter(Boolean);
     const description =
       descriptionParts.length > 0
@@ -957,8 +993,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       };
     }
 
-    const selectedArticles = articles.filter(
-      (article) => article.categoryId === selectedCategory.id,
+    const selectedArticles = articles.filter((article) =>
+      Array.isArray(article.shelfIds)
+        ? article.shelfIds.includes(selectedCategory.id)
+        : article.categoryId === selectedCategory.id,
     );
 
     return {
@@ -1550,7 +1588,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       sourceId: sourceId || '',
       articles: payload.articles,
       sources: payload.sources,
-      categories: payload.categories,
+      shelves: payload.shelves,
       meta: payload.meta,
     });
     const generatedAtElement = documentRef.getElementById('generated-at');

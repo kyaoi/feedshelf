@@ -422,7 +422,7 @@ function createArticle({
     }),
     feedId: feed.id,
     sourceName: feed.name,
-    category: feed.category,
+    shelfIds: [...feed.shelfIds],
     language: feed.language,
     title,
     url,
@@ -431,7 +431,8 @@ function createArticle({
     fetchedAt: normalizeFetchedAt(fetchedAt),
     author,
     imageUrl,
-    tags,
+    sourceTags: uniqueTags(feed.tags || []),
+    entryTags: uniqueTags(tags),
     sourceItemId,
     seenInFeeds: [feed.id],
   };

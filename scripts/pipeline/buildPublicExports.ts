@@ -10,8 +10,10 @@ import type {
   PublicExports,
   PublicMeta,
   PublicSearchIndexEntry,
+  PublicShelfSummary,
   PublicSourceSummary,
   PublicTagSummary,
+  ShelvesDocument,
 } from '../../src/shared/contracts.ts';
 
 function toIsoTimestamp(value: string): string {
@@ -22,14 +24,21 @@ function toIsoTimestamp(value: string): string {
   return parsed.toISOString();
 }
 
-function toComparableTime(value: string): number {
+function toComparableTime(value: string | null | undefined): number {
+  if (!value) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
     ? Number.NEGATIVE_INFINITY
     : parsed.getTime();
 }
 
-function compareByNewestTime(left: string, right: string): number {
+function compareByNewestTime(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): number {
   const leftTime = toComparableTime(left);
   const rightTime = toComparableTime(right);
 
@@ -111,28 +120,6 @@ export function slugifyCategoryLabel(label: string): string {
   return normalized;
 }
 
-function buildCategoryRegistry(
-  articles: CanonicalArticle[],
-): Map<string, string> {
-  const categories = new Map<string, string>();
-
-  for (const article of articles) {
-    const label = article.category;
-    const id = slugifyCategoryLabel(label);
-    const existing = categories.get(id);
-
-    if (existing && existing !== label) {
-      throw new Error(
-        `Category slug collision: ${existing} vs ${label} -> ${id}`,
-      );
-    }
-
-    categories.set(id, label);
-  }
-
-  return categories;
-}
-
 function selectSortAt(article: CanonicalArticle): string {
   return article.publishedAt || article.fetchedAt;
 }
@@ -178,101 +165,135 @@ function buildPublicArticles(
         sortAt: selectSortAt(article),
         sourceId: article.feedId,
         sourceName: article.sourceName,
-        categoryId: slugifyCategoryLabel(article.category),
-        categoryLabel: article.category,
+        shelfIds: [...article.shelfIds],
         imageUrl: article.imageUrl,
-        sourceTags: uniqueTags(feed.tags || []),
-        entryTags: uniqueTags(article.tags || []),
+        sourceTags: uniqueTags(article.sourceTags || feed.tags || []),
+        entryTags: uniqueTags(article.entryTags || []),
       };
     })
     .sort(comparePublicArticles);
 }
 
-function buildCategories(
-  publicArticles: PublicArticleSummary[],
-  categoryRegistry: Map<string, string>,
-): PublicCategorySummary[] {
-  const stats = new Map<string, PublicCategorySummary>();
+function collectSampleTags(articles: PublicArticleSummary[]): string[] {
+  const stats = new Map<
+    string,
+    { label: string; count: number; latestSortAt: string }
+  >();
 
-  for (const article of publicArticles) {
-    const existing = stats.get(article.categoryId) || {
-      id: article.categoryId,
-      label: categoryRegistry.get(article.categoryId) || article.categoryLabel,
-      articleCount: 0,
-      latestSortAt: article.sortAt,
-    };
+  for (const article of articles) {
+    for (const label of uniqueTags([
+      ...(article.sourceTags || []),
+      ...(article.entryTags || []),
+    ])) {
+      const compareKey = normalizeTagCompareKey(label);
+      const existing = stats.get(compareKey) || {
+        label,
+        count: 0,
+        latestSortAt: article.sortAt,
+      };
 
-    existing.articleCount += 1;
-    if (compareByNewestTime(article.sortAt, existing.latestSortAt) < 0) {
-      existing.latestSortAt = article.sortAt;
+      existing.count += 1;
+      if (compareByNewestTime(article.sortAt, existing.latestSortAt) < 0) {
+        existing.latestSortAt = article.sortAt;
+      }
+
+      stats.set(compareKey, existing);
     }
-
-    stats.set(article.categoryId, existing);
   }
 
-  return Array.from(stats.values()).sort((left, right) => {
-    const timeOrder = compareByNewestTime(
-      left.latestSortAt,
-      right.latestSortAt,
-    );
-    if (timeOrder !== 0) {
-      return timeOrder;
-    }
+  return Array.from(stats.values())
+    .sort((left, right) => {
+      if (left.count !== right.count) {
+        return right.count - left.count;
+      }
 
-    return left.label.localeCompare(right.label, 'en');
-  });
+      const freshnessOrder = compareByNewestTime(
+        left.latestSortAt,
+        right.latestSortAt,
+      );
+      if (freshnessOrder !== 0) {
+        return freshnessOrder;
+      }
+
+      return left.label.localeCompare(right.label, 'en');
+    })
+    .slice(0, 3)
+    .map((entry) => entry.label);
 }
 
 function buildSources(
   publicArticles: PublicArticleSummary[],
   feeds: FeedDefinition[],
-  categoryRegistry: Map<string, string>,
 ): PublicSourceSummary[] {
-  const feedMap = new Map<string, FeedDefinition>(
-    feeds.map((feed) => [feed.id, feed]),
-  );
-  const stats = new Map<string, PublicSourceSummary>();
-
-  for (const article of publicArticles) {
-    const feed = feedMap.get(article.sourceId);
-    if (!feed) {
-      throw new Error(
-        `Unknown sourceId for public export: ${article.sourceId}`,
+  return feeds
+    .filter((feed) => feed.enabled)
+    .map((feed) => {
+      const relatedArticles = publicArticles.filter(
+        (article) => article.sourceId === feed.id,
       );
-    }
+      const latestSortAt = relatedArticles[0]?.sortAt || '';
 
-    const categoryId = slugifyCategoryLabel(feed.category);
-    const existing = stats.get(article.sourceId) || {
-      id: feed.id,
-      name: feed.name,
-      siteUrl: feed.siteUrl,
-      language: feed.language,
-      categoryId,
-      categoryLabel: categoryRegistry.get(categoryId) || feed.category,
-      articleCount: 0,
-      latestSortAt: article.sortAt,
-      tags: uniqueTags(feed.tags || []),
-    };
+      return {
+        id: feed.id,
+        name: feed.name,
+        siteUrl: feed.siteUrl,
+        language: feed.language,
+        shelfIds: [...feed.shelfIds],
+        articleCount: relatedArticles.length,
+        latestSortAt,
+        tags: uniqueTags(feed.tags || []),
+      };
+    })
+    .sort((left, right) => {
+      const freshnessOrder = compareByNewestTime(
+        left.latestSortAt,
+        right.latestSortAt,
+      );
+      if (freshnessOrder !== 0) {
+        return freshnessOrder;
+      }
 
-    existing.articleCount += 1;
-    if (compareByNewestTime(article.sortAt, existing.latestSortAt) < 0) {
-      existing.latestSortAt = article.sortAt;
-    }
+      return left.name.localeCompare(right.name, 'en');
+    });
+}
 
-    stats.set(article.sourceId, existing);
-  }
-
-  return Array.from(stats.values()).sort((left, right) => {
-    const timeOrder = compareByNewestTime(
-      left.latestSortAt,
-      right.latestSortAt,
+function buildShelves(
+  publicArticles: PublicArticleSummary[],
+  sources: PublicSourceSummary[],
+  shelvesDocument: ShelvesDocument,
+): PublicShelfSummary[] {
+  return shelvesDocument.shelves.map((shelf) => {
+    const relatedArticles = publicArticles.filter((article) =>
+      article.shelfIds.includes(shelf.id),
     );
-    if (timeOrder !== 0) {
-      return timeOrder;
-    }
+    const relatedSources = sources.filter((source) =>
+      source.shelfIds.includes(shelf.id),
+    );
+    const latestSortAt =
+      relatedArticles[0]?.sortAt || relatedSources[0]?.latestSortAt || '';
+    const sampleTags = collectSampleTags(relatedArticles);
 
-    return left.id.localeCompare(right.id, 'en');
+    return {
+      id: shelf.id,
+      title: shelf.title,
+      description: shelf.description,
+      articleCount: relatedArticles.length,
+      sourceCount: relatedSources.length,
+      latestSortAt,
+      ...(sampleTags.length > 0 ? { sampleTags } : {}),
+    };
   });
+}
+
+function buildCategories(
+  shelves: PublicShelfSummary[],
+): PublicCategorySummary[] {
+  return shelves.map((shelf) => ({
+    id: shelf.id,
+    label: shelf.title,
+    articleCount: shelf.articleCount,
+    latestSortAt: shelf.latestSortAt,
+  }));
 }
 
 function buildTags(publicArticles: PublicArticleSummary[]): PublicTagSummary[] {
@@ -284,36 +305,24 @@ function buildTags(publicArticles: PublicArticleSummary[]): PublicTagSummary[] {
       articleIds: Set<string>;
       sourceIds: Set<string>;
       latestSortAt: string;
-      hasSourceLabel: boolean;
     }
   >();
 
   for (const article of publicArticles) {
-    const tagCandidates = [
-      ...article.sourceTags.map((label) => ({ label, isSourceTag: true })),
-      ...article.entryTags.map((label) => ({ label, isSourceTag: false })),
-    ];
+    const labels = uniqueTags([
+      ...(article.sourceTags || []),
+      ...(article.entryTags || []),
+    ]);
 
-    for (const candidate of tagCandidates) {
-      const compareKey = normalizeTagCompareKey(candidate.label);
-      if (compareKey === '') {
-        continue;
-      }
-
+    for (const label of labels) {
+      const compareKey = normalizeTagCompareKey(label);
       const existing = stats.get(compareKey) || {
-        id: buildTagId(candidate.label),
-        label: candidate.label,
+        id: buildTagId(label),
+        label,
         articleIds: new Set<string>(),
         sourceIds: new Set<string>(),
         latestSortAt: article.sortAt,
-        hasSourceLabel: candidate.isSourceTag,
       };
-
-      if (candidate.isSourceTag && !existing.hasSourceLabel) {
-        existing.label = candidate.label;
-        existing.id = buildTagId(candidate.label);
-        existing.hasSourceLabel = true;
-      }
 
       existing.articleIds.add(article.id);
       existing.sourceIds.add(article.sourceId);
@@ -326,24 +335,24 @@ function buildTags(publicArticles: PublicArticleSummary[]): PublicTagSummary[] {
   }
 
   return Array.from(stats.values())
-    .map((tag) => ({
-      id: tag.id,
-      label: tag.label,
-      articleCount: tag.articleIds.size,
-      sourceCount: tag.sourceIds.size,
-      latestSortAt: tag.latestSortAt,
+    .map((entry) => ({
+      id: entry.id,
+      label: entry.label,
+      articleCount: entry.articleIds.size,
+      sourceCount: entry.sourceIds.size,
+      latestSortAt: entry.latestSortAt,
     }))
     .sort((left, right) => {
       if (left.articleCount !== right.articleCount) {
         return right.articleCount - left.articleCount;
       }
 
-      const timeOrder = compareByNewestTime(
+      const freshnessOrder = compareByNewestTime(
         left.latestSortAt,
         right.latestSortAt,
       );
-      if (timeOrder !== 0) {
-        return timeOrder;
+      if (freshnessOrder !== 0) {
+        return freshnessOrder;
       }
 
       return left.label.localeCompare(right.label, 'en');
@@ -357,18 +366,21 @@ function buildSearchIndex(
     const sourceTags = uniqueTags(article.sourceTags || []);
     const entryTags = uniqueTags(article.entryTags || []);
     const tagLabels = uniqueTags([...sourceTags, ...entryTags]);
+    const titleText = normalizeSearchCompareText(article.title);
+    const sourceText = normalizeSearchCompareText(article.sourceName);
+    const tagText = normalizeSearchCompareText(tagLabels.join(' '));
 
     return {
       articleId: article.id,
       sortAt: article.sortAt,
-      shelfIds: [article.categoryId],
+      shelfIds: [...article.shelfIds],
       title: article.title,
       sourceName: article.sourceName,
       sourceTags,
       entryTags,
-      titleText: normalizeSearchCompareText(article.title),
-      sourceText: normalizeSearchCompareText(article.sourceName),
-      tagText: normalizeSearchCompareText(tagLabels.join(' ')),
+      titleText,
+      sourceText,
+      tagText,
       searchText: normalizeSearchCompareText(
         [article.title, article.sourceName, ...tagLabels].join(' '),
       ),
@@ -379,39 +391,41 @@ function buildSearchIndex(
 export function buildPublicExports({
   articles,
   feeds,
+  shelves,
   generatedAt,
 }: {
   articles: CanonicalArticle[];
   feeds: FeedDefinition[];
-  generatedAt?: string;
+  shelves: ShelvesDocument;
+  generatedAt: string;
 }): PublicExports {
-  const categoryRegistry = buildCategoryRegistry(articles);
+  const normalizedGeneratedAt = toIsoTimestamp(generatedAt);
   const publicArticles = buildPublicArticles(articles, feeds);
-  const categories = buildCategories(publicArticles, categoryRegistry);
-  const sources = buildSources(publicArticles, feeds, categoryRegistry);
-  const tags = buildTags(publicArticles);
-  const searchIndex = buildSearchIndex(publicArticles);
+  const publicSources = buildSources(publicArticles, feeds);
+  const publicShelves = buildShelves(publicArticles, publicSources, shelves);
+  const publicCategories = buildCategories(publicShelves);
+  const publicTags = buildTags(publicArticles);
+  const publicSearchIndex = buildSearchIndex(publicArticles);
+
   const meta: PublicMeta = {
-    generatedAt: toIsoTimestamp(generatedAt || new Date().toISOString()),
+    generatedAt: normalizedGeneratedAt,
     articleCount: publicArticles.length,
-    sourceCount: sources.length,
-    categoryCount: categories.length,
-    tagCount: tags.length,
-    searchIndexCount: searchIndex.length,
+    sourceCount: publicSources.length,
+    shelfCount: publicShelves.length,
+    categoryCount: publicCategories.length,
+    tagCount: publicTags.length,
+    searchIndexCount: publicSearchIndex.length,
   };
 
   return {
     articles: publicArticles,
-    categories,
-    sources,
-    tags,
-    searchIndex,
+    shelves: publicShelves,
+    categories: publicCategories,
+    sources: publicSources,
+    tags: publicTags,
+    searchIndex: publicSearchIndex,
     meta,
   };
-}
-
-async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
 export async function writePublicExports({
@@ -421,33 +435,37 @@ export async function writePublicExports({
   outputDir: string;
   publicExports: PublicExports;
 }): Promise<void> {
-  const resolvedOutputDir = path.resolve(outputDir);
-  await fs.mkdir(resolvedOutputDir, { recursive: true });
+  const absoluteOutputDir = path.resolve(outputDir);
+  await fs.mkdir(absoluteOutputDir, { recursive: true });
 
   await Promise.all([
-    writeJsonFile(
-      path.join(resolvedOutputDir, 'articles.json'),
-      publicExports.articles,
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'articles.json'),
+      JSON.stringify(publicExports.articles, null, 2),
     ),
-    writeJsonFile(
-      path.join(resolvedOutputDir, 'categories.json'),
-      publicExports.categories,
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'shelves.json'),
+      JSON.stringify(publicExports.shelves, null, 2),
     ),
-    writeJsonFile(
-      path.join(resolvedOutputDir, 'sources.json'),
-      publicExports.sources,
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'categories.json'),
+      JSON.stringify(publicExports.categories, null, 2),
     ),
-    writeJsonFile(
-      path.join(resolvedOutputDir, 'tags.json'),
-      publicExports.tags,
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'sources.json'),
+      JSON.stringify(publicExports.sources, null, 2),
     ),
-    writeJsonFile(
-      path.join(resolvedOutputDir, 'search-index.json'),
-      publicExports.searchIndex,
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'tags.json'),
+      JSON.stringify(publicExports.tags, null, 2),
     ),
-    writeJsonFile(
-      path.join(resolvedOutputDir, 'meta.json'),
-      publicExports.meta,
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'search-index.json'),
+      JSON.stringify(publicExports.searchIndex, null, 2),
+    ),
+    fs.writeFile(
+      path.join(absoluteOutputDir, 'meta.json'),
+      JSON.stringify(publicExports.meta, null, 2),
     ),
   ]);
 }

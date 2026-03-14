@@ -6,7 +6,6 @@ import type { FeedDefinition } from '../../src/shared/contracts.ts';
 const REQUIRED_STRING_FIELDS = [
   'id',
   'name',
-  'category',
   'feedUrl',
   'siteUrl',
   'language',
@@ -39,6 +38,22 @@ export function validateFeedDefinition(
     throw new Error(`Feed at index ${index} must have boolean field: enabled`);
   }
 
+  if (!Array.isArray(feed.shelfIds) || feed.shelfIds.length === 0) {
+    throw new Error(
+      `Feed at index ${index} must have non-empty array field: shelfIds`,
+    );
+  }
+
+  const shelfIds = feed.shelfIds.map((shelfId, shelfIndex) => {
+    if (typeof shelfId !== 'string' || shelfId.trim() === '') {
+      throw new Error(
+        `Feed at index ${index} has invalid shelfIds[${shelfIndex}] value.`,
+      );
+    }
+
+    return shelfId;
+  });
+
   const tags = Array.isArray(feed.tags)
     ? feed.tags.map((tag, tagIndex) => {
         if (typeof tag !== 'string' || tag.trim() === '') {
@@ -54,11 +69,11 @@ export function validateFeedDefinition(
   return {
     id: feed.id as string,
     name: feed.name as string,
-    category: feed.category as string,
     feedUrl: feed.feedUrl as string,
     siteUrl: feed.siteUrl as string,
     language: feed.language as string,
     enabled: feed.enabled,
+    shelfIds,
     tags,
   };
 }

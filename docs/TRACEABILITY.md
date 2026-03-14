@@ -15,9 +15,9 @@
 | FS-011 | 静的生成データの責務を分離できる | `scripts/pipeline/buildPublicExports.ts` / `public/data/*.json` | `tests/load-feeds.test.ts` で公開 JSON shape が確認できる |
 | FS-012 | ルーティングが一覧中心で定義されている | `/` / `/categories/?id=<categoryId>` / `/sources/?id=<sourceId>` | `public/*.html` と `src/web/app.ts` の導線が仕様と一致する |
 | FS-013 | 更新失敗時も前回成功データを破壊しない | `.github/workflows/update-public-data.yml` / `scripts/pipeline/update.ts` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `tests/update-workflow.test.ts` で全件失敗時に build が落ちて deploy が走らない publish 条件が確認できる |
-| FS-014 | フィード定義を `data/feeds.json` に集約できる | `data/feeds.json` / `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/loadFeeds.js` | `tests/load-feeds.test.ts` で単一ファイルから全フィードを読める |
+| FS-014 | フィード定義を `data/feeds.json` に集約できる | `data/feeds.json` / `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/loadFeeds.js` / `scripts/pipeline/run.ts` | `tests/load-feeds.test.ts` で `shelfIds[]` を含む source registry を読める |
 | FS-015 | フィード `id` を安定キーとして扱える | schema / validation | `id` が内部参照キーとして利用できる |
-| FS-016 | フィード定義の必須項目が明示されている | docs / loader contract | 必須フィールド欠落時に検出できる |
+| FS-016 | フィード定義の必須項目が明示されている | `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/loadShelves.ts` / docs | `tests/load-feeds.test.ts` で `shelfIds[]` と `shelves.yaml` の validation が確認できる |
 | FS-017 | 記事正規化オブジェクトを共通中間表現として固定できる | `scripts/pipeline/normalizeFeed.ts` / `src/shared/contracts.ts` / docs | `tests/load-feeds.test.ts` で canonical article object の shape と責務が固定される |
 | FS-018 | 公開日時が無い記事でも `fetchedAt` を持って保持できる | `scripts/pipeline/normalizeFeed.ts` | `tests/load-feeds.test.ts` で `publishedAt` 欠損時も `fetchedAt` を保持できる |
 | FS-019 | optional 項目の欠損表現が安定している | schema / JSON contract | 単数値は `null`、配列は `[]` で揃う |
@@ -30,8 +30,8 @@
 | FS-026 | 同一記事が観測された feed 集合を `seenInFeeds[]` に保持できる | `scripts/pipeline/dedupeArticles.ts` | `tests/load-feeds.test.ts` で provenance-lite の保持が確認できる |
 | FS-027 | `articles.json` の一覧用 shape と並び順を固定できる | `scripts/pipeline/buildPublicExports.ts` | `tests/load-feeds.test.ts` で一覧用 summary object 配列が確認できる |
 | FS-028 | `categories.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.ts` | `tests/load-feeds.test.ts` で `id/label/articleCount/latestSortAt` が確認できる |
-| FS-029 | `sources.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.ts` | `tests/load-feeds.test.ts` で source summary shape が確認できる |
-| FS-030 | `meta.json` で生成時刻と件数を公開できる | `scripts/pipeline/buildPublicExports.ts` | `tests/load-feeds.test.ts` で `meta.json` の件数と生成時刻が確認できる |
+| FS-029 | `sources.json` の shape を固定できる | `scripts/pipeline/buildPublicExports.ts` / `src/shared/contracts.ts` | `tests/load-feeds.test.ts` で `shelfIds` と source tag を持つ source summary shape が確認できる |
+| FS-030 | `meta.json` で生成時刻と件数を公開できる | `scripts/pipeline/buildPublicExports.ts` / `scripts/pipeline/run.ts` | `tests/load-feeds.test.ts` で `shelfCount` を含む `meta.json` と summary 件数が確認できる |
 | FS-031 | `categoryId` を安定 slug として扱える | `scripts/pipeline/buildPublicExports.ts` | `tests/load-feeds.test.ts` で slug 化と衝突時 build error が確認できる |
 | FS-032 | Phase 2 の実行モデルを GitHub Actions-first で固定できる | workflow strategy / docs | 定期実行が標準であり公開向け CLI を必須にしないことが仕様で確認できる |
 | FS-033 | 長期保持する取得 state を cache / artifact 非依存で保存できる | state storage strategy | 永続 state の正本が repository 管理下の保存先に置かれることが仕様で確認できる |
@@ -77,7 +77,7 @@
 | FS-073 | `/<shelfId>/` を棚別の主要導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページの責務（概要・記事一覧・関連 tag / source 導線）が docs で確認できる |
 | FS-074 | `/tags/` を tag discovery 導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `public/tags/index.html` / `src/web/app.ts` / `tests/web-tags.test.ts` | `/tags/` が tag list / detail を持つ固定 discovery route として動作することを tests と実装で確認できる |
 | FS-075 | `/search/` で title / sourceName / tags を対象に静的検索できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `public/search/index.html` / `src/web/app.ts` / `tests/web-search.test.ts` | `/search/` が `q` query・helper state・no-result state・score sort を持つ client-side 検索として動作することを tests と実装で確認できる |
-| FS-076 | tag / search / shelf を支える公開 JSON 契約を追加定義できる | `docs/SPEC_V1.md` / `PLAN.md` / `src/shared/contracts.ts` / `scripts/pipeline/buildPublicExports.ts` / `scripts/pipeline/run.ts` / `tests/load-feeds.test.ts` | `tags.json` と tag-aware な `articles.json` / `sources.json` / `search-index.json` / `meta.json` 契約が tests と実装で確認できる |
+| FS-076 | tag / search / shelf を支える公開 JSON 契約を追加定義できる | `docs/SPEC_V1.md` / `PLAN.md` / `src/shared/contracts.ts` / `scripts/pipeline/buildPublicExports.ts` / `scripts/pipeline/run.ts` / `tests/load-feeds.test.ts` | `articles/shelves/sources/tags/search-index/meta` と compatibility `categories.json` 契約が tests と実装で確認できる |
 | FS-081 | `articles.json` を canonical public listing とし、tag / search は lightweight summary / index で補助できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `src/web/app.ts` / `tests/web-search.test.ts` | tag detail / search result が `articles.json` を正本にし、`tags.json` / `search-index.json` が補助契約として再利用されることを tests と実装で確認できる |
 | FS-082 | root の棚カードを curator-managed な棚順で表示できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `shelves.yaml` 順を基本にした棚カード順、`articleCount` / `sourceCount` / `latestSortAt` / optional `sampleTags` が docs で確認できる |
 | FS-083 | root で tag / search / source の導線優先度を整理できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `public/index.html` / `src/web/app.ts` / `tests/web-home.test.ts` | root が search form → tags → sources → recent の補助 discovery 導線として成立することを tests と実装で確認できる |
@@ -114,5 +114,5 @@
 | FS-118 | feed expansion 後の QA を registry だけでなく public JSON / tag / search / UI まで追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` | 新棚・新source追加時の checklist に duplicate、JSON 反映、tag / search、empty / overflow UI が含まれることを docs で確認できる |
 | FS-119 | 最終的な FeedShelf v1 完了判定を旧MVPではなく shelf-first extension 込みで追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 旧MVP acceptance を baseline としつつ、root / shelf / tag / search / source bridge / public JSON 更新を含む最終 v1 acceptance が docs で確認できる |
 | FS-120 | `/categories/` を Phase 6 の compatibility route として残し、legacy deep link を hard 404 にしない方針を追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `/categories/?id=<legacyCategoryId>` が helper state または compatibility listing として扱われ、shelf / search / sources へ戻る CTA を持つ方針が docs で確認できる |
-| FS-121 | Phase 6 の primary public JSON と compatibility export の境界を追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `articles/shelves/sources/tags/search-index/meta` が正本であり、`categories.json` は必要な場合だけ互換用途に留めることが docs で確認できる |
+| FS-121 | Phase 6 の primary public JSON と compatibility export の境界を追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `scripts/pipeline/buildPublicExports.ts` / `scripts/pipeline/run.ts` | `articles/shelves/sources/tags/search-index/meta` が正本であり、`categories.json` は compatibility export として併存することが tests と実装で確認できる |
 | FS-122 | compatibility behavior や migration 方針を確定した task で docs / traceability / tests を同時更新する運用を追跡できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` | `FS-QA-10` が shelf-first acceptance と compatibility verification の両方を担い、実装変更時に docs / tests / checked-in assets を同期することが docs で確認できる |

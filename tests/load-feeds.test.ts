@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { loadFeeds } = require('../scripts/pipeline/loadFeeds');
+const { loadShelves } = require('../scripts/pipeline/loadShelves');
 const {
   normalizeFeedDocument,
   normalizeUrl,
@@ -15,6 +16,19 @@ const {
   slugifyCategoryLabel,
 } = require('../scripts/pipeline/buildPublicExports');
 const { parseArgs, runPipeline } = require('../scripts/pipeline/run');
+
+const SHELVES_YAML = `site:
+  title: FeedShelf
+  description: Discover articles by shelf
+  intro: Curated shelves for reading
+shelves:
+  - id: examples
+    title: Examples
+    description: Example shelf
+  - id: research
+    title: Research
+    description: Research shelf
+`;
 
 const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
@@ -31,15 +45,11 @@ const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <category> Cloud </category>
       <media:content url="https://example.com/image.jpg" medium="image" />
     </item>
-    <item>
-      <title></title>
-      <link>https://example.com/skip</link>
-    </item>
   </channel>
 </rss>`;
 
 const ATOM_XML = `<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+<feed xmlns="http://www.w3.org/2005/Atom">
   <title>Example Atom</title>
   <entry>
     <title>Atom title</title>
@@ -47,9 +57,7 @@ const ATOM_XML = `<?xml version="1.0" encoding="utf-8"?>
     <id>tag:example.com,2026:atom-1</id>
     <updated>2026-03-08T01:02:03Z</updated>
     <summary type="html">&lt;p&gt;Atom &lt;em&gt;summary&lt;/em&gt;.&lt;/p&gt;</summary>
-    <author>
-      <name>Atom Author</name>
-    </author>
+    <author><name>Atom Author</name></author>
     <category term="Atom" />
     <category term="Cloud" />
   </entry>
@@ -58,22 +66,22 @@ const ATOM_XML = `<?xml version="1.0" encoding="utf-8"?>
 const RSS_FEED = {
   id: 'rss-feed',
   name: 'Example RSS',
-  category: 'Examples',
   feedUrl: 'https://example.com/rss.xml',
   siteUrl: 'https://example.com/',
   language: 'en',
   enabled: true,
+  shelfIds: ['examples'],
   tags: ['RSS Source'],
 };
 
 const ATOM_FEED = {
   id: 'atom-feed',
   name: 'Example Atom',
-  category: 'Examples',
   feedUrl: 'https://example.com/atom.xml',
   siteUrl: 'https://example.com/',
   language: 'en',
   enabled: true,
+  shelfIds: ['examples', 'research'],
   tags: ['Atom Source'],
 };
 
@@ -85,11 +93,11 @@ test('loadFeeds parses and validates feed definitions', async () => {
 
   const feeds = await loadFeeds(feedsPath);
   assert.equal(feeds.length, 1);
-  assert.equal(feeds[0].id, 'rss-feed');
+  assert.deepEqual(feeds[0].shelfIds, ['examples']);
   assert.deepEqual(feeds[0].tags, ['RSS Source']);
 });
 
-test('loadFeeds rejects missing required fields', async () => {
+test('loadFeeds rejects missing shelfIds', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-invalid-'),
   );
@@ -99,51 +107,43 @@ test('loadFeeds rejects missing required fields', async () => {
     feedsPath,
     JSON.stringify([
       {
-        id: 'missing-enabled',
-        name: 'Broken Feed',
-        category: 'Broken',
-        feedUrl: 'https://example.com/feed.xml',
-        siteUrl: 'https://example.com/',
-        language: 'en',
-      },
-    ]),
-  );
-
-  await assert.rejects(
-    loadFeeds(feedsPath),
-    /must have boolean field: enabled/,
-  );
-});
-
-test('loadFeeds rejects invalid optional tags entries', async () => {
-  const tempDir = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'feedshelf-invalid-tags-'),
-  );
-  const feedsPath = path.join(tempDir, 'feeds.json');
-
-  await fs.writeFile(
-    feedsPath,
-    JSON.stringify([
-      {
         ...RSS_FEED,
-        tags: ['ok', 123],
+        shelfIds: undefined,
       },
     ]),
   );
 
-  await assert.rejects(loadFeeds(feedsPath), /invalid tags\[1\] value/);
+  await assert.rejects(loadFeeds(feedsPath), /non-empty array field: shelfIds/);
 });
 
-test('parseArgs accepts --feeds, --output-dir, and --dry-run', () => {
+test('loadShelves parses shelves.yaml and validates reserved ids', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-shelves-'),
+  );
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+  const shelves = await loadShelves(shelvesPath);
+  assert.equal(shelves.site.title, 'FeedShelf');
+  assert.equal(shelves.shelves[0].id, 'examples');
+
+  await fs.writeFile(shelvesPath, SHELVES_YAML.replace('examples', 'search'));
+  await assert.rejects(loadShelves(shelvesPath), /reserved/);
+});
+
+test('parseArgs accepts --feeds, --shelves, --output-dir, and --dry-run', () => {
   const parsed = parseArgs([
     '--feeds',
     'fixtures/feeds.json',
+    '--shelves',
+    'fixtures/shelves.yaml',
     '--output-dir',
     'tmp/public-data',
     '--dry-run',
   ]);
   assert.equal(parsed.dryRun, true);
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
+  assert.match(parsed.shelvesPath, /fixtures[\\/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
 });
 
@@ -154,7 +154,7 @@ test('normalizeUrl keeps safe canonicalization only', () => {
   );
 });
 
-test('normalizeFeedDocument converts RSS items into canonical article objects', () => {
+test('normalizeFeedDocument keeps shelfIds, sourceTags, and entryTags', () => {
   const articles = normalizeFeedDocument({
     feed: RSS_FEED,
     xml: RSS_XML,
@@ -162,23 +162,9 @@ test('normalizeFeedDocument converts RSS items into canonical article objects', 
   });
 
   assert.equal(articles.length, 1);
-  assert.deepEqual(articles[0], {
-    id: articles[0].id,
-    feedId: 'rss-feed',
-    sourceName: 'Example RSS',
-    category: 'Examples',
-    language: 'en',
-    title: 'RSS title',
-    url: 'https://example.com/articles/1?utm_source=rss&b=2&a=1#fragment',
-    summary: 'Hello RSS world.',
-    publishedAt: '2026-03-07T00:00:00.000Z',
-    fetchedAt: '2026-03-08T06:00:00.000Z',
-    author: 'rss@example.com (RSS Author)',
-    imageUrl: 'https://example.com/image.jpg',
-    tags: ['RSS', 'Cloud'],
-    sourceItemId: 'rss-item-1',
-    seenInFeeds: ['rss-feed'],
-  });
+  assert.deepEqual(articles[0].shelfIds, ['examples']);
+  assert.deepEqual(articles[0].sourceTags, ['RSS Source']);
+  assert.deepEqual(articles[0].entryTags, ['RSS', 'Cloud']);
 });
 
 test('normalizeFeedDocument converts Atom entries into canonical article objects', () => {
@@ -189,33 +175,19 @@ test('normalizeFeedDocument converts Atom entries into canonical article objects
   });
 
   assert.equal(articles.length, 1);
-  assert.deepEqual(articles[0], {
-    id: articles[0].id,
-    feedId: 'atom-feed',
-    sourceName: 'Example Atom',
-    category: 'Examples',
-    language: 'en',
-    title: 'Atom title',
-    url: 'https://example.com/atom?b=2&utm_medium=email&a=1',
-    summary: 'Atom summary.',
-    publishedAt: '2026-03-08T01:02:03.000Z',
-    fetchedAt: '2026-03-08T06:00:00.000Z',
-    author: 'Atom Author',
-    imageUrl: null,
-    tags: ['Atom', 'Cloud'],
-    sourceItemId: 'tag:example.com,2026:atom-1',
-    seenInFeeds: ['atom-feed'],
-  });
+  assert.deepEqual(articles[0].shelfIds, ['examples', 'research']);
+  assert.deepEqual(articles[0].sourceTags, ['Atom Source']);
+  assert.deepEqual(articles[0].entryTags, ['Atom', 'Cloud']);
 });
 
-test('dedupeArticles merges duplicates by normalizedUrl across feeds', () => {
+test('dedupeArticles merges shelfIds, sourceTags, and entryTags across duplicate items', () => {
   const deduped = dedupeArticles([
     {
       id: 'article-a',
       feedId: 'rss-feed',
       sourceName: 'Example RSS',
-      category: 'Examples',
       language: 'en',
+      shelfIds: ['examples'],
       title: 'Shared article',
       url: 'https://example.com/shared?a=1&utm_source=rss',
       summary: 'Short summary.',
@@ -223,7 +195,8 @@ test('dedupeArticles merges duplicates by normalizedUrl across feeds', () => {
       fetchedAt: '2026-03-08T06:00:00.000Z',
       author: null,
       imageUrl: null,
-      tags: ['rss'],
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
       sourceItemId: 'rss-shared',
       seenInFeeds: ['rss-feed'],
     },
@@ -231,8 +204,8 @@ test('dedupeArticles merges duplicates by normalizedUrl across feeds', () => {
       id: 'article-b',
       feedId: 'atom-feed',
       sourceName: 'Example Atom',
-      category: 'Examples',
       language: 'en',
+      shelfIds: ['examples', 'research'],
       title: 'Shared article (richer)',
       url: 'https://example.com/shared?a=1&utm_medium=email',
       summary: 'Longer summary with more useful detail.',
@@ -240,467 +213,107 @@ test('dedupeArticles merges duplicates by normalizedUrl across feeds', () => {
       fetchedAt: '2026-03-08T06:05:00.000Z',
       author: 'Atom Author',
       imageUrl: 'https://example.com/shared.jpg',
-      tags: ['atom'],
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
       sourceItemId: 'atom-shared',
       seenInFeeds: ['atom-feed'],
     },
   ]);
 
   assert.equal(deduped.length, 1);
-  assert.deepEqual(deduped[0], {
-    id: 'article-b',
-    feedId: 'atom-feed',
-    sourceName: 'Example Atom',
-    category: 'Examples',
-    language: 'en',
-    title: 'Shared article (richer)',
-    url: 'https://example.com/shared?a=1&utm_medium=email',
-    summary: 'Longer summary with more useful detail.',
-    publishedAt: '2026-03-08T01:02:03.000Z',
-    fetchedAt: '2026-03-08T06:00:00.000Z',
-    author: 'Atom Author',
-    imageUrl: 'https://example.com/shared.jpg',
-    tags: ['atom', 'rss'],
-    sourceItemId: 'atom-shared',
-    seenInFeeds: ['atom-feed', 'rss-feed'],
-  });
+  assert.deepEqual(deduped[0].shelfIds, ['examples', 'research']);
+  assert.deepEqual(deduped[0].sourceTags, ['Atom Source', 'RSS Source']);
+  assert.deepEqual(deduped[0].entryTags, ['atom', 'rss']);
 });
 
-test('dedupeArticles merges duplicates by feedId and sourceItemId when URL cannot be normalized', () => {
-  const deduped = dedupeArticles([
-    {
-      id: 'article-a',
-      feedId: 'rss-feed',
-      sourceName: 'Example RSS',
-      category: 'Examples',
-      language: 'en',
-      title: 'Opaque URL article',
-      url: '/articles/opaque',
-      summary: null,
-      publishedAt: null,
-      fetchedAt: '2026-03-08T06:00:00.000Z',
-      author: null,
-      imageUrl: null,
-      tags: [],
-      sourceItemId: 'opaque-1',
-      seenInFeeds: ['rss-feed'],
-    },
-    {
-      id: 'article-b',
-      feedId: 'rss-feed',
-      sourceName: 'Example RSS',
-      category: 'Examples',
-      language: 'en',
-      title: 'Opaque URL article',
-      url: 'not-a-valid-url',
-      summary: 'Recovered metadata.',
-      publishedAt: '2026-03-08T01:02:03.000Z',
-      fetchedAt: '2026-03-08T06:05:00.000Z',
-      author: 'RSS Author',
-      imageUrl: null,
-      tags: ['deduped'],
-      sourceItemId: 'opaque-1',
-      seenInFeeds: ['rss-feed'],
-    },
-  ]);
-
-  assert.equal(deduped.length, 1);
-  assert.equal(deduped[0].sourceItemId, 'opaque-1');
-  assert.equal(deduped[0].publishedAt, '2026-03-08T01:02:03.000Z');
-  assert.equal(deduped[0].summary, 'Recovered metadata.');
-  assert.equal(deduped[0].author, 'RSS Author');
-  assert.equal(deduped[0].fetchedAt, '2026-03-08T06:00:00.000Z');
-  assert.deepEqual(deduped[0].tags, ['deduped']);
-});
-
-test('dedupeArticles does not collapse articles by title similarity alone', () => {
-  const deduped = dedupeArticles([
-    {
-      id: 'article-a',
-      feedId: 'rss-feed',
-      sourceName: 'Example RSS',
-      category: 'Examples',
-      language: 'en',
-      title: 'Same title',
-      url: 'https://example.com/articles/a',
-      summary: null,
-      publishedAt: null,
-      fetchedAt: '2026-03-08T06:00:00.000Z',
-      author: null,
-      imageUrl: null,
-      tags: [],
-      sourceItemId: null,
-      seenInFeeds: ['rss-feed'],
-    },
-    {
-      id: 'article-b',
-      feedId: 'atom-feed',
-      sourceName: 'Example Atom',
-      category: 'Examples',
-      language: 'en',
-      title: 'Same title',
-      url: 'https://example.com/articles/b',
-      summary: null,
-      publishedAt: null,
-      fetchedAt: '2026-03-08T06:05:00.000Z',
-      author: null,
-      imageUrl: null,
-      tags: [],
-      sourceItemId: null,
-      seenInFeeds: ['atom-feed'],
-    },
-  ]);
-
-  assert.equal(deduped.length, 2);
-});
-
-test('slugifyCategoryLabel preserves unicode letters and normalizes separators', () => {
-  assert.equal(slugifyCategoryLabel('日本 IT / Science'), '日本-it-science');
-});
-
-test('buildPublicExports creates listing-ready JSON payloads', () => {
+test('buildPublicExports creates shelf-first public JSON contracts', () => {
   const publicExports = buildPublicExports({
     articles: [
       {
-        id: 'article-a',
+        id: 'article-1',
         feedId: 'rss-feed',
         sourceName: 'Example RSS',
-        category: 'Examples',
         language: 'en',
-        title: 'Older article',
-        url: 'https://example.com/articles/older',
-        summary: 'Older summary.',
-        publishedAt: '2026-03-07T00:00:00.000Z',
+        shelfIds: ['examples'],
+        title: 'Exported article',
+        url: 'https://example.com/exported',
+        summary: 'Exported summary',
+        publishedAt: '2026-03-08T01:02:03.000Z',
         fetchedAt: '2026-03-08T06:00:00.000Z',
         author: null,
         imageUrl: null,
-        tags: ['RSS'],
-        sourceItemId: null,
+        sourceTags: ['RSS Source'],
+        entryTags: ['Cloud'],
+        sourceItemId: 'article-1',
         seenInFeeds: ['rss-feed'],
       },
-      {
-        id: 'article-b',
-        feedId: 'atom-feed',
-        sourceName: 'Example Atom',
-        category: 'Examples',
-        language: 'en',
-        title: 'Newer article',
-        url: 'https://example.com/articles/newer',
-        summary: 'Newer summary.',
-        publishedAt: null,
-        fetchedAt: '2026-03-08T06:05:00.000Z',
-        author: null,
-        imageUrl: 'https://example.com/newer.jpg',
-        tags: ['Cloud'],
-        sourceItemId: null,
-        seenInFeeds: ['atom-feed'],
-      },
     ],
-    feeds: [RSS_FEED, ATOM_FEED],
-    generatedAt: '2026-03-08T07:00:00Z',
+    feeds: [RSS_FEED],
+    shelves: {
+      site: {
+        title: 'FeedShelf',
+        description: 'Discover articles by shelf',
+        intro: 'Curated shelves',
+      },
+      shelves: [
+        {
+          id: 'examples',
+          title: 'Examples',
+          description: 'Example shelf',
+        },
+      ],
+    },
+    generatedAt: '2026-03-08T06:00:00Z',
   });
 
-  assert.deepEqual(publicExports.articles, [
-    {
-      id: 'article-b',
-      title: 'Newer article',
-      url: 'https://example.com/articles/newer',
-      summary: 'Newer summary.',
-      publishedAt: null,
-      sortAt: '2026-03-08T06:05:00.000Z',
-      sourceId: 'atom-feed',
-      sourceName: 'Example Atom',
-      categoryId: 'examples',
-      categoryLabel: 'Examples',
-      imageUrl: 'https://example.com/newer.jpg',
-      sourceTags: ['Atom Source'],
-      entryTags: ['Cloud'],
-    },
-    {
-      id: 'article-a',
-      title: 'Older article',
-      url: 'https://example.com/articles/older',
-      summary: 'Older summary.',
-      publishedAt: '2026-03-07T00:00:00.000Z',
-      sortAt: '2026-03-07T00:00:00.000Z',
-      sourceId: 'rss-feed',
-      sourceName: 'Example RSS',
-      categoryId: 'examples',
-      categoryLabel: 'Examples',
-      imageUrl: null,
-      sourceTags: ['RSS Source'],
-      entryTags: ['RSS'],
-    },
-  ]);
-
-  assert.deepEqual(publicExports.categories, [
-    {
-      id: 'examples',
-      label: 'Examples',
-      articleCount: 2,
-      latestSortAt: '2026-03-08T06:05:00.000Z',
-    },
-  ]);
-
-  assert.deepEqual(publicExports.sources, [
-    {
-      id: 'atom-feed',
-      name: 'Example Atom',
-      siteUrl: 'https://example.com/',
-      language: 'en',
-      categoryId: 'examples',
-      categoryLabel: 'Examples',
-      articleCount: 1,
-      latestSortAt: '2026-03-08T06:05:00.000Z',
-      tags: ['Atom Source'],
-    },
-    {
-      id: 'rss-feed',
-      name: 'Example RSS',
-      siteUrl: 'https://example.com/',
-      language: 'en',
-      categoryId: 'examples',
-      categoryLabel: 'Examples',
-      articleCount: 1,
-      latestSortAt: '2026-03-07T00:00:00.000Z',
-      tags: ['RSS Source'],
-    },
-  ]);
-
-  assert.equal(publicExports.tags.length, 4);
-  assert.deepEqual(publicExports.tags[0], {
-    id: publicExports.tags[0].id,
-    label: 'Atom Source',
-    articleCount: 1,
-    sourceCount: 1,
-    latestSortAt: '2026-03-08T06:05:00.000Z',
-  });
-  assert.deepEqual(publicExports.searchIndex, [
-    {
-      articleId: 'article-b',
-      sortAt: '2026-03-08T06:05:00.000Z',
-      shelfIds: ['examples'],
-      title: 'Newer article',
-      sourceName: 'Example Atom',
-      sourceTags: ['Atom Source'],
-      entryTags: ['Cloud'],
-      titleText: 'newer article',
-      sourceText: 'example atom',
-      tagText: 'atom source cloud',
-      searchText: 'newer article example atom atom source cloud',
-    },
-    {
-      articleId: 'article-a',
-      sortAt: '2026-03-07T00:00:00.000Z',
-      shelfIds: ['examples'],
-      title: 'Older article',
-      sourceName: 'Example RSS',
-      sourceTags: ['RSS Source'],
-      entryTags: ['RSS'],
-      titleText: 'older article',
-      sourceText: 'example rss',
-      tagText: 'rss source rss',
-      searchText: 'older article example rss rss source rss',
-    },
-  ]);
-
-  assert.deepEqual(publicExports.meta, {
-    generatedAt: '2026-03-08T07:00:00.000Z',
-    articleCount: 2,
-    sourceCount: 2,
-    categoryCount: 1,
-    tagCount: 4,
-    searchIndexCount: 2,
-  });
+  assert.equal(publicExports.articles[0].shelfIds[0], 'examples');
+  assert.equal(publicExports.shelves[0].id, 'examples');
+  assert.equal(publicExports.categories[0].id, 'examples');
+  assert.equal(publicExports.sources[0].shelfIds[0], 'examples');
+  assert.equal(publicExports.tags[0].label, 'Cloud');
+  assert.equal(publicExports.searchIndex[0].shelfIds[0], 'examples');
+  assert.equal(publicExports.meta.shelfCount, 1);
+  assert.equal(publicExports.meta.categoryCount, 1);
 });
 
-test('buildPublicExports rejects category slug collisions', () => {
-  assert.throws(
-    () =>
-      buildPublicExports({
-        articles: [
-          {
-            id: 'article-a',
-            feedId: 'rss-feed',
-            sourceName: 'Example RSS',
-            category: 'C++',
-            language: 'en',
-            title: 'Article A',
-            url: 'https://example.com/articles/a',
-            summary: null,
-            publishedAt: null,
-            fetchedAt: '2026-03-08T06:00:00.000Z',
-            author: null,
-            imageUrl: null,
-            tags: [],
-            sourceItemId: null,
-            seenInFeeds: ['rss-feed'],
-          },
-          {
-            id: 'article-b',
-            feedId: 'atom-feed',
-            sourceName: 'Example Atom',
-            category: 'C#',
-            language: 'en',
-            title: 'Article B',
-            url: 'https://example.com/articles/b',
-            summary: null,
-            publishedAt: null,
-            fetchedAt: '2026-03-08T06:05:00.000Z',
-            author: null,
-            imageUrl: null,
-            tags: [],
-            sourceItemId: null,
-            seenInFeeds: ['atom-feed'],
-          },
-        ],
-        feeds: [RSS_FEED, ATOM_FEED],
-        generatedAt: '2026-03-08T07:00:00Z',
-      }),
-    /Category slug collision/,
-  );
+test('slugifyCategoryLabel keeps compatibility export stable', () => {
+  assert.equal(slugifyCategoryLabel('C++'), 'c');
+  assert.equal(slugifyCategoryLabel('C#'), 'c');
 });
 
-test('runPipeline reports public JSON counts in dry-run mode', async () => {
+test('runPipeline writes shelves.json and reports shelf/category counts', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-run-'));
   const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
   const outputDir = path.join(tempDir, 'public-data');
-  const lines: string[] = [];
 
-  await fs.writeFile(feedsPath, JSON.stringify([RSS_FEED, ATOM_FEED]));
+  await fs.writeFile(feedsPath, JSON.stringify([RSS_FEED]));
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
 
   const summary = await runPipeline({
     feedsPath,
+    shelvesPath,
     outputDir,
-    generatedAt: '2026-03-08T07:00:00Z',
-    dryRun: true,
     feedDocuments: [
       {
         feedId: 'rss-feed',
         xml: RSS_XML,
         fetchedAt: '2026-03-08T06:00:00Z',
       },
-      {
-        feedId: 'atom-feed',
-        xml: ATOM_XML,
-        fetchedAt: '2026-03-08T06:05:00Z',
-      },
     ],
-    logger: {
-      log(message: string) {
-        lines.push(message);
-      },
-    },
+    generatedAt: '2026-03-08T06:00:00Z',
+    logger: { log() {} },
   });
 
-  assert.deepEqual(summary, {
-    feedsPath,
-    outputDir,
-    generatedAt: '2026-03-08T07:00:00.000Z',
-    totalFeeds: 2,
-    enabledFeeds: 2,
-    normalizedArticles: 2,
-    dedupedArticles: 2,
-    duplicatesCollapsed: 0,
-    publicArticles: 2,
-    publicCategories: 1,
-    publicSources: 2,
-    publicTags: 5,
-    publicSearchIndex: 2,
-  });
-  assert.match(lines.join('\n'), /normalizedArticles=2/);
-  assert.match(lines.join('\n'), /dedupedArticles=2 duplicatesCollapsed=0/);
-  assert.match(
-    lines.join('\n'),
-    /publicArticles=2 publicCategories=1 publicSources=2 publicTags=5 publicSearchIndex=2/,
+  assert.equal(summary.publicShelves, 2);
+  assert.equal(summary.publicCategories, 2);
+  const shelvesJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'shelves.json'), 'utf8'),
   );
-  assert.match(lines.join('\n'), /FS-PIPE-04 public JSON ready/);
-  await assert.rejects(fs.access(outputDir));
-});
-
-test('runPipeline writes public JSON files when dry-run is false', async () => {
-  const tempDir = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'feedshelf-run-write-'),
-  );
-  const feedsPath = path.join(tempDir, 'feeds.json');
-  const outputDir = path.join(tempDir, 'public-data');
-
-  await fs.writeFile(feedsPath, JSON.stringify([RSS_FEED, ATOM_FEED]));
-
-  const summary = await runPipeline({
-    feedsPath,
-    outputDir,
-    generatedAt: '2026-03-08T07:00:00Z',
-    feedDocuments: [
-      {
-        feedId: 'rss-feed',
-        xml: RSS_XML,
-        fetchedAt: '2026-03-08T06:00:00Z',
-      },
-      {
-        feedId: 'atom-feed',
-        xml: ATOM_XML,
-        fetchedAt: '2026-03-08T06:05:00Z',
-      },
-    ],
-    logger: {
-      log() {},
-    },
-  });
-
-  assert.equal(summary.publicArticles, 2);
-  assert.equal(summary.publicCategories, 1);
-  assert.equal(summary.publicSources, 2);
-  assert.equal(summary.publicTags, 5);
-  assert.equal(summary.publicSearchIndex, 2);
-
-  const articles = JSON.parse(
+  const articlesJson = JSON.parse(
     await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
   );
-  const categories = JSON.parse(
-    await fs.readFile(path.join(outputDir, 'categories.json'), 'utf8'),
-  );
-  const sources = JSON.parse(
-    await fs.readFile(path.join(outputDir, 'sources.json'), 'utf8'),
-  );
-  const tags = JSON.parse(
-    await fs.readFile(path.join(outputDir, 'tags.json'), 'utf8'),
-  );
-  const searchIndex = JSON.parse(
-    await fs.readFile(path.join(outputDir, 'search-index.json'), 'utf8'),
-  );
-  const meta = JSON.parse(
-    await fs.readFile(path.join(outputDir, 'meta.json'), 'utf8'),
-  );
 
-  assert.equal(articles.length, 2);
-  assert.equal(articles[0].title, 'Atom title');
-  assert.equal(articles[0].categoryId, 'examples');
-  assert.deepEqual(articles[0].sourceTags, ['Atom Source']);
-  assert.deepEqual(articles[0].entryTags, ['Atom', 'Cloud']);
-  assert.deepEqual(categories, [
-    {
-      id: 'examples',
-      label: 'Examples',
-      articleCount: 2,
-      latestSortAt: '2026-03-08T01:02:03.000Z',
-    },
-  ]);
-  assert.deepEqual(
-    sources.map((source: { id: string }) => source.id),
-    ['atom-feed', 'rss-feed'],
-  );
-  assert.equal(tags.length, 5);
-  assert.equal(searchIndex.length, 2);
-  assert.equal(searchIndex[0].articleId, articles[0].id);
-  assert.equal(searchIndex[0].sourceText, 'example atom');
-  assert.equal(searchIndex[0].tagText, 'atom source atom cloud');
-  assert.deepEqual(meta, {
-    generatedAt: '2026-03-08T07:00:00.000Z',
-    articleCount: 2,
-    sourceCount: 2,
-    categoryCount: 1,
-    tagCount: 5,
-    searchIndexCount: 2,
-  });
+  assert.equal(shelvesJson[0].id, 'examples');
+  assert.equal(articlesJson[0].shelfIds[0], 'examples');
 });

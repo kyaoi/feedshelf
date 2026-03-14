@@ -1,0 +1,15 @@
+site:
+  title: FeedShelf
+  description: 興味を惹かれる記事を見つけるための読み物棚
+  intro: ジャンル横断ではなく、読み口ごとに気になる話題を辿れる静的な記事棚
+
+shelves:
+  - id: it
+    title: IT
+    description: 日本IT・Web・開発・クラウド寄りの記事をまとめて追う棚
+  - id: ai
+    title: AI
+    description: AI モデル・API・プロダクト・応用・研究寄りの記事を眺める棚
+  - id: science
+    title: Science
+    description: 科学・宇宙・研究・技術ニュース寄りの記事をまとめて辿る棚

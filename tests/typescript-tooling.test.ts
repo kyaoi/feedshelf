@@ -70,15 +70,15 @@ test('package scripts expose the quality-gate contract', () => {
 
   assert.equal(
     packageJson.scripts.format,
-    'biome format --write biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json src scripts tests',
+    'biome format --write biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json data/shelves.yaml src scripts tests',
   );
   assert.equal(
     packageJson.scripts['format:check'],
-    'biome format biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json src scripts tests',
+    'biome format biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json data/shelves.yaml src scripts tests',
   );
   assert.equal(
     packageJson.scripts['lint:biome'],
-    'biome lint biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json src scripts tests',
+    'biome lint biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json data/shelves.yaml src scripts tests',
   );
   assert.equal(
     packageJson.scripts['check:fast'],

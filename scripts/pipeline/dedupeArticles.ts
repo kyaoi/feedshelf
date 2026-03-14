@@ -27,7 +27,7 @@ function countRichFields(article: CanonicalArticle): number {
     score += 1;
   }
 
-  if (Array.isArray(article.tags) && article.tags.length > 0) {
+  if (Array.isArray(article.entryTags) && article.entryTags.length > 0) {
     score += 1;
   }
 
@@ -131,7 +131,9 @@ export function mergeDuplicateArticles(
     summary: chooseLongerText(winner.summary, loser.summary),
     author: winner.author || loser.author || null,
     imageUrl: winner.imageUrl || loser.imageUrl || null,
-    tags: uniqueUnion(winner.tags, loser.tags),
+    shelfIds: uniqueUnion(winner.shelfIds, loser.shelfIds),
+    sourceTags: uniqueUnion(winner.sourceTags, loser.sourceTags),
+    entryTags: uniqueUnion(winner.entryTags, loser.entryTags),
     sourceItemId: winner.sourceItemId || loser.sourceItemId || null,
     seenInFeeds: uniqueUnion(winner.seenInFeeds, loser.seenInFeeds),
   };

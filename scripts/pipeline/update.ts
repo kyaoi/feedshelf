@@ -12,37 +12,26 @@ import { runPipeline } from './run.ts';
 
 export interface UpdatePipelineArgs {
   feedsPath: string;
+  shelvesPath: string;
   outputDir: string;
   dryRun: boolean;
 }
 
-export interface FetchFeedDocumentOptions {
-  fetchedAt?: string;
-  fetchImpl?: typeof fetch;
-  timeoutMs?: number;
-}
-
 export interface RunUpdatePipelineOptions extends UpdatePipelineArgs {
-  generatedAt?: string;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
+  generatedAt?: string;
 }
 
-export interface FetchEnabledFeedDocumentsResult {
-  feeds: FeedDefinition[];
-  enabledFeeds: FeedDefinition[];
-  feedDocuments: FeedDocumentInput[];
-  failedFetches: FeedFetchFailure[];
+export interface FeedFetchOptions {
+  fetchImpl?: typeof fetch;
+  fetchedAt?: string;
 }
-
-const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
-const FEED_ACCEPT_HEADER =
-  'application/atom+xml, application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1';
-const FEED_USER_AGENT = 'FeedShelf/0.1 (+https://github.com/kyaoi/feedshelf)';
 
 export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
   const args: UpdatePipelineArgs = {
     feedsPath: path.resolve(process.cwd(), 'data/feeds.json'),
+    shelvesPath: path.resolve(process.cwd(), 'data/shelves.yaml'),
     outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
   };
@@ -56,6 +45,16 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
         throw new Error('--feeds requires a path argument.');
       }
       args.feedsPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--shelves') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--shelves requires a path argument.');
+      }
+      args.shelvesPath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -85,46 +84,37 @@ export function selectEnabledFeeds(feeds: FeedDefinition[]): FeedDefinition[] {
   return feeds.filter((feed) => feed.enabled);
 }
 
+function resolveFetchImplementation(fetchImpl?: typeof fetch): typeof fetch {
+  const candidate = fetchImpl || globalThis.fetch;
+  if (typeof candidate !== 'function') {
+    throw new Error('Fetch API is not available in this environment.');
+  }
+  return candidate;
+}
+
 export async function fetchFeedDocument(
   feed: FeedDefinition,
-  options: FetchFeedDocumentOptions = {},
+  options: FeedFetchOptions = {},
 ): Promise<FeedDocumentInput> {
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
-  if (typeof fetchImpl !== 'function') {
-    throw new Error('fetchFeedDocument requires a fetch implementation.');
-  }
-
-  const response = await fetchImpl(feed.feedUrl, {
+  const fetcher = resolveFetchImplementation(options.fetchImpl);
+  const fetchedAt = new Date(options.fetchedAt || Date.now()).toISOString();
+  const response = await fetcher(feed.feedUrl, {
     headers: {
-      accept: FEED_ACCEPT_HEADER,
-      'user-agent': FEED_USER_AGENT,
+      accept:
+        'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
+      'user-agent': 'FeedShelf/0.1 (+https://github.com/kyaoi/feedshelf)',
     },
-    signal: AbortSignal.timeout(options.timeoutMs || DEFAULT_FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Feed ${feed.id} fetch failed: ${response.status} ${response.statusText}`.trim(),
-    );
-  }
-
-  const xml = await response.text();
-  if (xml.trim() === '') {
-    throw new Error(`Feed ${feed.id} returned an empty document.`);
+    throw new Error(`HTTP ${response.status} while fetching ${feed.feedUrl}`);
   }
 
   return {
     feedId: feed.id,
-    xml,
-    fetchedAt: new Date(options.fetchedAt || Date.now()).toISOString(),
+    xml: await response.text(),
+    fetchedAt,
   };
-}
-
-function formatFeedFetchFailure(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  return String(error);
 }
 
 export function shouldPublishFromFetchedDocuments({
@@ -137,20 +127,38 @@ export function shouldPublishFromFetchedDocuments({
   if (enabledFeeds.length === 0) {
     return {
       ok: false,
-      reason:
-        'No enabled feeds were configured; refusing to publish an empty update.',
+      reason: 'No enabled feeds are configured.',
     };
   }
 
   if (feedDocuments.length === 0) {
     return {
       ok: false,
-      reason:
-        'All enabled feeds failed to fetch; deploy will be skipped to preserve the previous site.',
+      reason: 'No feed documents were fetched successfully.',
     };
   }
 
   return { ok: true };
+}
+
+function formatFeedFetchFailure(error: unknown): string {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message?: string }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return 'Unknown fetch error';
+}
+
+interface FetchEnabledFeedDocumentsResult {
+  feeds: FeedDefinition[];
+  enabledFeeds: FeedDefinition[];
+  feedDocuments: FeedDocumentInput[];
+  failedFetches: FeedFetchFailure[];
 }
 
 export async function fetchEnabledFeedDocuments({
@@ -224,6 +232,7 @@ export async function runUpdatePipeline(
 
   const pipelineSummary = await runPipeline({
     feedsPath: options.feedsPath,
+    shelvesPath: options.shelvesPath,
     outputDir: options.outputDir,
     dryRun: options.dryRun,
     feedDocuments,

@@ -6,6 +6,7 @@ import type {
   PipelineLogger,
   PipelineSummary,
   RunPipelineOptions,
+  ShelvesDocument,
 } from '../../src/shared/contracts.ts';
 import {
   buildPublicExports,
@@ -13,11 +14,30 @@ import {
 } from './buildPublicExports.ts';
 import { dedupeArticles } from './dedupeArticles.ts';
 import { loadFeeds } from './loadFeeds.ts';
+import { loadShelves } from './loadShelves.ts';
 import { normalizeFeedDocument } from './normalizeFeed.ts';
+
+function validateFeedShelfReferences(
+  feeds: FeedDefinition[],
+  shelves: ShelvesDocument,
+): void {
+  const shelfIds = new Set(shelves.shelves.map((shelf) => shelf.id));
+
+  for (const feed of feeds) {
+    for (const shelfId of feed.shelfIds) {
+      if (!shelfIds.has(shelfId)) {
+        throw new Error(
+          `Unknown shelfId referenced by feed ${feed.id}: ${shelfId}`,
+        );
+      }
+    }
+  }
+}
 
 export function parseArgs(argv: string[]): PipelineArgs {
   const args: PipelineArgs = {
     feedsPath: path.resolve(process.cwd(), 'data/feeds.json'),
+    shelvesPath: path.resolve(process.cwd(), 'data/shelves.yaml'),
     outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
   };
@@ -31,6 +51,16 @@ export function parseArgs(argv: string[]): PipelineArgs {
         throw new Error('--feeds requires a path argument.');
       }
       args.feedsPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--shelves') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--shelves requires a path argument.');
+      }
+      args.shelvesPath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -61,10 +91,15 @@ export async function runPipeline(
 ): Promise<PipelineSummary> {
   const feedsPath =
     options.feedsPath || path.resolve(process.cwd(), 'data/feeds.json');
+  const shelvesPath =
+    options.shelvesPath || path.resolve(process.cwd(), 'data/shelves.yaml');
   const outputDir =
     options.outputDir || path.resolve(process.cwd(), 'public/data');
   const logger: PipelineLogger = options.logger || console;
   const feeds = await loadFeeds(feedsPath);
+  const shelves = await loadShelves(shelvesPath);
+  validateFeedShelfReferences(feeds, shelves);
+
   const enabledFeeds = feeds.filter((feed) => feed.enabled);
   const feedDocuments = Array.isArray(options.feedDocuments)
     ? options.feedDocuments
@@ -93,6 +128,7 @@ export async function runPipeline(
   const publicExports = buildPublicExports({
     articles: dedupedArticles,
     feeds,
+    shelves,
     generatedAt: options.generatedAt || new Date().toISOString(),
   });
 
@@ -105,6 +141,7 @@ export async function runPipeline(
 
   const summary: PipelineSummary = {
     feedsPath,
+    shelvesPath,
     outputDir,
     generatedAt: publicExports.meta.generatedAt,
     totalFeeds: feeds.length,
@@ -113,6 +150,7 @@ export async function runPipeline(
     dedupedArticles: dedupedArticles.length,
     duplicatesCollapsed: articles.length - dedupedArticles.length,
     publicArticles: publicExports.meta.articleCount,
+    publicShelves: publicExports.meta.shelfCount,
     publicCategories: publicExports.meta.categoryCount,
     publicSources: publicExports.meta.sourceCount,
     publicTags: publicExports.meta.tagCount,
@@ -120,7 +158,7 @@ export async function runPipeline(
   };
 
   logger.log(
-    `[pipeline] feeds=${summary.totalFeeds} enabled=${summary.enabledFeeds} feedsPath=${path.relative(process.cwd(), feedsPath) || 'data/feeds.json'}`,
+    `[pipeline] feeds=${summary.totalFeeds} enabled=${summary.enabledFeeds} feedsPath=${path.relative(process.cwd(), feedsPath) || 'data/feeds.json'} shelvesPath=${path.relative(process.cwd(), shelvesPath) || 'data/shelves.yaml'}`,
   );
 
   if (articles.length > 0) {
@@ -131,7 +169,7 @@ export async function runPipeline(
   }
 
   logger.log(
-    `[pipeline] publicArticles=${summary.publicArticles} publicCategories=${summary.publicCategories} publicSources=${summary.publicSources} publicTags=${summary.publicTags} publicSearchIndex=${summary.publicSearchIndex} outputDir=${path.relative(process.cwd(), outputDir) || 'public/data'}`,
+    `[pipeline] publicArticles=${summary.publicArticles} publicShelves=${summary.publicShelves} publicCategories=${summary.publicCategories} publicSources=${summary.publicSources} publicTags=${summary.publicTags} publicSearchIndex=${summary.publicSearchIndex} outputDir=${path.relative(process.cwd(), outputDir) || 'public/data'}`,
   );
 
   if (options.dryRun) {

@@ -2,51 +2,51 @@
   {
     "id": "itmedia-news",
     "name": "ITmedia NEWS 新着",
-    "category": "日本IT",
     "feedUrl": "https://rss.itmedia.co.jp/rss/2.0/news_bursts.xml",
     "siteUrl": "https://www.itmedia.co.jp/news/",
     "language": "ja",
     "enabled": true,
+    "shelfIds": ["it"],
     "tags": ["日本IT", "ニュース", "クラウド"]
   },
   {
     "id": "publickey",
     "name": "Publickey",
-    "category": "日本IT",
     "feedUrl": "https://www.publickey1.jp/atom.xml",
     "siteUrl": "https://www.publickey1.jp/",
     "language": "ja",
     "enabled": true,
+    "shelfIds": ["it"],
     "tags": ["日本IT", "開発", "クラウド"]
   },
   {
     "id": "openai-news",
     "name": "OpenAI News",
-    "category": "AI",
     "feedUrl": "https://openai.com/news/rss.xml",
     "siteUrl": "https://openai.com/news/",
     "language": "en",
     "enabled": true,
+    "shelfIds": ["ai"],
     "tags": ["AI", "研究", "生成AI"]
   },
   {
     "id": "sciencedaily-technology",
     "name": "ScienceDaily Top Technology",
-    "category": "科学",
     "feedUrl": "https://www.sciencedaily.com/rss/top/technology.xml",
     "siteUrl": "https://www.sciencedaily.com/news/top/technology/",
     "language": "en",
     "enabled": true,
+    "shelfIds": ["science"],
     "tags": ["科学", "テクノロジー"]
   },
   {
     "id": "nasa-news",
     "name": "NASA News Releases",
-    "category": "科学",
     "feedUrl": "https://www.nasa.gov/news-release/feed/",
     "siteUrl": "https://www.nasa.gov/news/",
     "language": "en",
     "enabled": true,
+    "shelfIds": ["science"],
     "tags": ["科学", "宇宙"]
   }
 ]
