@@ -206,6 +206,62 @@ test('web UI build and verify config are present', () => {
   );
 });
 
+test('README and docs stay aligned with workflow boundaries and diffship failure handling', () => {
+  const readme = fs.readFileSync(
+    path.resolve(__dirname, '..', 'README.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const ciWorkflow = fs.readFileSync(
+    path.resolve(__dirname, '..', '.github/workflows/ci.yml'),
+    'utf8',
+  );
+  const updateWorkflow = fs.readFileSync(
+    path.resolve(__dirname, '..', '.github/workflows/update-public-data.yml'),
+    'utf8',
+  );
+
+  assert.match(readme, /stash しない/);
+  assert.match(readme, /git rev-parse HEAD/);
+  assert.match(readme, /failure log/);
+  assert.match(readme, /diffship の修正ループ/);
+
+  for (const documentText of [spec, decisions, traceability, plan]) {
+    assert.match(documentText, /tests\/typescript-tooling\.test\.ts/);
+  }
+
+  assert.match(spec, /working tree を保持/);
+  assert.match(spec, /exact HEAD/);
+  assert.match(spec, /\.github\/workflows\/ci\.yml/);
+  assert.match(spec, /\.github\/workflows\/update-public-data\.yml/);
+
+  assert.match(ciWorkflow, /^name: CI/m);
+  assert.match(ciWorkflow, /pnpm run ci/);
+  assert.doesNotMatch(ciWorkflow, /actions\/configure-pages@v5/);
+  assert.doesNotMatch(ciWorkflow, /pnpm run pipeline:update/);
+
+  assert.match(updateWorkflow, /^name: Update public data/m);
+  assert.match(updateWorkflow, /actions\/configure-pages@v5/);
+  assert.match(updateWorkflow, /pnpm run ci/);
+  assert.match(updateWorkflow, /pnpm run pipeline:update/);
+  assert.match(updateWorkflow, /actions\/deploy-pages@v4/);
+});
+
 test('biome baseline config scopes generated files out of formatting and linting', () => {
   const biomeConfig = readJson<BiomeConfigLike>('biome.json');
   const ignore = biomeConfig.files?.ignore || [];

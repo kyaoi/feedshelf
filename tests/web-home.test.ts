@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   buildDataPaths,
@@ -202,4 +204,30 @@ test('buildSourceNavigationItems shows shelf count and language', () => {
   ]);
 
   assert.equal(items[0].metaLabel, '1 棚 / en');
+});
+
+test('README and shelf-first copy stay aligned with compatibility route guidance', () => {
+  const readme = fs.readFileSync(
+    path.resolve(__dirname, '..', 'README.md'),
+    'utf8',
+  );
+  const appSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/web/app.ts'),
+    'utf8',
+  );
+
+  assert.match(readme, /shelf-first/);
+  assert.match(readme, /\/`・`\/tags\/`・`\/search\/`・`\/sources\//);
+  assert.match(readme, /`categories\.json` は compatibility export/);
+  assert.match(
+    readme,
+    /articles \/ shelves \/ sources \/ tags \/ search-index \/ meta/,
+  );
+  assert.match(readme, /http:\/\/localhost:4173\/categories\//);
+
+  assert.match(appSource, /MISSING_CATEGORY_SELECTION_MESSAGE/);
+  assert.match(appSource, /棚カタログ・タグ・検索/);
+  assert.match(appSource, /UNKNOWN_CATEGORY_MESSAGE/);
+  assert.match(appSource, /buildCategoryHrefFromHome/);
+  assert.match(appSource, /\.\/categories\/\?/);
 });

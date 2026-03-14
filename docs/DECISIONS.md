@@ -463,9 +463,9 @@
 
 ## D-073: FS-DX-04 では DX docs の契約を workflow と専用 test に同期する
 
-- 決定: `FS-DX-04` では `README.md` に quality gate failure 時の運用入口を追加し、`tests/dx-docs-sync.test.ts` で README / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` / `PLAN.md` が `.github/workflows/ci.yml` と `.github/workflows/update-public-data.yml` の境界、ならびに diffship 修正ループ運用を同じ内容で指していることを確認する
+- 決定: `FS-DX-04` では `README.md` に quality gate failure 時の運用入口を追加し、`tests/typescript-tooling.test.ts` に docs sync assertion を追加し、README / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` / `PLAN.md` が `.github/workflows/ci.yml` と `.github/workflows/update-public-data.yml` の境界、ならびに diffship 修正ループ運用を同じ内容で指していることを確認する
 - 理由: Biome / hook / workflow の実装だけ整っても、repo 直下の入口と traceability が追随しなければ、将来の修正時に「どの gate がどこで走るか」「失敗時に何を渡すか」の判断が再び docs と実装でずれやすいため
-- 影響: `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/TRACEABILITY.md` を更新し、DX の docs 契約は `tests/dx-docs-sync.test.ts` で継続監視する
+- 影響: `README.md` / `PLAN.md` / `docs/SPEC_V1.md` / `docs/TRACEABILITY.md` を更新し、DX の docs 契約は `tests/typescript-tooling.test.ts` で継続監視する
 
 ## D-074: `tsx` で直接起動する TS CLI entrypoint は direct-execution guard で self-execute する
 
