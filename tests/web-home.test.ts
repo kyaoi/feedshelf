@@ -7,6 +7,7 @@ const {
   buildDataPaths,
   loadHomePageData,
   buildHomePageViewModel,
+  buildShelfHrefFromHome,
   buildSourceNavigationItems,
   MISSING_PUBLIC_DATA_ERROR,
 } = require('../public/assets/app.js');
@@ -206,7 +207,7 @@ test('buildSourceNavigationItems shows shelf count and language', () => {
   assert.equal(items[0].metaLabel, '1 棚 / en');
 });
 
-test('README and shelf-first copy stay aligned with compatibility route guidance', () => {
+test('README and shelf-first copy stay aligned with shelf routes and compatibility guidance', () => {
   const readme = fs.readFileSync(
     path.resolve(__dirname, '..', 'README.md'),
     'utf8',
@@ -223,11 +224,13 @@ test('README and shelf-first copy stay aligned with compatibility route guidance
     readme,
     /articles \/ shelves \/ sources \/ tags \/ search-index \/ meta/,
   );
+  assert.match(readme, /`\/<shelfId>\//);
+  assert.match(readme, /http:\/\/localhost:4173\/it\//);
   assert.match(readme, /http:\/\/localhost:4173\/categories\//);
 
+  assert.equal(buildShelfHrefFromHome('it'), './it/');
   assert.match(appSource, /MISSING_CATEGORY_SELECTION_MESSAGE/);
-  assert.match(appSource, /棚カタログ・タグ・検索/);
-  assert.match(appSource, /UNKNOWN_CATEGORY_MESSAGE/);
-  assert.match(appSource, /buildCategoryHrefFromHome/);
-  assert.match(appSource, /\.\/categories\/\?/);
+  assert.match(appSource, /MISSING_SHELF_SELECTION_MESSAGE/);
+  assert.match(appSource, /buildShelfHrefFromHome/);
+  assert.match(appSource, /\.\/\$\{encodeURIComponent\(shelfId\)\}\/`/);
 });

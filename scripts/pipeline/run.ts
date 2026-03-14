@@ -136,6 +136,7 @@ export async function runPipeline(
     await writePublicExports({
       outputDir,
       publicExports,
+      shelvesDocument: shelves,
     });
   }
 

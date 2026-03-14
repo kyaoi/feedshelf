@@ -299,4 +299,4 @@ Phase 6 の進め方:
 - FS-DX-02 では Biome format 導入に伴う既存 TS / JSON / config の整形差分と `public/assets/app.js` の再生成を含め、initial lint gate では `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` にして unrelated refactor を避けた
 - FS-DX-03 では `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとの routine quality gate を `pnpm run ci` で実行する通常 CI workflow を update / deploy workflow から分離した
 - FS-DX-04 では README に failure handling の入口を追加し、`tests/typescript-tooling.test.ts` で quality gate / workflow 分離 / diffship 修正ループ運用の docs 追跡を実行可能な形で固定した
-- FS-UX-10 の実装は diffship loop で安全に進めるため、まず既存ファイルだけで `/` の shelf catalog 化と `/sources/` の related shelf bridge を入れ、`/<shelfId>/` の route shell 追加は次ループへ分離する
+- FS-UX-10 では `/` の shelf catalog 化に加えて、`/<shelfId>/` の route shell と `/sources/` から棚 route へ戻る bridge までを checked-in asset / pipeline 生成へ反映した

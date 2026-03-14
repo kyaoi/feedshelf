@@ -1222,7 +1222,7 @@ Phase 5 は、実装に入る前に `FS-QA-00` で監査・導線・受け入れ
 
 - データ取得・正規化・dedupe・公開 JSON 契約は `tests/load-feeds.test.ts` で確認する
 - 更新 workflow・partial failure policy・deploy 境界は `.github/workflows/update-public-data.yml` と `tests/update-workflow.test.ts` で確認する
-- 新着 / カテゴリ別 / 媒体別の一覧導線と safe external link handling は `tests/web-home.test.ts` / `tests/web-categories.test.ts` / `tests/web-sources.test.ts` で確認する
+- 新着 / 棚 / カテゴリ別 / 媒体別の一覧導線と safe external link handling は `tests/web-home.test.ts` / `tests/web-shelf.test.ts` / `tests/web-categories.test.ts` / `tests/web-sources.test.ts` で確認する
 - TypeScript tooling と checked-in browser asset の同期は `tests/typescript-tooling.test.ts` と `scripts/verifyWebBuild.ts` で確認する
 
 最小手動確認は以下とする。

@@ -281,7 +281,7 @@ test('slugifyCategoryLabel keeps compatibility export stable', () => {
   assert.equal(slugifyCategoryLabel('C#'), 'c');
 });
 
-test('runPipeline writes shelves.json and reports shelf/category counts', async () => {
+test('runPipeline writes shelves.json, shelf route shells, and reports shelf/category counts', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-run-'));
   const feedsPath = path.join(tempDir, 'feeds.json');
   const shelvesPath = path.join(tempDir, 'shelves.yaml');
@@ -328,6 +328,10 @@ test('runPipeline writes shelves.json and reports shelf/category counts', async 
   const categoriesJson = JSON.parse(
     await fs.readFile(path.join(outputDir, 'categories.json'), 'utf8'),
   );
+  const shelfRouteHtml = await fs.readFile(
+    path.join(tempDir, 'examples', 'index.html'),
+    'utf8',
+  );
 
   assert.equal(shelvesJson[0].id, 'examples');
   assert.equal(articlesJson[0].shelfIds[0], 'examples');
@@ -337,4 +341,7 @@ test('runPipeline writes shelves.json and reports shelf/category counts', async 
   assert.equal(metaJson.shelfCount, 2);
   assert.equal(metaJson.categoryCount, 2);
   assert.equal(categoriesJson[0].id, shelvesJson[0].id);
+  assert.match(shelfRouteHtml, /data-feedshelf-page="shelf"/);
+  assert.match(shelfRouteHtml, /data-shelf-id="examples"/);
+  assert.match(shelfRouteHtml, /related-sources-title/);
 });

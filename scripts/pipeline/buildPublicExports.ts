@@ -13,6 +13,7 @@ import type {
   PublicShelfSummary,
   PublicSourceSummary,
   PublicTagSummary,
+  ShelfDefinition,
   ShelvesDocument,
 } from '../../src/shared/contracts.ts';
 
@@ -428,17 +429,132 @@ export function buildPublicExports({
   };
 }
 
+function renderShelfRouteHtml(shelf: ShelfDefinition): string {
+  const title = `${shelf.title} | FeedShelf`;
+  const description = `${shelf.description} FeedShelf の shelf-first route から、注目記事・新着・関連媒体を辿れます。`;
+
+  return `<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <meta
+      name="description"
+      content="${description}"
+    />
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <script defer src="../assets/app.js"></script>
+  </head>
+  <body data-feedshelf-page="shelf" data-shelf-id="${shelf.id}">
+    <header class="hero hero--compact">
+      <div class="container hero__inner">
+        <a class="back-link" href="../">← トップへ戻る</a>
+        <p class="eyebrow">FeedShelf / Shelf</p>
+        <h1 id="shelf-page-title">${shelf.title} 棚</h1>
+        <p id="shelf-page-description" class="lead">
+          ${shelf.description}
+        </p>
+      </div>
+    </header>
+
+    <main class="container layout">
+      <section class="panel" aria-labelledby="shelf-nav-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Shelves</p>
+            <h2 id="shelf-nav-title">棚一覧</h2>
+          </div>
+          <p id="generated-at" class="muted">読み込み中…</p>
+        </div>
+        <div id="shelf-nav" class="chip-list" aria-live="polite">
+          <p class="placeholder-text">読み込み中…</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="featured-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Featured</p>
+            <h2 id="featured-title">注目記事</h2>
+          </div>
+          <p id="featured-count" class="muted">読み込み中…</p>
+        </div>
+        <ol id="featured-list" class="article-list" aria-live="polite">
+          <li class="placeholder-text">読み込み中…</li>
+        </ol>
+      </section>
+
+      <section class="panel" aria-labelledby="related-sources-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Sources</p>
+            <h2 id="related-sources-title">関連する媒体</h2>
+          </div>
+          <p class="muted">この棚に属する媒体から source detail へ移動できます。</p>
+        </div>
+        <div id="related-sources" class="chip-list" aria-live="polite">
+          <p class="placeholder-text">読み込み中…</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="articles-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Recent</p>
+            <h2 id="articles-title">この棚の新着記事</h2>
+          </div>
+          <p id="articles-count" class="muted">読み込み中…</p>
+        </div>
+
+        <div id="articles-status" class="status status--loading" aria-live="polite">
+          公開 JSON を読み込んでいます…
+        </div>
+        <ol id="articles-list" class="article-list" hidden></ol>
+      </section>
+    </main>
+  </body>
+</html>
+`;
+}
+
+async function writeShelfRouteShells({
+  siteDir,
+  shelves,
+}: {
+  siteDir: string;
+  shelves: ShelfDefinition[];
+}): Promise<void> {
+  await Promise.all(
+    shelves.map(async (shelf) => {
+      const shelfDir = path.join(siteDir, shelf.id);
+      await fs.mkdir(shelfDir, { recursive: true });
+      await fs.writeFile(
+        path.join(shelfDir, 'index.html'),
+        renderShelfRouteHtml(shelf),
+      );
+    }),
+  );
+}
+
 export async function writePublicExports({
   outputDir,
   publicExports,
+  shelvesDocument,
 }: {
   outputDir: string;
   publicExports: PublicExports;
+  shelvesDocument: ShelvesDocument;
 }): Promise<void> {
   const absoluteOutputDir = path.resolve(outputDir);
+  const siteDir = path.dirname(absoluteOutputDir);
   await fs.mkdir(absoluteOutputDir, { recursive: true });
 
   await Promise.all([
+    writeShelfRouteShells({
+      siteDir,
+      shelves: shelvesDocument.shelves,
+    }),
     fs.writeFile(
       path.join(absoluteOutputDir, 'articles.json'),
       JSON.stringify(publicExports.articles, null, 2),

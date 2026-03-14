@@ -172,6 +172,21 @@ interface CategoryPageViewModel {
   selectedCategoryLabel?: string;
 }
 
+interface ShelfPageViewModel {
+  kind: 'missing-shelf' | 'unknown-shelf' | 'empty-shelf' | 'ready';
+  generatedAtText: string;
+  navigationItems: CategoryNavigationItem[];
+  relatedSources: SourceNavigationItem[];
+  title: string;
+  description: string;
+  featuredCountText: string;
+  featuredArticles: ArticleViewModel[];
+  articlesCountText: string;
+  articles: ArticleViewModel[];
+  statusMessage: string;
+  selectedShelfTitle?: string;
+}
+
 interface SourcePageViewModel {
   kind: 'missing-source' | 'unknown-source' | 'empty-source' | 'ready';
   generatedAtText: string;
@@ -275,6 +290,12 @@ type FeedShelfGlobalScope = typeof globalThis & {
     '指定されたカテゴリは見つかりませんでした。棚カタログへ戻るか、別のカテゴリを選んでください。';
   const EMPTY_CATEGORY_ARTICLES_MESSAGE =
     'このカテゴリの記事はまだありません。次回の生成を待つか、棚・タグ・媒体ページから別の導線を試してください。';
+  const MISSING_SHELF_SELECTION_MESSAGE =
+    '棚 route が特定できませんでした。トップの棚カタログから入り直してください。';
+  const UNKNOWN_SHELF_MESSAGE =
+    '指定された棚は見つかりませんでした。棚カタログへ戻るか、別の棚を選んでください。';
+  const EMPTY_SHELF_ARTICLES_MESSAGE =
+    'この棚の記事はまだありません。次回の生成を待つか、タグ・媒体・検索から別の導線を試してください。';
   const SOURCE_QUERY_PARAM = 'id';
   const TAG_QUERY_PARAM = 'id';
   const SEARCH_QUERY_PARAM = 'q';
@@ -794,7 +815,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
         freshnessLabel: shelf.latestSortAt
           ? `${formatDateTime(shelf.latestSortAt)} 更新`
           : '更新時刻不明',
-        href: buildCategoryHrefFromHome(shelf.id),
+        href: buildShelfHrefFromHome(shelf.id),
       };
     });
   }
@@ -841,6 +862,126 @@ type FeedShelfGlobalScope = typeof globalThis & {
       href: typeof hrefBuilder === 'function' ? hrefBuilder(tag.id) : null,
       isSelected: selectedTagId === tag.id,
     }));
+  }
+
+  function buildShelfNavigationItems(
+    shelves: PublicShelfSummaryLike[],
+    {
+      selectedShelfId = null,
+      hrefBuilder = buildShelfHrefFromHome,
+    }: {
+      selectedShelfId?: string | null;
+      hrefBuilder?: ((shelfId: string) => string) | null;
+    } = {},
+  ): CategoryNavigationItem[] {
+    return buildCategoryNavigationItems(
+      shelves.map((shelf) => ({
+        id: shelf.id,
+        label: shelf.title,
+        articleCount: shelf.articleCount,
+        latestSortAt: shelf.latestSortAt || '',
+      })),
+      {
+        selectedCategoryId: selectedShelfId,
+        hrefBuilder,
+      },
+    );
+  }
+
+  function buildShelfPageViewModel({
+    shelfId,
+    articles,
+    shelves,
+    sources,
+    meta,
+  }: {
+    shelfId: string;
+    articles: PublicArticleSummaryLike[];
+    shelves: PublicShelfSummaryLike[];
+    sources: PublicSourceSummaryLike[];
+    meta: PublicMetaLike;
+  }): ShelfPageViewModel {
+    const navigationItems = buildShelfNavigationItems(shelves, {
+      selectedShelfId: shelfId,
+      hrefBuilder: buildShelfHrefFromShelfPage,
+    });
+    const selectedShelf = shelves.find((shelf) => shelf.id === shelfId) || null;
+    const generatedAtText =
+      meta && meta.generatedAt
+        ? `${formatDateTime(meta.generatedAt)} 更新`
+        : '更新時刻不明';
+
+    if (!shelfId) {
+      return {
+        kind: 'missing-shelf',
+        generatedAtText,
+        navigationItems,
+        relatedSources: [],
+        title: '棚を選択してください',
+        description: MISSING_SHELF_SELECTION_MESSAGE,
+        featuredCountText: '0 件',
+        featuredArticles: [],
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: MISSING_SHELF_SELECTION_MESSAGE,
+      };
+    }
+
+    if (!selectedShelf) {
+      return {
+        kind: 'unknown-shelf',
+        generatedAtText,
+        navigationItems,
+        relatedSources: [],
+        title: '棚が見つかりません',
+        description: UNKNOWN_SHELF_MESSAGE,
+        featuredCountText: '0 件',
+        featuredArticles: [],
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: UNKNOWN_SHELF_MESSAGE,
+      };
+    }
+
+    const selectedArticles = articles.filter((article) =>
+      Array.isArray(article.shelfIds)
+        ? article.shelfIds.includes(selectedShelf.id)
+        : article.categoryId === selectedShelf.id,
+    );
+    const featuredArticles = buildArticleViewModels(
+      selectedArticles.slice(0, 3),
+    );
+    const relatedSources = buildSourceNavigationItems(
+      sources.filter((source) =>
+        Array.isArray(source.shelfIds)
+          ? source.shelfIds.includes(selectedShelf.id)
+          : source.categoryId === selectedShelf.id,
+      ),
+      {
+        hrefBuilder: buildSourceHrefFromShelfPage,
+      },
+    );
+    const description = `${selectedShelf.description} 注目 ${formatCount(
+      featuredArticles.length,
+    )} 件と新着 ${formatCount(selectedArticles.length)} 件、関連媒体 ${formatCount(
+      selectedShelf.sourceCount,
+    )} 件をこの棚から辿れます。`;
+
+    return {
+      kind: selectedArticles.length === 0 ? 'empty-shelf' : 'ready',
+      generatedAtText,
+      navigationItems,
+      relatedSources,
+      title: `${selectedShelf.title} 棚`,
+      description,
+      featuredCountText: `${featuredArticles.length} 件`,
+      featuredArticles,
+      articlesCountText: `${selectedArticles.length} 件`,
+      articles: buildArticleViewModels(selectedArticles),
+      statusMessage:
+        selectedArticles.length === 0 ? EMPTY_SHELF_ARTICLES_MESSAGE : '',
+      selectedShelfTitle: selectedShelf.title,
+    };
   }
 
   function buildSourcePageViewModel({
@@ -914,7 +1055,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
           latestSortAt: shelf.latestSortAt || '',
         })),
       {
-        hrefBuilder: buildCategoryHrefFromSourcePage,
+        hrefBuilder: buildShelfHrefFromSourcePage,
       },
     );
     const descriptionParts = [
@@ -1373,6 +1514,18 @@ type FeedShelfGlobalScope = typeof globalThis & {
       .join('');
   }
 
+  function buildShelfHrefFromHome(shelfId: string): string {
+    return `./${encodeURIComponent(shelfId)}/`;
+  }
+
+  function buildShelfHrefFromShelfPage(shelfId: string): string {
+    return `../${encodeURIComponent(shelfId)}/`;
+  }
+
+  function buildShelfHrefFromSourcePage(shelfId: string): string {
+    return `../${encodeURIComponent(shelfId)}/`;
+  }
+
   function buildCategoryHrefFromHome(categoryId: string): string {
     return `./categories/?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
   }
@@ -1401,6 +1554,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return `./?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
   }
 
+  function buildSourceHrefFromShelfPage(sourceId: string): string {
+    return `../sources/?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
+  }
+
   function buildSearchHrefFromHome(query: string): string {
     return `./search/?${SEARCH_QUERY_PARAM}=${encodeURIComponent(query)}`;
   }
@@ -1414,6 +1571,16 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
     const params = new URLSearchParams(locationRef.search);
     return params.get(CATEGORY_QUERY_PARAM) || '';
+  }
+
+  function getShelfIdFromDocument(
+    documentRef: Document | null | undefined = browserScope.document,
+  ): string {
+    if (!documentRef || !documentRef.body) {
+      return '';
+    }
+
+    return documentRef.body.dataset.shelfId || '';
   }
 
   function getSourceIdFromLocation(
@@ -1518,6 +1685,86 @@ type FeedShelfGlobalScope = typeof globalThis & {
     statusElement.hidden = true;
     listElement.hidden = false;
     listElement.innerHTML = renderArticleItems(viewModel.articles);
+  }
+
+  function renderShelfPage(
+    documentRef: Document,
+    payload: ReadyPayload,
+    { shelfId }: { shelfId?: string } = {},
+  ): ShelfPageViewModel {
+    const viewModel = buildShelfPageViewModel({
+      shelfId: shelfId || '',
+      articles: payload.articles,
+      shelves: payload.shelves,
+      sources: payload.sources,
+      meta: payload.meta,
+    });
+    const generatedAtElement = documentRef.getElementById('generated-at');
+    const navElement = documentRef.getElementById('shelf-nav');
+    const relatedSourcesElement = documentRef.getElementById('related-sources');
+    const titleElement = documentRef.getElementById('shelf-page-title');
+    const descriptionElement = documentRef.getElementById(
+      'shelf-page-description',
+    );
+    const featuredCountElement = documentRef.getElementById('featured-count');
+    const featuredListElement = documentRef.getElementById('featured-list');
+    const articlesCountElement = documentRef.getElementById('articles-count');
+    const statusElement = documentRef.getElementById('articles-status');
+    const listElement = documentRef.getElementById('articles-list');
+
+    if (generatedAtElement) {
+      generatedAtElement.textContent = viewModel.generatedAtText;
+    }
+
+    if (navElement) {
+      navElement.innerHTML = renderChipItems(viewModel.navigationItems);
+    }
+
+    if (relatedSourcesElement) {
+      relatedSourcesElement.innerHTML = renderSourceItems(
+        viewModel.relatedSources,
+      );
+    }
+
+    if (titleElement) {
+      titleElement.textContent = viewModel.title;
+    }
+
+    if (descriptionElement) {
+      descriptionElement.textContent = viewModel.description;
+    }
+
+    if (featuredCountElement) {
+      featuredCountElement.textContent = viewModel.featuredCountText;
+    }
+
+    if (featuredListElement) {
+      featuredListElement.innerHTML =
+        viewModel.featuredArticles.length > 0
+          ? renderArticleItems(viewModel.featuredArticles)
+          : '<li class="placeholder-text">注目記事はまだありません。</li>';
+    }
+
+    if (articlesCountElement) {
+      articlesCountElement.textContent = viewModel.articlesCountText;
+    }
+
+    if (!statusElement || !listElement) {
+      return viewModel;
+    }
+
+    if (viewModel.kind !== 'ready') {
+      setStatus(documentRef, {
+        kind: 'warning',
+        message: viewModel.statusMessage,
+      });
+      return viewModel;
+    }
+
+    statusElement.hidden = true;
+    listElement.hidden = false;
+    listElement.innerHTML = renderArticleItems(viewModel.articles);
+    return viewModel;
   }
 
   function renderCategoryPage(
@@ -1796,6 +2043,37 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return payload;
   }
 
+  async function initShelfPage({
+    basePath = '..',
+    fetchImpl = browserScope.fetch,
+    documentRef = browserScope.document,
+  }: HomePageInitOptions = {}): Promise<
+    ShelfPageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }
+  > {
+    if (!documentRef) {
+      return { kind: 'skipped' };
+    }
+
+    setStatus(documentRef, {
+      kind: 'loading',
+      message: '公開 JSON を読み込んでいます…',
+    });
+
+    const payload = await loadHomePageData({ basePath, fetchImpl });
+
+    if (payload.kind === 'ready') {
+      return renderShelfPage(documentRef, payload, {
+        shelfId: getShelfIdFromDocument(documentRef),
+      });
+    }
+
+    setStatus(documentRef, {
+      kind: payload.kind === 'missing-data' ? 'warning' : 'error',
+      message: payload.message,
+    });
+    return payload;
+  }
+
   async function initCategoryPage({
     basePath = '..',
     fetchImpl = browserScope.fetch,
@@ -1937,14 +2215,17 @@ type FeedShelfGlobalScope = typeof globalThis & {
     CATEGORY_QUERY_PARAM,
     DEFAULT_BASE_PATH,
     EMPTY_CATEGORY_ARTICLES_MESSAGE,
+    EMPTY_SHELF_ARTICLES_MESSAGE,
     MISSING_CATEGORY_SELECTION_MESSAGE,
     MISSING_PUBLIC_DATA_ERROR,
+    MISSING_SHELF_SELECTION_MESSAGE,
     MISSING_SOURCE_SELECTION_MESSAGE,
     INVALID_ARTICLE_LINK_LABEL,
     MISSING_SUMMARY_LABEL,
     SOURCE_QUERY_PARAM,
     UNKNOWN_CATEGORY_MESSAGE,
     UNKNOWN_PUBLISHED_AT_LABEL,
+    UNKNOWN_SHELF_MESSAGE,
     UNKNOWN_SOURCE_MESSAGE,
     buildArticleViewModels,
     buildCategoryHrefFromCategoryPage,
@@ -1953,7 +2234,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     buildCategoryNavigationItems,
     buildCategoryPageViewModel,
     buildShelfCards,
+    buildShelfHrefFromHome,
+    buildShelfHrefFromShelfPage,
+    buildShelfHrefFromSourcePage,
+    buildShelfNavigationItems,
+    buildShelfPageViewModel,
     buildSourceHrefFromHome,
+    buildSourceHrefFromShelfPage,
     buildSourceHrefFromSourcePage,
     buildSourceNavigationItems,
     buildSourcePageViewModel,
@@ -1967,10 +2254,12 @@ type FeedShelfGlobalScope = typeof globalThis & {
     formatCount,
     formatDateTime,
     getCategoryIdFromLocation,
+    getShelfIdFromDocument,
     getSourceIdFromLocation,
     getSearchQueryFromLocation,
     initCategoryPage,
     initHomePage,
+    initShelfPage,
     initSearchPage,
     initSourcePage,
     loadHomePageData,
@@ -1980,6 +2269,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     renderChipItems,
     renderHomePage,
     renderShelfCards,
+    renderShelfPage,
     renderSourceItems,
     renderSourcePage,
     renderStats,
@@ -2020,19 +2310,23 @@ type FeedShelfGlobalScope = typeof globalThis & {
         typeof browserScope.location.pathname === 'string'
           ? browserScope.location.pathname
           : '';
+      const pageType = browserScope.document.body?.dataset.feedshelfPage || '';
       const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
       const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
       const isTagPage = /\/tags\/(?:index\.html)?$/u.test(pathname);
       const isSearchPage = /\/search\/(?:index\.html)?$/u.test(pathname);
-      const initializer = isCategoryPage
-        ? initCategoryPage
-        : isSourcePage
-          ? initSourcePage
-          : isTagPage
-            ? initTagPage
-            : isSearchPage
-              ? initSearchPage
-              : initHomePage;
+      const initializer =
+        pageType === 'shelf'
+          ? initShelfPage
+          : isCategoryPage
+            ? initCategoryPage
+            : isSourcePage
+              ? initSourcePage
+              : isTagPage
+                ? initTagPage
+                : isSearchPage
+                  ? initSearchPage
+                  : initHomePage;
 
       initializer().catch((error: unknown) => {
         console.error('[feedshelf] failed to initialize page', error);

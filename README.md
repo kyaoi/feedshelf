@@ -11,7 +11,7 @@ v1 では **記事本文を保持せず、GitHub Actions で `public/data/*.json
 - 入力は公開 RSS / Atom のみ
 - 更新は GitHub Actions、公開は GitHub Pages を前提にする
 - Web UI は `public/` 配下の static HTML / CSS / JS として保つ
-- 主役の導線は `/`・`/tags/`・`/search/`・`/sources/` とし、`/categories/` は compatibility route として残す
+- 主役の導線は `/`・`/<shelfId>/`・`/tags/`・`/search/`・`/sources/` とし、`/categories/` は compatibility route として残す
 
 詳細な仕様は [`docs/SPEC_V1.md`](docs/SPEC_V1.md) を参照してください。
 
@@ -85,6 +85,7 @@ python -m http.server 4173 --directory public
 その後、ブラウザで以下を開いて確認します。
 
 - `http://localhost:4173/`
+- `http://localhost:4173/it/` （例: 棚 route）
 - `http://localhost:4173/tags/`
 - `http://localhost:4173/search/`
 - `http://localhost:4173/sources/`

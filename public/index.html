@@ -17,7 +17,7 @@
         <p class="eyebrow">FeedShelf / Phase 6</p>
         <h1>棚から読みたい記事に出会うための静的 RSS シェルフ</h1>
         <p class="lead">
-          まず棚を選び、そこから媒体や記事へ降りていく shelf-first な入口です。棚ページの専用 route が揃うまでは、互換一覧へ橋渡しします。
+          まず棚を選び、そこから注目記事・新着・媒体へ降りていく shelf-first な入口です。各棚は `/<shelfId>/` の専用 route で開けます。
         </p>
       </div>
     </header>
@@ -53,7 +53,7 @@
             <p class="panel__eyebrow">Shelves</p>
             <h2 id="shelves-title">興味から選ぶ棚カタログ</h2>
           </div>
-          <p class="muted">現時点では互換 route を使って棚一覧を開きます。</p>
+          <p class="muted">棚ごとの専用 route から、その棚の注目記事と新着へ入れます。</p>
         </div>
         <div id="shelves-list" class="shelf-grid" aria-live="polite">
           <p class="placeholder-text">読み込み中…</p>

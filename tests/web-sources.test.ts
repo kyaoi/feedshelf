@@ -137,6 +137,6 @@ test('buildSourcePageViewModel filters articles by sourceId and derives related 
   assert.equal(viewModel.articles.length, 1);
   assert.equal(viewModel.articles[0].title, 'IT article');
   assert.equal(viewModel.navigationItems[0].isSelected, true);
-  assert.equal(viewModel.relatedShelves[0].href, '../categories/?id=it');
+  assert.equal(viewModel.relatedShelves[0].href, '../it/');
   assert.equal(viewModel.relatedShelves[0].label, 'IT');
 });
