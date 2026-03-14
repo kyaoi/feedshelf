@@ -786,6 +786,13 @@
 - 影響: route cleanup は managed marker を持つ棚 route に限定し、`/tags/` / `/search/` / `/sources/` / `/categories/` などの fixed route を誤って削除しない
 - 影響: contributor が shelf を削除・rename した場合も、次回 export で generated route shell が docs 上の棚集合と同期する
 
+## D-119B: generated shelf route shell は curator text を HTML escape して埋め込む
+
+- 決定: `writePublicExports` / generated な `/<shelfId>/index.html` route shell は、`shelves.yaml` の `title` / `description` を plain text として扱い、`&` / `<` / `>` / quote を HTML escape して `<title>` / meta description / visible heading に埋め込む
+- 理由: shelf metadata は curator-managed text であり、`R&D` や `<beta>` のような通常文字列でも escape しないと generated route shell の title / meta / heading が壊れうるため
+- 影響: route shell 生成は reserved route / stale route cleanup だけでなく text safety も担う
+- 影響: `FS-QA-10` / post-Phase-6 maintenance では、棚 metadata に HTML special chars が含まれても generated shelf route が壊れないことを tests で確認する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

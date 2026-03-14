@@ -275,9 +275,13 @@ test('README and docs stay aligned with workflow boundaries and diffship failure
   assert.match(spec, /\.github\/workflows\/update-public-data\.yml/);
   assert.match(spec, /oldShelfId/);
   assert.match(spec, /route shell を掃除/);
+  assert.match(spec, /HTML を壊さない/);
   assert.match(decisions, /stale な generated shelf route だけを掃除する/);
+  assert.match(decisions, /HTML escape して埋め込む/);
   assert.match(traceability, /FS-125/);
+  assert.match(traceability, /FS-126/);
   assert.match(plan, /stale route を残さない/);
+  assert.match(plan, /HTML special chars を escape/);
 
   assert.match(ciWorkflow, /^name: CI/m);
   assert.match(ciWorkflow, /pnpm run ci/);

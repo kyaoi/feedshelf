@@ -56,6 +56,15 @@ function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function uniqueTags(values: Array<string | null | undefined>): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -432,8 +441,13 @@ export function buildPublicExports({
 }
 
 function renderShelfRouteHtml(shelf: ShelfDefinition): string {
-  const title = `${shelf.title} | FeedShelf`;
-  const description = `${shelf.description} FeedShelf の shelf-first route から、注目記事・新着・関連媒体を辿れます。`;
+  const title = escapeHtml(`${shelf.title} | FeedShelf`);
+  const description = escapeHtml(
+    `${shelf.description} FeedShelf の shelf-first route から、注目記事・新着・関連媒体を辿れます。`,
+  );
+  const shelfTitle = escapeHtml(`${shelf.title} 棚`);
+  const shelfDescription = escapeHtml(shelf.description);
+  const shelfId = escapeHtml(shelf.id);
 
   return `<!doctype html>
 <html lang="ja">
@@ -448,14 +462,14 @@ function renderShelfRouteHtml(shelf: ShelfDefinition): string {
     <link rel="stylesheet" href="../assets/styles.css" />
     <script defer src="../assets/app.js"></script>
   </head>
-  <body data-feedshelf-page="shelf" data-shelf-id="${shelf.id}">
+  <body data-feedshelf-page="shelf" data-shelf-id="${shelfId}">
     <header class="hero hero--compact">
       <div class="container hero__inner">
         <a class="back-link" href="../">← トップへ戻る</a>
         <p class="eyebrow">FeedShelf / Shelf</p>
-        <h1 id="shelf-page-title">${shelf.title} 棚</h1>
+        <h1 id="shelf-page-title">${shelfTitle}</h1>
         <p id="shelf-page-description" class="lead">
-          ${shelf.description}
+          ${shelfDescription}
         </p>
       </div>
     </header>

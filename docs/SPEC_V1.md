@@ -488,6 +488,7 @@ source を追加・無効化・棚へ紐付け・source tag を調整したい�
 - `feeds.json.shelfIds[]` の各値は `shelves.yaml` に存在しなければならない
 - shelf を削除または rename する場合は、参照する全 source の `shelfIds[]` も同時に更新する
 - shelf を削除または rename したあとの次回 `pipeline:update` では、generated な `/<oldShelfId>/index.html` route shell を掃除し、fixed route や hand-authored page を誤って削除しない
+- generated な `/<shelfId>/index.html` route shell に `title` / `description` を埋め込むときは plain text として扱い、`&` / `<` / `>` / quote を escape して HTML を壊さない
 
 `entryTags` は input registry ではなく、RSS / Atom metadata から pipeline が生成する article metadata として扱う。
 

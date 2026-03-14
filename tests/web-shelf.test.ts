@@ -267,6 +267,59 @@ test('buildShelfPageViewModel returns empty-shelf when no articles match shelfId
   assert.equal(viewModel.relatedSources.length, 1);
 });
 
+test('writePublicExports escapes shelf metadata in generated shelf route shells', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-shelf-escape-'),
+  );
+  const outputDir = path.join(tempDir, 'data');
+  const shelvesDocument = {
+    ...SHELVES_DOCUMENT,
+    shelves: [
+      {
+        id: 'research-notes',
+        title: 'R&D <Daily>',
+        description: 'AI & ML "notes" <beta>',
+      },
+    ],
+  };
+  const publicExports = buildPublicExports({
+    articles: CANONICAL_ARTICLES.map((article) => ({
+      ...article,
+      shelfIds: ['research-notes'],
+    })),
+    feeds: FEEDS.map((feed) => ({
+      ...feed,
+      shelfIds: ['research-notes'],
+    })),
+    shelves: shelvesDocument,
+    generatedAt: '2026-03-09T00:10:00Z',
+  });
+
+  await writePublicExports({
+    outputDir,
+    publicExports,
+    shelvesDocument,
+  });
+
+  const shelfHtml = await fs.readFile(
+    path.join(tempDir, 'research-notes', 'index.html'),
+    'utf8',
+  );
+
+  assert.match(shelfHtml, /<title>R&amp;D &lt;Daily&gt; \| FeedShelf<\/title>/);
+  assert.match(
+    shelfHtml,
+    /content="AI &amp; ML &quot;notes&quot; &lt;beta&gt; FeedShelf/,
+  );
+  assert.match(
+    shelfHtml,
+    /<h1 id="shelf-page-title">R&amp;D &lt;Daily&gt; 棚<\/h1>/,
+  );
+  assert.match(shelfHtml, /AI &amp; ML &quot;notes&quot; &lt;beta&gt;/);
+  assert.doesNotMatch(shelfHtml, /R&D <Daily>/);
+  assert.doesNotMatch(shelfHtml, /AI & ML "notes" <beta>/);
+});
+
 test('writePublicExports creates shelf route shells alongside public JSON', async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-shelf-'));
   const outputDir = path.join(tempDir, 'data');

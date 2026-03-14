@@ -302,3 +302,4 @@ Phase 6 の進め方:
 - FS-DX-04 では README に failure handling の入口を追加し、`tests/typescript-tooling.test.ts` で quality gate / workflow 分離 / diffship 修正ループ運用の docs 追跡を実行可能な形で固定した
 - FS-UX-10 では `/` の shelf catalog 化に加えて、`/<shelfId>/` の route shell と `/sources/` から棚 route へ戻る bridge までを checked-in asset / pipeline 生成へ反映した
 - Phase 6 実装後の維持では、pipeline export が managed な `/<shelfId>/` route shell を再生成し、棚削除・rename 後に stale route を残さないことも evidence に含める
+- Phase 6 実装後の維持では、generated な shelf route shell に埋め込む `title` / `description` を plain text として扱い、HTML special chars を escape して Pages 上の route shell を壊さないことも evidence に含める
