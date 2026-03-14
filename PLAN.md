@@ -236,8 +236,9 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- `FS-UX-10` / `FS-TAG-10` / `FS-SEARCH-10` / `FS-FEED-10` / `FS-QA-10` を実装済みにし、Phase 6 implementation backlog を完了扱いにする
-- shelf-first acceptance と `/categories/` compatibility verification の evidence は tests / README / TRACEABILITY に同期した状態で維持する
+- Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
+- 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
+- `FS-DATA-05` 〜 `FS-DATA-08` の deferred backlog は v2 以降候補として必要時に再優先付けする
 
 ## メモ
 

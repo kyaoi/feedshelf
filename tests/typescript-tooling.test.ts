@@ -206,6 +206,29 @@ test('web UI build and verify config are present', () => {
   );
 });
 
+test('Phase 6 shelf-route evidence stays aligned across docs, tests, and PLAN', () => {
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+
+  assert.match(spec, /tests\/web-shelf\.test\.ts/);
+  assert.match(traceability, /tests\/web-shelf\.test\.ts/);
+  assert.equal(
+    fs.existsSync(path.resolve(__dirname, '..', 'tests/web-shelf.test.ts')),
+    true,
+  );
+  assert.match(plan, /Phase 6 implementation backlog は完了済み/);
+});
+
 test('README and docs stay aligned with workflow boundaries and diffship failure handling', () => {
   const readme = fs.readFileSync(
     path.resolve(__dirname, '..', 'README.md'),
