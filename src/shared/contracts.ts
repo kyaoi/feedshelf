@@ -70,12 +70,27 @@ export interface PublicTagSummary {
   latestSortAt: string;
 }
 
+export interface PublicSearchIndexEntry {
+  articleId: string;
+  sortAt: string;
+  shelfIds: string[];
+  title: string;
+  sourceName: string;
+  sourceTags: string[];
+  entryTags: string[];
+  titleText: string;
+  sourceText: string;
+  tagText: string;
+  searchText: string;
+}
+
 export interface PublicMeta {
   generatedAt: string;
   articleCount: number;
   sourceCount: number;
   categoryCount: number;
   tagCount: number;
+  searchIndexCount: number;
 }
 
 export interface PublicExports {
@@ -83,6 +98,7 @@ export interface PublicExports {
   categories: PublicCategorySummary[];
   sources: PublicSourceSummary[];
   tags: PublicTagSummary[];
+  searchIndex: PublicSearchIndexEntry[];
   meta: PublicMeta;
 }
 
@@ -111,6 +127,7 @@ export interface PipelineSummary {
   publicCategories: number;
   publicSources: number;
   publicTags: number;
+  publicSearchIndex: number;
 }
 
 export interface FeedFetchFailure {

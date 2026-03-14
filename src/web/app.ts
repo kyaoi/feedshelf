@@ -41,12 +41,27 @@ interface PublicTagSummaryLike {
   latestSortAt?: string;
 }
 
+interface PublicSearchIndexEntryLike {
+  articleId: string;
+  sortAt: string;
+  shelfIds?: string[];
+  title: string;
+  sourceName: string;
+  sourceTags?: string[];
+  entryTags?: string[];
+  titleText?: string;
+  sourceText?: string;
+  tagText?: string;
+  searchText?: string;
+}
+
 interface PublicMetaLike {
   generatedAt?: string;
   articleCount?: number;
   sourceCount?: number;
   categoryCount?: number;
   tagCount?: number;
+  searchIndexCount?: number;
 }
 
 interface ReadyPayload {
@@ -56,6 +71,10 @@ interface ReadyPayload {
   sources: PublicSourceSummaryLike[];
   tags: PublicTagSummaryLike[];
   meta: PublicMetaLike;
+}
+
+interface SearchReadyPayload extends ReadyPayload {
+  searchIndex: PublicSearchIndexEntryLike[];
 }
 
 interface MissingDataPayload {
@@ -164,6 +183,17 @@ interface TagPageViewModel {
   selectedTagLabel?: string;
 }
 
+interface SearchPageViewModel {
+  kind: 'missing-query' | 'no-results' | 'ready';
+  generatedAtText: string;
+  title: string;
+  description: string;
+  articlesCountText: string;
+  articles: ArticleViewModel[];
+  statusMessage: string;
+  queryValue: string;
+}
+
 interface StatusOptions {
   kind: string;
   message: string;
@@ -186,6 +216,10 @@ interface CategoryPageInitOptions extends HomePageInitOptions {
 }
 
 interface SourcePageInitOptions extends HomePageInitOptions {
+  locationRef?: LocationLike | null;
+}
+
+interface SearchPageInitOptions extends HomePageInitOptions {
   locationRef?: LocationLike | null;
 }
 
@@ -229,6 +263,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
   const SOURCE_QUERY_PARAM = 'id';
   const TAG_QUERY_PARAM = 'id';
+  const SEARCH_QUERY_PARAM = 'q';
   const MISSING_SOURCE_SELECTION_MESSAGE =
     '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
   const UNKNOWN_SOURCE_MESSAGE =
@@ -241,6 +276,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
     '指定されたタグは見つかりませんでした。別のタグを選んでください。';
   const EMPTY_TAG_ARTICLES_MESSAGE =
     'このタグの記事はまだありません。別のタグを選ぶか、次回の生成を待ってください。';
+  const MISSING_SEARCH_QUERY_MESSAGE =
+    '検索語がまだ入力されていません。タイトル・媒体名・タグ名から探したい語を入力してください。';
+  const EMPTY_SEARCH_RESULTS_MESSAGE =
+    '一致する記事が見つかりませんでした。語句を減らすか、タグ・媒体ページから探し直してください。';
+  const SEARCH_RANKING_HINT = '並び順: title > sourceName > tags > freshness';
   const INVALID_ARTICLE_LINK_LABEL = '元記事リンクを確認できません。';
 
   function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
@@ -252,6 +292,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       categories: `${prefix}/categories.json`,
       sources: `${prefix}/sources.json`,
       tags: `${prefix}/tags.json`,
+      searchIndex: `${prefix}/search-index.json`,
       meta: `${prefix}/meta.json`,
     };
   }
@@ -330,6 +371,52 @@ type FeedShelfGlobalScope = typeof globalThis & {
     }
   }
 
+  async function loadSearchPageData({
+    basePath = DEFAULT_BASE_PATH,
+    fetchImpl = browserScope.fetch,
+  }: HomePageInitOptions = {}): Promise<
+    SearchReadyPayload | MissingDataPayload | ErrorPayload
+  > {
+    const payload = await loadHomePageData({ basePath, fetchImpl });
+
+    if (payload.kind !== 'ready') {
+      return payload;
+    }
+
+    const paths = buildDataPaths(basePath);
+
+    try {
+      const searchIndex = await fetchJson<unknown>(
+        fetchImpl,
+        paths.searchIndex,
+      );
+
+      return {
+        ...payload,
+        searchIndex: Array.isArray(searchIndex)
+          ? (searchIndex as PublicSearchIndexEntryLike[])
+          : [],
+      };
+    } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as { status?: number }).status === 404
+      ) {
+        return {
+          kind: 'missing-data',
+          message: MISSING_PUBLIC_DATA_ERROR,
+        };
+      }
+
+      return {
+        kind: 'error',
+        message: describeLoadError(error),
+      };
+    }
+  }
+
   function describeLoadError(error: unknown): string {
     if (
       browserScope.location &&
@@ -379,6 +466,31 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
   function formatCount(value: number | string | null | undefined): string {
     return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
+  }
+
+  function toComparableTime(value: string | null | undefined): number {
+    if (!value) {
+      return Number.NEGATIVE_INFINITY;
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime())
+      ? Number.NEGATIVE_INFINITY
+      : parsed.getTime();
+  }
+
+  function compareByNewestTime(
+    left: string | null | undefined,
+    right: string | null | undefined,
+  ): number {
+    const leftTime = toComparableTime(left);
+    const rightTime = toComparableTime(right);
+
+    if (leftTime !== rightTime) {
+      return rightTime - leftTime;
+    }
+
+    return 0;
   }
 
   function buildHomePageViewModel({
@@ -434,6 +546,107 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return normalizeWhitespace(value.normalize('NFKC')).toLocaleLowerCase(
       'en-US',
     );
+  }
+
+  function normalizeSearchCompareText(
+    value: string | null | undefined,
+  ): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    return normalizeWhitespace(value.normalize('NFKC')).toLocaleLowerCase(
+      'en-US',
+    );
+  }
+
+  function tokenizeSearchQuery(value: string | null | undefined): string[] {
+    const normalized = normalizeSearchCompareText(value);
+    return normalized === '' ? [] : normalized.split(' ');
+  }
+
+  function buildSearchEntryFields(entry: PublicSearchIndexEntryLike): {
+    titleText: string;
+    sourceText: string;
+    tagText: string;
+    searchText: string;
+  } {
+    const sourceTags = Array.isArray(entry.sourceTags) ? entry.sourceTags : [];
+    const entryTags = Array.isArray(entry.entryTags) ? entry.entryTags : [];
+    const tagLabels = uniqueLabels([...sourceTags, ...entryTags]);
+
+    const titleText =
+      entry.titleText || normalizeSearchCompareText(entry.title || '');
+    const sourceText =
+      entry.sourceText || normalizeSearchCompareText(entry.sourceName || '');
+    const tagText =
+      entry.tagText || normalizeSearchCompareText(tagLabels.join(' '));
+    const searchText =
+      entry.searchText ||
+      normalizeSearchCompareText(
+        [entry.title || '', entry.sourceName || '', ...tagLabels].join(' '),
+      );
+
+    return {
+      titleText,
+      sourceText,
+      tagText,
+      searchText,
+    };
+  }
+
+  function scoreSearchEntry(
+    entry: PublicSearchIndexEntryLike,
+    query: string | null | undefined,
+  ): number {
+    const normalizedQuery = normalizeSearchCompareText(query);
+    const terms = tokenizeSearchQuery(normalizedQuery);
+    if (terms.length === 0) {
+      return 0;
+    }
+
+    const { titleText, sourceText, tagText, searchText } =
+      buildSearchEntryFields(entry);
+
+    for (const term of terms) {
+      if (!searchText.includes(term)) {
+        return 0;
+      }
+    }
+
+    let score = 0;
+
+    if (normalizedQuery !== '') {
+      if (titleText === normalizedQuery) {
+        score += 1_000;
+      } else if (titleText.includes(normalizedQuery)) {
+        score += 400;
+      }
+
+      if (sourceText.includes(normalizedQuery)) {
+        score += 180;
+      }
+
+      if (tagText.includes(normalizedQuery)) {
+        score += 120;
+      }
+    }
+
+    for (const term of terms) {
+      if (titleText.includes(term)) {
+        score += 120;
+      }
+
+      if (sourceText.includes(term)) {
+        score += 72;
+      }
+
+      if (tagText.includes(term)) {
+        score += 36;
+      }
+    }
+
+    return score;
   }
 
   function uniqueLabels(values: Array<string | null | undefined>): string[] {
@@ -844,6 +1057,110 @@ type FeedShelfGlobalScope = typeof globalThis & {
     };
   }
 
+  function buildSearchPageViewModel({
+    query,
+    articles,
+    searchIndex,
+    meta,
+  }: {
+    query: string;
+    articles: PublicArticleSummaryLike[];
+    searchIndex: PublicSearchIndexEntryLike[];
+    meta: PublicMetaLike;
+  }): SearchPageViewModel {
+    const generatedAtText =
+      meta && meta.generatedAt
+        ? `${formatDateTime(meta.generatedAt)} 更新`
+        : '更新時刻不明';
+    const normalizedQuery = normalizeSearchCompareText(query);
+    const queryValue = normalizeWhitespace(query || '');
+
+    if (normalizedQuery === '') {
+      return {
+        kind: 'missing-query',
+        generatedAtText,
+        title: '横断検索で探す',
+        description:
+          'タイトル・媒体名・タグ名から探したい語を入力すると、検索 index から最近の記事へ辿れます。',
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage:
+          `${MISSING_SEARCH_QUERY_MESSAGE} ${SEARCH_RANKING_HINT}`.trim(),
+        queryValue,
+      };
+    }
+
+    const articleMap = new Map<string, PublicArticleSummaryLike>(
+      articles.map((article) => [article.id, article]),
+    );
+    const matches = searchIndex
+      .map((entry) => ({
+        entry,
+        article: articleMap.get(entry.articleId) || null,
+        score: scoreSearchEntry(entry, normalizedQuery),
+      }))
+      .filter(
+        (
+          candidate,
+        ): candidate is {
+          entry: PublicSearchIndexEntryLike;
+          article: PublicArticleSummaryLike;
+          score: number;
+        } => Boolean(candidate.article) && candidate.score > 0,
+      )
+      .sort((left, right) => {
+        if (left.score !== right.score) {
+          return right.score - left.score;
+        }
+
+        const timeOrder = compareByNewestTime(
+          left.entry.sortAt || left.article.sortAt,
+          right.entry.sortAt || right.article.sortAt,
+        );
+        if (timeOrder !== 0) {
+          return timeOrder;
+        }
+
+        const titleOrder = left.article.title.localeCompare(
+          right.article.title,
+          'en',
+        );
+        if (titleOrder !== 0) {
+          return titleOrder;
+        }
+
+        return left.article.id.localeCompare(right.article.id, 'en');
+      });
+
+    if (matches.length === 0) {
+      return {
+        kind: 'no-results',
+        generatedAtText,
+        title: `「${queryValue}」の検索結果`,
+        description:
+          'タイトル・媒体名・タグ名を横断検索しましたが、一致する記事は見つかりませんでした。',
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage:
+          `${EMPTY_SEARCH_RESULTS_MESSAGE} ${SEARCH_RANKING_HINT}`.trim(),
+        queryValue,
+      };
+    }
+
+    return {
+      kind: 'ready',
+      generatedAtText,
+      title: `「${queryValue}」の検索結果`,
+      description: `title / sourceName / tags を対象に横断検索し、score 順で記事を表示しています。${SEARCH_RANKING_HINT}`,
+      articlesCountText: `${matches.length} 件`,
+      articles: buildArticleViewModels(
+        matches.map((candidate) => candidate.article),
+      ),
+      statusMessage: '',
+      queryValue,
+    };
+  }
+
   function renderStats(stats: StatViewModel[]): string {
     return stats
       .map(
@@ -1046,6 +1363,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return `./?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
   }
 
+  function buildSearchHrefFromHome(query: string): string {
+    return `./search/?${SEARCH_QUERY_PARAM}=${encodeURIComponent(query)}`;
+  }
+
   function getCategoryIdFromLocation(
     locationRef: LocationLike | null | undefined = browserScope.location,
   ): string {
@@ -1077,6 +1398,17 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
     const params = new URLSearchParams(locationRef.search);
     return params.get(TAG_QUERY_PARAM) || '';
+  }
+
+  function getSearchQueryFromLocation(
+    locationRef: LocationLike | null | undefined = browserScope.location,
+  ): string {
+    if (!locationRef || typeof locationRef.search !== 'string') {
+      return '';
+    }
+
+    const params = new URLSearchParams(locationRef.search);
+    return params.get(SEARCH_QUERY_PARAM) || '';
   }
 
   function setStatus(
@@ -1335,6 +1667,67 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return viewModel;
   }
 
+  function renderSearchPage(
+    documentRef: Document,
+    payload: SearchReadyPayload,
+    { query }: { query?: string } = {},
+  ): SearchPageViewModel {
+    const viewModel = buildSearchPageViewModel({
+      query: query || '',
+      articles: payload.articles,
+      searchIndex: payload.searchIndex,
+      meta: payload.meta,
+    });
+    const generatedAtElement = documentRef.getElementById('generated-at');
+    const titleElement = documentRef.getElementById('search-page-title');
+    const descriptionElement = documentRef.getElementById(
+      'search-page-description',
+    );
+    const articlesCountElement = documentRef.getElementById('articles-count');
+    const statusElement = documentRef.getElementById('articles-status');
+    const listElement = documentRef.getElementById('articles-list');
+    const inputElement = documentRef.getElementById(
+      'search-query-input',
+    ) as HTMLInputElement | null;
+
+    if (generatedAtElement) {
+      generatedAtElement.textContent = viewModel.generatedAtText;
+    }
+
+    if (titleElement) {
+      titleElement.textContent = viewModel.title;
+    }
+
+    if (descriptionElement) {
+      descriptionElement.textContent = viewModel.description;
+    }
+
+    if (articlesCountElement) {
+      articlesCountElement.textContent = viewModel.articlesCountText;
+    }
+
+    if (inputElement) {
+      inputElement.value = viewModel.queryValue;
+    }
+
+    if (!statusElement || !listElement) {
+      return viewModel;
+    }
+
+    if (viewModel.kind !== 'ready') {
+      setStatus(documentRef, {
+        kind: 'warning',
+        message: viewModel.statusMessage,
+      });
+      return viewModel;
+    }
+
+    statusElement.hidden = true;
+    listElement.hidden = false;
+    listElement.innerHTML = renderArticleItems(viewModel.articles);
+    return viewModel;
+  }
+
   async function initHomePage({
     basePath = DEFAULT_BASE_PATH,
     fetchImpl = browserScope.fetch,
@@ -1467,6 +1860,41 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return payload;
   }
 
+  async function initSearchPage({
+    basePath = '..',
+    fetchImpl = browserScope.fetch,
+    documentRef = browserScope.document,
+    locationRef = browserScope.location,
+  }: SearchPageInitOptions = {}): Promise<
+    | SearchPageViewModel
+    | MissingDataPayload
+    | ErrorPayload
+    | { kind: 'skipped' }
+  > {
+    if (!documentRef) {
+      return { kind: 'skipped' };
+    }
+
+    setStatus(documentRef, {
+      kind: 'loading',
+      message: '検索 index を読み込んでいます…',
+    });
+
+    const payload = await loadSearchPageData({ basePath, fetchImpl });
+
+    if (payload.kind === 'ready') {
+      return renderSearchPage(documentRef, payload, {
+        query: getSearchQueryFromLocation(locationRef),
+      });
+    }
+
+    setStatus(documentRef, {
+      kind: payload.kind === 'missing-data' ? 'warning' : 'error',
+      message: payload.message,
+    });
+    return payload;
+  }
+
   const exported = {
     CATEGORY_QUERY_PARAM,
     DEFAULT_BASE_PATH,
@@ -1491,6 +1919,8 @@ type FeedShelfGlobalScope = typeof globalThis & {
     buildSourceHrefFromSourcePage,
     buildSourceNavigationItems,
     buildSourcePageViewModel,
+    buildSearchHrefFromHome,
+    buildSearchPageViewModel,
     buildDataPaths,
     buildHomePageViewModel,
     normalizeExternalArticleUrl,
@@ -1500,10 +1930,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     formatDateTime,
     getCategoryIdFromLocation,
     getSourceIdFromLocation,
+    getSearchQueryFromLocation,
     initCategoryPage,
     initHomePage,
+    initSearchPage,
     initSourcePage,
     loadHomePageData,
+    loadSearchPageData,
     renderArticleItems,
     renderCategoryPage,
     renderChipItems,
@@ -1518,6 +1951,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     MISSING_TAG_SELECTION_MESSAGE,
     TAG_QUERY_PARAM,
     UNKNOWN_TAG_MESSAGE,
+    MISSING_SEARCH_QUERY_MESSAGE,
+    EMPTY_SEARCH_RESULTS_MESSAGE,
+    SEARCH_QUERY_PARAM,
+    SEARCH_RANKING_HINT,
     articleHasTag,
     buildTagHrefFromHome,
     buildTagHrefFromTagPage,
@@ -1525,7 +1962,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
     buildTagPageViewModel,
     getTagIdFromLocation,
     initTagPage,
+    normalizeSearchCompareText,
+    renderSearchPage,
     renderTagPage,
+    scoreSearchEntry,
+    tokenizeSearchQuery,
   };
 
   if (commonJsModule && typeof commonJsModule === 'object') {
@@ -1544,13 +1985,16 @@ type FeedShelfGlobalScope = typeof globalThis & {
       const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
       const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
       const isTagPage = /\/tags\/(?:index\.html)?$/u.test(pathname);
+      const isSearchPage = /\/search\/(?:index\.html)?$/u.test(pathname);
       const initializer = isCategoryPage
         ? initCategoryPage
         : isSourcePage
           ? initSourcePage
           : isTagPage
             ? initTagPage
-            : initHomePage;
+            : isSearchPage
+              ? initSearchPage
+              : initHomePage;
 
       initializer().catch((error: unknown) => {
         console.error('[feedshelf] failed to initialize page', error);

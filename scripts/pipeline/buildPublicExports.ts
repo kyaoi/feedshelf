@@ -9,6 +9,7 @@ import type {
   PublicCategorySummary,
   PublicExports,
   PublicMeta,
+  PublicSearchIndexEntry,
   PublicSourceSummary,
   PublicTagSummary,
 } from '../../src/shared/contracts.ts';
@@ -71,6 +72,12 @@ function uniqueTags(values: Array<string | null | undefined>): string[] {
 
 export function normalizeTagCompareKey(label: string): string {
   return normalizeWhitespace(String(label).normalize('NFKC')).toLocaleLowerCase(
+    'en-US',
+  );
+}
+
+export function normalizeSearchCompareText(value: string): string {
+  return normalizeWhitespace(String(value).normalize('NFKC')).toLocaleLowerCase(
     'en-US',
   );
 }
@@ -343,6 +350,32 @@ function buildTags(publicArticles: PublicArticleSummary[]): PublicTagSummary[] {
     });
 }
 
+function buildSearchIndex(
+  publicArticles: PublicArticleSummary[],
+): PublicSearchIndexEntry[] {
+  return publicArticles.map((article) => {
+    const sourceTags = uniqueTags(article.sourceTags || []);
+    const entryTags = uniqueTags(article.entryTags || []);
+    const tagLabels = uniqueTags([...sourceTags, ...entryTags]);
+
+    return {
+      articleId: article.id,
+      sortAt: article.sortAt,
+      shelfIds: [article.categoryId],
+      title: article.title,
+      sourceName: article.sourceName,
+      sourceTags,
+      entryTags,
+      titleText: normalizeSearchCompareText(article.title),
+      sourceText: normalizeSearchCompareText(article.sourceName),
+      tagText: normalizeSearchCompareText(tagLabels.join(' ')),
+      searchText: normalizeSearchCompareText(
+        [article.title, article.sourceName, ...tagLabels].join(' '),
+      ),
+    };
+  });
+}
+
 export function buildPublicExports({
   articles,
   feeds,
@@ -357,12 +390,14 @@ export function buildPublicExports({
   const categories = buildCategories(publicArticles, categoryRegistry);
   const sources = buildSources(publicArticles, feeds, categoryRegistry);
   const tags = buildTags(publicArticles);
+  const searchIndex = buildSearchIndex(publicArticles);
   const meta: PublicMeta = {
     generatedAt: toIsoTimestamp(generatedAt || new Date().toISOString()),
     articleCount: publicArticles.length,
     sourceCount: sources.length,
     categoryCount: categories.length,
     tagCount: tags.length,
+    searchIndexCount: searchIndex.length,
   };
 
   return {
@@ -370,6 +405,7 @@ export function buildPublicExports({
     categories,
     sources,
     tags,
+    searchIndex,
     meta,
   };
 }
@@ -404,6 +440,10 @@ export async function writePublicExports({
     writeJsonFile(
       path.join(resolvedOutputDir, 'tags.json'),
       publicExports.tags,
+    ),
+    writeJsonFile(
+      path.join(resolvedOutputDir, 'search-index.json'),
+      publicExports.searchIndex,
     ),
     writeJsonFile(
       path.join(resolvedOutputDir, 'meta.json'),

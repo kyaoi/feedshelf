@@ -475,12 +475,42 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
     sourceCount: 1,
     latestSortAt: '2026-03-08T06:05:00.000Z',
   });
+  assert.deepEqual(publicExports.searchIndex, [
+    {
+      articleId: 'article-b',
+      sortAt: '2026-03-08T06:05:00.000Z',
+      shelfIds: ['examples'],
+      title: 'Newer article',
+      sourceName: 'Example Atom',
+      sourceTags: ['Atom Source'],
+      entryTags: ['Cloud'],
+      titleText: 'newer article',
+      sourceText: 'example atom',
+      tagText: 'atom source cloud',
+      searchText: 'newer article example atom atom source cloud',
+    },
+    {
+      articleId: 'article-a',
+      sortAt: '2026-03-07T00:00:00.000Z',
+      shelfIds: ['examples'],
+      title: 'Older article',
+      sourceName: 'Example RSS',
+      sourceTags: ['RSS Source'],
+      entryTags: ['RSS'],
+      titleText: 'older article',
+      sourceText: 'example rss',
+      tagText: 'rss source rss',
+      searchText: 'older article example rss rss source rss',
+    },
+  ]);
+
   assert.deepEqual(publicExports.meta, {
     generatedAt: '2026-03-08T07:00:00.000Z',
     articleCount: 2,
     sourceCount: 2,
     categoryCount: 1,
     tagCount: 4,
+    searchIndexCount: 2,
   });
 });
 
@@ -576,12 +606,13 @@ test('runPipeline reports public JSON counts in dry-run mode', async () => {
     publicCategories: 1,
     publicSources: 2,
     publicTags: 5,
+    publicSearchIndex: 2,
   });
   assert.match(lines.join('\n'), /normalizedArticles=2/);
   assert.match(lines.join('\n'), /dedupedArticles=2 duplicatesCollapsed=0/);
   assert.match(
     lines.join('\n'),
-    /publicArticles=2 publicCategories=1 publicSources=2 publicTags=5/,
+    /publicArticles=2 publicCategories=1 publicSources=2 publicTags=5 publicSearchIndex=2/,
   );
   assert.match(lines.join('\n'), /FS-PIPE-04 public JSON ready/);
   await assert.rejects(fs.access(outputDir));
@@ -621,6 +652,7 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
   assert.equal(summary.publicCategories, 1);
   assert.equal(summary.publicSources, 2);
   assert.equal(summary.publicTags, 5);
+  assert.equal(summary.publicSearchIndex, 2);
 
   const articles = JSON.parse(
     await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
@@ -633,6 +665,9 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
   );
   const tags = JSON.parse(
     await fs.readFile(path.join(outputDir, 'tags.json'), 'utf8'),
+  );
+  const searchIndex = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'search-index.json'), 'utf8'),
   );
   const meta = JSON.parse(
     await fs.readFile(path.join(outputDir, 'meta.json'), 'utf8'),
@@ -656,11 +691,16 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
     ['atom-feed', 'rss-feed'],
   );
   assert.equal(tags.length, 5);
+  assert.equal(searchIndex.length, 2);
+  assert.equal(searchIndex[0].articleId, articles[0].id);
+  assert.equal(searchIndex[0].sourceText, 'example atom');
+  assert.equal(searchIndex[0].tagText, 'atom source atom cloud');
   assert.deepEqual(meta, {
     generatedAt: '2026-03-08T07:00:00.000Z',
     articleCount: 2,
     sourceCount: 2,
     categoryCount: 1,
     tagCount: 5,
+    searchIndexCount: 2,
   });
 });

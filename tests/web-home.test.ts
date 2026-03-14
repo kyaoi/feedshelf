@@ -18,6 +18,7 @@ test('buildDataPaths builds public JSON paths under ./data by default', () => {
     categories: './data/categories.json',
     sources: './data/sources.json',
     tags: './data/tags.json',
+    searchIndex: './data/search-index.json',
     meta: './data/meta.json',
   });
 });

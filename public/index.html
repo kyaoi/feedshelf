@@ -61,6 +61,30 @@
       </section>
 
 
+      <section class="panel" aria-labelledby="search-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Search</p>
+            <h2 id="search-title">横断検索で探す</h2>
+          </div>
+          <p class="muted">棚やタグで辿りきれない topic / 媒体名を補助的に探せます。</p>
+        </div>
+        <form class="search-form" action="./search/" method="get">
+          <label class="search-form__label" for="home-search-query">タイトル・媒体名・タグ名</label>
+          <div class="search-form__controls">
+            <input
+              id="home-search-query"
+              class="search-form__input"
+              type="search"
+              name="q"
+              placeholder="例: kubernetes publickey cloud"
+              autocomplete="off"
+            />
+            <button class="search-form__button" type="submit">検索ページへ</button>
+          </div>
+        </form>
+      </section>
+
       <section class="panel" aria-labelledby="tags-title">
         <div class="panel__heading">
           <div>
