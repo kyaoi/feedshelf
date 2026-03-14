@@ -298,3 +298,62 @@ test('writePublicExports creates shelf route shells alongside public JSON', asyn
   assert.match(shelfHtml, /注目記事/);
   assert.match(shelfHtml, /関連する媒体/);
 });
+
+test('writePublicExports prunes stale generated shelf routes without deleting fixed routes', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-shelf-prune-'),
+  );
+  const outputDir = path.join(tempDir, 'data');
+  const initialExports = buildPublicExports({
+    articles: CANONICAL_ARTICLES,
+    feeds: FEEDS,
+    shelves: SHELVES_DOCUMENT,
+    generatedAt: '2026-03-09T00:10:00Z',
+  });
+
+  await writePublicExports({
+    outputDir,
+    publicExports: initialExports,
+    shelvesDocument: SHELVES_DOCUMENT,
+  });
+
+  const fixedRouteDir = path.join(tempDir, 'tags');
+  await fs.mkdir(fixedRouteDir, { recursive: true });
+  await fs.writeFile(
+    path.join(fixedRouteDir, 'index.html'),
+    '<!doctype html><title>fixed route</title>',
+  );
+
+  const nextShelvesDocument = {
+    ...SHELVES_DOCUMENT,
+    shelves: SHELVES_DOCUMENT.shelves.filter((shelf) => shelf.id === 'it'),
+  };
+  const nextExports = buildPublicExports({
+    articles: CANONICAL_ARTICLES.filter((article) =>
+      article.shelfIds.includes('it'),
+    ),
+    feeds: FEEDS.filter((feed) => feed.shelfIds.includes('it')),
+    shelves: nextShelvesDocument,
+    generatedAt: '2026-03-10T00:10:00Z',
+  });
+
+  await writePublicExports({
+    outputDir,
+    publicExports: nextExports,
+    shelvesDocument: nextShelvesDocument,
+  });
+
+  await assert.rejects(
+    fs.readFile(path.join(tempDir, 'science', 'index.html'), 'utf8'),
+    { code: 'ENOENT' },
+  );
+  const remainingShelfHtml = await fs.readFile(
+    path.join(tempDir, 'it', 'index.html'),
+    'utf8',
+  );
+  assert.match(remainingShelfHtml, /data-shelf-id="it"/);
+  assert.equal(
+    await fs.readFile(path.join(fixedRouteDir, 'index.html'), 'utf8'),
+    '<!doctype html><title>fixed route</title>',
+  );
+});

@@ -263,6 +263,7 @@ test('README and docs stay aligned with workflow boundaries and diffship failure
   assert.match(readme, /git rev-parse HEAD/);
   assert.match(readme, /failure log/);
   assert.match(readme, /diffship の修正ループ/);
+  assert.match(readme, /generated route は次回 export 時に掃除/);
 
   for (const documentText of [spec, decisions, traceability, plan]) {
     assert.match(documentText, /tests\/typescript-tooling\.test\.ts/);
@@ -272,6 +273,11 @@ test('README and docs stay aligned with workflow boundaries and diffship failure
   assert.match(spec, /exact HEAD/);
   assert.match(spec, /\.github\/workflows\/ci\.yml/);
   assert.match(spec, /\.github\/workflows\/update-public-data\.yml/);
+  assert.match(spec, /oldShelfId/);
+  assert.match(spec, /route shell を掃除/);
+  assert.match(decisions, /stale な generated shelf route だけを掃除する/);
+  assert.match(traceability, /FS-125/);
+  assert.match(plan, /stale route を残さない/);
 
   assert.match(ciWorkflow, /^name: CI/m);
   assert.match(ciWorkflow, /pnpm run ci/);

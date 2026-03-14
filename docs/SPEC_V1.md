@@ -487,6 +487,7 @@ source を追加・無効化・棚へ紐付け・source tag を調整したい�
 - 1 shelf は 0 個以上の source を持ちうる
 - `feeds.json.shelfIds[]` の各値は `shelves.yaml` に存在しなければならない
 - shelf を削除または rename する場合は、参照する全 source の `shelfIds[]` も同時に更新する
+- shelf を削除または rename したあとの次回 `pipeline:update` では、generated な `/<oldShelfId>/index.html` route shell を掃除し、fixed route や hand-authored page を誤って削除しない
 
 `entryTags` は input registry ではなく、RSS / Atom metadata から pipeline が生成する article metadata として扱う。
 

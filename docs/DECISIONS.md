@@ -779,6 +779,13 @@
 - 影響: `FS-QA-05` と `FS-QA-10` では、旧MVP evidence を再利用しつつ、棚カタログ・棚ページ・tag / search・source bridge・public JSON 更新を追加 acceptance として扱う
 - 影響: README や docs でも「Phase 5 でMVP完了済み」と「最終 v1 は Phase 6 込み」を区別して表現する
 
+## D-119A: pipeline export は stale な generated shelf route だけを掃除する
+
+- 決定: `pipeline:update` / `writePublicExports` は current `shelves.yaml` に存在する `shelfId` の `/<shelfId>/index.html` を再生成し、現行棚集合に存在しない route dir については **generated な shelf route marker を持つ場合だけ** 掃除する
+- 理由: shelf の rename / delete 後に GitHub Pages 上へ stale な `/<oldShelfId>/` が残ると、仕様上は存在しない棚へ到達できてしまう一方で、固定 route や hand-authored page を directory 名だけで削除するのは危険だから
+- 影響: route cleanup は managed marker を持つ棚 route に限定し、`/tags/` / `/search/` / `/sources/` / `/categories/` などの fixed route を誤って削除しない
+- 影響: contributor が shelf を削除・rename した場合も、次回 export で generated route shell が docs 上の棚集合と同期する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

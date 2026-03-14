@@ -76,6 +76,8 @@ pnpm run pipeline:update
 
 生成物は `public/data/` に出力されます。`public/data/` は生成物として扱い、手編集しません。
 
+同時に `/<shelfId>/index.html` の棚 route shell も同期され、`data/shelves.yaml` から削除・rename された棚に対応する generated route は次回 export 時に掃除されます。
+
 ### 4. `public/` を静的配信して確認する
 
 ```bash

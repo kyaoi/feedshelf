@@ -17,6 +17,8 @@ import type {
   ShelvesDocument,
 } from '../../src/shared/contracts.ts';
 
+const SHELF_ROUTE_PAGE_MARKER = 'data-feedshelf-page="shelf"';
+
 function toIsoTimestamp(value: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
@@ -518,6 +520,46 @@ function renderShelfRouteHtml(shelf: ShelfDefinition): string {
 `;
 }
 
+async function pruneStaleShelfRouteShells({
+  siteDir,
+  activeShelfIds,
+}: {
+  siteDir: string;
+  activeShelfIds: Set<string>;
+}): Promise<void> {
+  const entries = await fs.readdir(siteDir, { withFileTypes: true });
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.isDirectory() || activeShelfIds.has(entry.name)) {
+        return;
+      }
+
+      const indexPath = path.join(siteDir, entry.name, 'index.html');
+      let html = '';
+
+      try {
+        html = await fs.readFile(indexPath, 'utf8');
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return;
+        }
+
+        throw error;
+      }
+
+      if (!html.includes(SHELF_ROUTE_PAGE_MARKER)) {
+        return;
+      }
+
+      await fs.rm(path.join(siteDir, entry.name), {
+        recursive: true,
+        force: true,
+      });
+    }),
+  );
+}
+
 async function writeShelfRouteShells({
   siteDir,
   shelves,
@@ -525,6 +567,9 @@ async function writeShelfRouteShells({
   siteDir: string;
   shelves: ShelfDefinition[];
 }): Promise<void> {
+  const activeShelfIds = new Set(shelves.map((shelf) => shelf.id));
+  await pruneStaleShelfRouteShells({ siteDir, activeShelfIds });
+
   await Promise.all(
     shelves.map(async (shelf) => {
       const shelfDir = path.join(siteDir, shelf.id);
