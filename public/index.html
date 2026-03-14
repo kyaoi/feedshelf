@@ -6,7 +6,7 @@
     <title>FeedShelf</title>
     <meta
       name="description"
-      content="複数の公開 RSS / Atom フィードを横断して新着を確認するための静的 Web アプリ。"
+      content="複数の公開 RSS / Atom フィードから興味ベースで記事を探すための shelf-first な静的 Web アプリ。"
     />
     <link rel="stylesheet" href="./assets/styles.css" />
     <script defer src="./assets/app.js"></script>
@@ -14,10 +14,10 @@
   <body>
     <header class="hero">
       <div class="container hero__inner">
-        <p class="eyebrow">FeedShelf / Phase 3</p>
-        <h1>新着をまとめて読むための静的 RSS シェルフ</h1>
+        <p class="eyebrow">FeedShelf / Phase 6</p>
+        <h1>棚から読みたい記事に出会うための静的 RSS シェルフ</h1>
         <p class="lead">
-          公開 RSS / Atom から生成した `public/data/*.json` を読み込み、新着記事を軽量に一覧表示します。
+          まず棚を選び、そこから媒体や記事へ降りていく shelf-first な入口です。棚ページの専用 route が揃うまでは、互換一覧へ橋渡しします。
         </p>
       </div>
     </header>
@@ -41,21 +41,21 @@
             <dd>—</dd>
           </div>
           <div class="stat-card">
-            <dt>カテゴリ数</dt>
+            <dt>棚数</dt>
             <dd>—</dd>
           </div>
         </dl>
       </section>
 
-      <section class="panel" aria-labelledby="categories-title">
+      <section class="panel" aria-labelledby="shelves-title">
         <div class="panel__heading">
           <div>
-            <p class="panel__eyebrow">カテゴリ</p>
-            <h2 id="categories-title">カテゴリ別の入口</h2>
+            <p class="panel__eyebrow">Shelves</p>
+            <h2 id="shelves-title">興味から選ぶ棚カタログ</h2>
           </div>
-          <p class="muted">カテゴリ chip から専用一覧へ移動できます。</p>
+          <p class="muted">現時点では互換 route を使って棚一覧を開きます。</p>
         </div>
-        <div id="categories-list" class="chip-list" aria-live="polite">
+        <div id="shelves-list" class="shelf-grid" aria-live="polite">
           <p class="placeholder-text">読み込み中…</p>
         </div>
       </section>
@@ -63,10 +63,10 @@
       <section class="panel" aria-labelledby="sources-title">
         <div class="panel__heading">
           <div>
-            <p class="panel__eyebrow">媒体</p>
-            <h2 id="sources-title">媒体別の入口</h2>
+            <p class="panel__eyebrow">Sources</p>
+            <h2 id="sources-title">媒体ディレクトリ</h2>
           </div>
-          <p class="muted">媒体 pill から専用一覧へ移動できます。</p>
+          <p class="muted">媒体から入りたいときの補助導線です。</p>
         </div>
         <div id="sources-list" class="chip-list" aria-live="polite">
           <p class="placeholder-text">読み込み中…</p>
@@ -76,8 +76,8 @@
       <section class="panel" aria-labelledby="articles-title">
         <div class="panel__heading">
           <div>
-            <p class="panel__eyebrow">新着</p>
-            <h2 id="articles-title">新着記事一覧</h2>
+            <p class="panel__eyebrow">Recent</p>
+            <h2 id="articles-title">全体の新着記事</h2>
           </div>
           <p id="articles-count" class="muted">読み込み中…</p>
         </div>

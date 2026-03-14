@@ -73,7 +73,7 @@
 | FS-069 | source を複数棚へ所属させる契約を `shelfIds[]` として定義できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `category` ではなく配列の `shelfIds[]` を採る方針が docs で確認できる |
 | FS-070 | source に手動タグを付与して discovery に活用できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `feeds.json.tags` が curator-managed tag として定義されている |
 | FS-071 | RSS / Atom metadata 由来の記事タグを best-effort で扱える | `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `PLAN.md` | `entryTags` が optional / best-effort metadata として定義されている |
-| FS-072 | ルート `/` を棚カタログとして再設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | ルートの主役が全体新着ではなく site intro + 棚カード一覧になることが docs で確認できる |
+| FS-072 | ルート `/` を棚カタログとして再設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `public/index.html` / `src/web/app.ts` / `tests/web-home.test.ts` | root が site intro + shelf cards + 補助 source directory を表示し、棚 CTA が compatibility route へ橋渡しすることを tests と実装で確認できる |
 | FS-073 | `/<shelfId>/` を棚別の主要導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページの責務（概要・記事一覧・関連 tag / source 導線）が docs で確認できる |
 | FS-074 | `/tags/` を tag discovery 導線として設計できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | tag list / tag detail の方針が docs で確認できる |
 | FS-075 | `/search/` で title / sourceName / tags を対象に静的検索できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | build-time search index + client-side 検索の方針が docs で確認できる |
@@ -91,7 +91,7 @@
 | FS-087 | 記事カードで title / visible tags / source の優先度を metadata より上に置ける | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | discovery-first な card hierarchy が docs で確認できる |
 | FS-088 | visible tag chips を既存 `entryTags` / `sourceTags` から導出できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `cardTags` のような専用公開 field を追加せず、0〜3件程度の tag 表示を構成できることが docs で確認できる |
 | FS-089 | 棚ページの記事カードで冗長な棚 / category 表示を減らし、summary 欠損時も読みやすさを保てる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | 棚ページでは current shelf / category の繰り返し表示を必須にせず、summary / image が optional でも card hierarchy が成立することを docs で確認できる |
-| FS-098 | `/sources/` を source directory / profile として補助導線に位置づけられる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | source page が棚・tag・検索の補助 route であり、探索の開始地点ではないことを docs で確認できる |
+| FS-098 | `/sources/` を source directory / profile として補助導線に位置づけられる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `public/sources/index.html` / `src/web/app.ts` / `tests/web-sources.test.ts` | source page が媒体一覧に加えて related shelf bridge を持ち、棚へ戻る補助 route として機能することを tests と実装で確認できる |
 | FS-099 | source detail から関連棚・tag・recent articles へ戻れる UI を設計できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | `/sources/?id=...` が source identity 確認だけで終わらず、`shelfIds` / `tags` / recent articles を通じて再探索できることを docs で確認できる |
 | FS-100 | source page を既存 `sources.json` / `articles.json` だけで構成できる | `docs/SPEC_V1.md` / `docs/DECISIONS.md` | per-source detail JSON を増やさず、summary と article filter の再利用で `/sources/` を実装できることを docs で確認できる |
 | FS-101 | Phase 6 の主要閲覧 surface を narrow viewport で 1 カラムへ安全に縮退できる | `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` | root / shelf / source / tag / search が横スクロール前提ではなく、mobile で縦積みへ崩せる方針が docs で確認できる |

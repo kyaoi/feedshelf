@@ -143,12 +143,14 @@
                     value: formatCount(meta && meta.sourceCount),
                 },
                 {
-                    label: 'カテゴリ数',
+                    label: '棚数',
                     value: formatCount(meta && meta.categoryCount),
                 },
             ],
-            categories: buildCategoryNavigationItems(categories, {
-                hrefBuilder: buildCategoryHrefFromHome,
+            shelves: buildShelfCards({
+                categories,
+                sources,
+                articles,
             }),
             sources: buildSourceNavigationItems(sources, {
                 hrefBuilder: buildSourceHrefFromHome,
@@ -199,6 +201,29 @@
             isSelected: selectedCategoryId === category.id,
         }));
     }
+    function buildShelfCards({ categories, sources, articles, }) {
+        return categories.map((category) => {
+            const relatedSources = sources.filter((source) => source.categoryId
+                ? source.categoryId === category.id
+                : source.categoryLabel === category.label);
+            const latestArticle = articles.find((article) => article.categoryId === category.id);
+            const latestSortAt = latestArticle?.sortAt || category.latestSortAt || null;
+            const sourceCount = relatedSources.length;
+            return {
+                id: category.id,
+                title: category.label,
+                description: sourceCount > 0
+                    ? `${sourceCount} 媒体から ${category.label} の記事をまとめて追えます。現在は互換ルート経由で一覧を開きます。`
+                    : `${category.label} の記事をまとめて確認できます。現在は互換ルート経由で一覧を開きます。`,
+                countLabel: `${formatCount(category.articleCount)} 件`,
+                sourceCountLabel: `${formatCount(sourceCount)} 媒体`,
+                freshnessLabel: latestSortAt
+                    ? `${formatDateTime(latestSortAt)} 更新`
+                    : '更新時刻不明',
+                href: buildCategoryHrefFromHome(category.id),
+            };
+        });
+    }
     function buildSourceNavigationItems(sources, { selectedSourceId = null, hrefBuilder = buildSourceHrefFromHome, } = {}) {
         return sources.map((source) => ({
             id: source.id,
@@ -211,19 +236,21 @@
             isSelected: selectedSourceId === source.id,
         }));
     }
-    function buildSourcePageViewModel({ sourceId, articles, sources, meta, }) {
+    function buildSourcePageViewModel({ sourceId, articles, sources, categories, meta, }) {
         const navigationItems = buildSourceNavigationItems(sources, {
             selectedSourceId: sourceId,
             hrefBuilder: buildSourceHrefFromSourcePage,
         });
         const selectedSource = sources.find((source) => source.id === sourceId) || null;
+        const generatedAtText = meta && meta.generatedAt
+            ? `${formatDateTime(meta.generatedAt)} 更新`
+            : '更新時刻不明';
         if (!sourceId) {
             return {
                 kind: 'missing-source',
-                generatedAtText: meta && meta.generatedAt
-                    ? `${formatDateTime(meta.generatedAt)} 更新`
-                    : '更新時刻不明',
+                generatedAtText,
                 navigationItems,
+                relatedShelves: [],
                 title: '媒体を選択してください',
                 description: MISSING_SOURCE_SELECTION_MESSAGE,
                 articlesCountText: '0 件',
@@ -234,10 +261,9 @@
         if (!selectedSource) {
             return {
                 kind: 'unknown-source',
-                generatedAtText: meta && meta.generatedAt
-                    ? `${formatDateTime(meta.generatedAt)} 更新`
-                    : '更新時刻不明',
+                generatedAtText,
                 navigationItems,
+                relatedShelves: [],
                 title: '媒体が見つかりません',
                 description: UNKNOWN_SOURCE_MESSAGE,
                 articlesCountText: '0 件',
@@ -246,19 +272,24 @@
             };
         }
         const selectedArticles = articles.filter((article) => article.sourceId === selectedSource.id);
+        const relatedCategories = categories.filter((category) => selectedSource.categoryId
+            ? category.id === selectedSource.categoryId
+            : category.label === selectedSource.categoryLabel);
+        const relatedShelves = buildCategoryNavigationItems(relatedCategories, {
+            hrefBuilder: buildCategoryHrefFromSourcePage,
+        });
         const descriptionParts = [
             selectedSource.categoryLabel,
             selectedSource.language,
         ].filter(Boolean);
         const description = descriptionParts.length > 0
-            ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。`
-            : `${selectedSource.name} の記事だけを新着順で表示しています。`;
+            ? `${selectedSource.name} (${descriptionParts.join(' / ')}) の記事だけを新着順で表示しています。関連する棚から一覧へ戻れます。`
+            : `${selectedSource.name} の記事だけを新着順で表示しています。関連する棚から一覧へ戻れます。`;
         return {
             kind: selectedArticles.length === 0 ? 'empty-source' : 'ready',
-            generatedAtText: meta && meta.generatedAt
-                ? `${formatDateTime(meta.generatedAt)} 更新`
-                : '更新時刻不明',
+            generatedAtText,
             navigationItems,
+            relatedShelves,
             title: `${selectedSource.name} の記事一覧`,
             description,
             articlesCountText: `${selectedArticles.length} 件`,
@@ -351,6 +382,31 @@
       </span>
     `;
     }
+    function renderShelfCards(shelves) {
+        if (shelves.length === 0) {
+            return '<p class="placeholder-text">棚はまだありません。</p>';
+        }
+        return shelves
+            .map((shelf) => `
+          <article class="shelf-card">
+            <div class="shelf-card__meta">
+              <span class="meta-pill">${escapeHtml(shelf.countLabel)}</span>
+              <span class="meta-pill">${escapeHtml(shelf.sourceCountLabel)}</span>
+            </div>
+            <div class="shelf-card__body">
+              <h3>${escapeHtml(shelf.title)}</h3>
+              <p class="muted">${escapeHtml(shelf.description)}</p>
+            </div>
+            <div class="shelf-card__footer">
+              <span class="muted">${escapeHtml(shelf.freshnessLabel)}</span>
+              ${shelf.href
+            ? `<a class="article-card__link" href="${escapeHtml(shelf.href)}">棚を開く</a>`
+            : '<span class="article-card__link article-card__link--disabled" aria-disabled="true">準備中</span>'}
+            </div>
+          </article>
+        `)
+            .join('');
+    }
     function renderSourceItems(sources) {
         if (sources.length === 0) {
             return '<p class="placeholder-text">媒体はまだありません。</p>';
@@ -433,6 +489,9 @@
     function buildCategoryHrefFromCategoryPage(categoryId) {
         return `./?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
     }
+    function buildCategoryHrefFromSourcePage(categoryId) {
+        return `../categories/?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
+    }
     function buildSourceHrefFromHome(sourceId) {
         return `./sources/?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
     }
@@ -469,7 +528,7 @@
         const viewModel = buildHomePageViewModel(payload);
         const generatedAtElement = documentRef.getElementById('generated-at');
         const metaStatsElement = documentRef.getElementById('meta-stats');
-        const categoriesElement = documentRef.getElementById('categories-list');
+        const shelvesElement = documentRef.getElementById('shelves-list');
         const sourcesElement = documentRef.getElementById('sources-list');
         const articlesCountElement = documentRef.getElementById('articles-count');
         const statusElement = documentRef.getElementById('articles-status');
@@ -480,8 +539,8 @@
         if (metaStatsElement) {
             metaStatsElement.innerHTML = renderStats(viewModel.stats);
         }
-        if (categoriesElement) {
-            categoriesElement.innerHTML = renderChipItems(viewModel.categories);
+        if (shelvesElement) {
+            shelvesElement.innerHTML = renderShelfCards(viewModel.shelves);
         }
         if (sourcesElement) {
             sourcesElement.innerHTML = renderSourceItems(viewModel.sources);
@@ -552,10 +611,12 @@
             sourceId: sourceId || '',
             articles: payload.articles,
             sources: payload.sources,
+            categories: payload.categories,
             meta: payload.meta,
         });
         const generatedAtElement = documentRef.getElementById('generated-at');
         const navElement = documentRef.getElementById('source-nav');
+        const relatedShelvesElement = documentRef.getElementById('related-shelves');
         const titleElement = documentRef.getElementById('source-page-title');
         const descriptionElement = documentRef.getElementById('source-page-description');
         const articlesCountElement = documentRef.getElementById('articles-count');
@@ -566,6 +627,9 @@
         }
         if (navElement) {
             navElement.innerHTML = renderSourceItems(viewModel.navigationItems);
+        }
+        if (relatedShelvesElement) {
+            relatedShelvesElement.innerHTML = renderChipItems(viewModel.relatedShelves);
         }
         if (titleElement) {
             titleElement.textContent = viewModel.title;
@@ -666,8 +730,10 @@
         buildArticleViewModels,
         buildCategoryHrefFromCategoryPage,
         buildCategoryHrefFromHome,
+        buildCategoryHrefFromSourcePage,
         buildCategoryNavigationItems,
         buildCategoryPageViewModel,
+        buildShelfCards,
         buildSourceHrefFromHome,
         buildSourceHrefFromSourcePage,
         buildSourceNavigationItems,
@@ -689,6 +755,7 @@
         renderCategoryPage,
         renderChipItems,
         renderHomePage,
+        renderShelfCards,
         renderSourceItems,
         renderSourcePage,
         renderStats,

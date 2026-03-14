@@ -6,6 +6,7 @@ const {
   EMPTY_SOURCE_ARTICLES_MESSAGE,
   MISSING_SOURCE_SELECTION_MESSAGE,
   UNKNOWN_SOURCE_MESSAGE,
+  buildCategoryHrefFromSourcePage,
   buildSourceHrefFromHome,
   buildSourceHrefFromSourcePage,
   buildSourcePageViewModel,
@@ -20,6 +21,10 @@ test('buildSourceHrefFromHome and buildSourceHrefFromSourcePage build stable que
   assert.equal(
     buildSourceHrefFromSourcePage('itmedia-news'),
     './?id=itmedia-news',
+  );
+  assert.equal(
+    buildCategoryHrefFromSourcePage('japan-it'),
+    '../categories/?id=japan-it',
   );
 });
 
@@ -42,16 +47,19 @@ test('buildSourcePageViewModel returns selection guidance when id is missing', (
         id: 'itmedia-news',
         name: 'ITmedia NEWS',
         articleCount: 0,
+        categoryId: 'japan-it',
         categoryLabel: '日本IT',
         language: 'ja',
       },
     ],
+    categories: [{ id: 'japan-it', label: '日本IT', articleCount: 0 }],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
 
   assert.equal(viewModel.kind, 'missing-source');
   assert.equal(viewModel.statusMessage, MISSING_SOURCE_SELECTION_MESSAGE);
   assert.equal(viewModel.navigationItems[0].href, './?id=itmedia-news');
+  assert.equal(viewModel.relatedShelves.length, 0);
 });
 
 test('buildSourcePageViewModel returns warning state when source is unknown', () => {
@@ -63,10 +71,12 @@ test('buildSourcePageViewModel returns warning state when source is unknown', ()
         id: 'itmedia-news',
         name: 'ITmedia NEWS',
         articleCount: 0,
+        categoryId: 'japan-it',
         categoryLabel: '日本IT',
         language: 'ja',
       },
     ],
+    categories: [{ id: 'japan-it', label: '日本IT', articleCount: 0 }],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
 
@@ -84,10 +94,12 @@ test('buildSourcePageViewModel returns empty-source when selected source has no 
         id: 'itmedia-news',
         name: 'ITmedia NEWS',
         articleCount: 0,
+        categoryId: 'japan-it',
         categoryLabel: '日本IT',
         language: 'ja',
       },
     ],
+    categories: [{ id: 'japan-it', label: '日本IT', articleCount: 0 }],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
 
@@ -132,6 +144,7 @@ test('buildSourcePageViewModel filters articles by sourceId and marks selected p
         id: 'itmedia-news',
         name: 'ITmedia NEWS',
         articleCount: 1,
+        categoryId: 'japan-it',
         categoryLabel: '日本IT',
         language: 'ja',
       },
@@ -139,9 +152,14 @@ test('buildSourcePageViewModel filters articles by sourceId and marks selected p
         id: 'gigazine-science',
         name: 'GIGAZINE',
         articleCount: 1,
+        categoryId: 'science',
         categoryLabel: 'Science',
         language: 'ja',
       },
+    ],
+    categories: [
+      { id: 'japan-it', label: '日本IT', articleCount: 1 },
+      { id: 'science', label: 'Science', articleCount: 1 },
     ],
     meta: { generatedAt: '2026-03-09T00:00:00Z' },
   });
@@ -152,4 +170,6 @@ test('buildSourcePageViewModel filters articles by sourceId and marks selected p
   assert.equal(viewModel.navigationItems[0].isSelected, true);
   assert.equal(viewModel.navigationItems[1].isSelected, false);
   assert.match(viewModel.description, /ITmedia NEWS/);
+  assert.equal(viewModel.relatedShelves[0].href, '../categories/?id=japan-it');
+  assert.equal(viewModel.relatedShelves[0].label, '日本IT');
 });

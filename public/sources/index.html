@@ -6,7 +6,7 @@
     <title>FeedShelf / Sources</title>
     <meta
       name="description"
-      content="FeedShelf の媒体別一覧ページ。public/data/*.json を読み込み、指定媒体の記事だけを表示します。"
+      content="FeedShelf の媒体別一覧ページ。public/data/*.json を読み込み、指定媒体の記事と関連棚への戻り先を表示します。"
     />
     <link rel="stylesheet" href="../assets/styles.css" />
     <script defer src="../assets/app.js"></script>
@@ -33,6 +33,19 @@
           <p id="generated-at" class="muted">読み込み中…</p>
         </div>
         <div id="source-nav" class="chip-list" aria-live="polite">
+          <p class="placeholder-text">読み込み中…</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="related-shelves-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Shelves</p>
+            <h2 id="related-shelves-title">関連する棚へ戻る</h2>
+          </div>
+          <p class="muted">棚一覧へ戻って別の媒体や記事へ探索を広げられます。</p>
+        </div>
+        <div id="related-shelves" class="chip-list" aria-live="polite">
           <p class="placeholder-text">読み込み中…</p>
         </div>
       </section>

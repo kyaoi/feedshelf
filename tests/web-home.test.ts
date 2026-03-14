@@ -33,6 +33,7 @@ test('loadHomePageData loads articles/categories/sources/meta together', async (
         publishedAt: '2026-03-09T00:00:00Z',
         sortAt: '2026-03-09T00:00:00Z',
         sourceName: 'Example Source',
+        categoryId: 'example',
         categoryLabel: 'Example Category',
         imageUrl: null,
       },
@@ -106,6 +107,7 @@ test('buildHomePageViewModel fills nullable article fields with display-safe val
         publishedAt: null,
         sortAt: null,
         sourceName: 'Example Source',
+        categoryId: 'example-category',
         categoryLabel: 'Example Category',
         imageUrl: null,
       },
@@ -132,7 +134,9 @@ test('buildHomePageViewModel fills nullable article fields with display-safe val
 
   assert.equal(viewModel.articles[0].summary, MISSING_SUMMARY_LABEL);
   assert.equal(viewModel.articles[0].publishedAtLabel, '公開日時不明');
-  assert.equal(viewModel.categories[0].countLabel, '4件');
+  assert.equal(viewModel.shelves[0].countLabel, '4 件');
+  assert.equal(viewModel.shelves[0].sourceCountLabel, '1 媒体');
+  assert.equal(viewModel.shelves[0].href, './categories/?id=example-category');
   assert.equal(viewModel.sources[0].metaLabel, 'Example Category / en');
   assert.match(viewModel.generatedAtText, /更新$/);
 });
@@ -181,6 +185,7 @@ test('buildHomePageViewModel marks invalid external links as unavailable', () =>
         publishedAt: '2026-03-09T00:00:00Z',
         sortAt: '2026-03-09T00:00:00Z',
         sourceName: 'Example Source',
+        categoryId: 'example-category',
         categoryLabel: 'Example Category',
         imageUrl: null,
       },
