@@ -313,7 +313,28 @@ test('runPipeline writes shelves.json and reports shelf/category counts', async 
   const articlesJson = JSON.parse(
     await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
   );
+  const sourcesJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'sources.json'), 'utf8'),
+  );
+  const tagsJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'tags.json'), 'utf8'),
+  );
+  const searchIndexJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'search-index.json'), 'utf8'),
+  );
+  const metaJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'meta.json'), 'utf8'),
+  );
+  const categoriesJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'categories.json'), 'utf8'),
+  );
 
   assert.equal(shelvesJson[0].id, 'examples');
   assert.equal(articlesJson[0].shelfIds[0], 'examples');
+  assert.equal(sourcesJson[0].shelfIds[0], 'examples');
+  assert.equal(tagsJson[0].label, 'Cloud');
+  assert.equal(searchIndexJson[0].articleId, articlesJson[0].id);
+  assert.equal(metaJson.shelfCount, 2);
+  assert.equal(metaJson.categoryCount, 2);
+  assert.equal(categoriesJson[0].id, shelvesJson[0].id);
 });

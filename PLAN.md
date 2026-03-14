@@ -227,7 +227,7 @@ Phase 6 の進め方:
 - [x] `FS-TAG-10` `sourceTags` / `entryTags` / `tags.json` を使った tag list / tag detail / article card tag 表示を実装する
 - [x] `FS-SEARCH-10` build-time search index と `/search/` の client-side 検索 UI を実装する
 - [x] `FS-FEED-10` `data/shelves.yaml` / `data/feeds.json` / public JSON 生成を Phase 6 契約へ更新する
-- [ ] `FS-QA-10` Phase 6 拡張の tests / docs / acceptance / migration verification を実装へ反映する
+- [x] `FS-QA-10` Phase 6 拡張の tests / docs / acceptance / migration verification を実装へ反映する
 
 完了条件:
 - docs task で固定した Phase 6 契約が runtime / pipeline / public JSON / tests に反映されている
@@ -236,8 +236,8 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- `FS-UX-10` / `FS-TAG-10` / `FS-SEARCH-10` / `FS-FEED-10` を実装済みにし、次の task は `FS-QA-10` とする
-- 実装中に Phase 6 契約の変更が必要になった場合は、先に affected task / docs / tests / public JSON 契約への影響を分析し、必要なら docs task を挟む
+- `FS-UX-10` / `FS-TAG-10` / `FS-SEARCH-10` / `FS-FEED-10` / `FS-QA-10` を実装済みにし、Phase 6 implementation backlog を完了扱いにする
+- shelf-first acceptance と `/categories/` compatibility verification の evidence は tests / README / TRACEABILITY に同期した状態で維持する
 
 ## メモ
 

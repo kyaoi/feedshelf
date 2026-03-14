@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FeedShelf / Categories</title>
+    <title>FeedShelf / Categories (Compatibility)</title>
     <meta
       name="description"
-      content="FeedShelf のカテゴリ別一覧ページ。public/data/*.json を読み込み、指定カテゴリの記事だけを表示します。"
+      content="FeedShelf の categories compatibility page。legacy category deep link を壊さず、棚・タグ・検索・媒体ページへ戻る helper route を提供します。"
     />
     <link rel="stylesheet" href="../assets/styles.css" />
     <script defer src="../assets/app.js"></script>
@@ -15,10 +15,10 @@
     <header class="hero hero--compact">
       <div class="container hero__inner">
         <a class="back-link" href="../">← トップへ戻る</a>
-        <p class="eyebrow">FeedShelf / Category</p>
-        <h1 id="category-page-title">カテゴリを選択してください</h1>
+        <p class="eyebrow">FeedShelf / Category Compatibility</p>
+        <h1 id="category-page-title">カテゴリ互換一覧</h1>
         <p id="category-page-description" class="lead">
-          トップページまたはカテゴリ一覧から対象カテゴリを選ぶと、該当記事だけを表示します。
+          旧カテゴリ導線を壊さないための compatibility route です。棚・タグ・検索・媒体ページへ戻りながら、既存 deep link も確認できます。
         </p>
       </div>
     </header>
@@ -34,6 +34,22 @@
         </div>
         <div id="category-nav" class="chip-list" aria-live="polite">
           <p class="placeholder-text">読み込み中…</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="compatibility-links-title">
+        <div class="panel__heading">
+          <div>
+            <p class="panel__eyebrow">Compatibility</p>
+            <h2 id="compatibility-links-title">棚-first 導線へ戻る</h2>
+          </div>
+          <p class="muted">legacy category deep link を残しつつ、主役の導線へ戻れます。</p>
+        </div>
+        <div class="chip-list helper-links">
+          <a class="chip chip--muted" href="../">棚カタログへ</a>
+          <a class="chip chip--muted" href="../tags/">タグ一覧へ</a>
+          <a class="chip chip--muted" href="../search/">検索ページへ</a>
+          <a class="chip chip--muted" href="../sources/">媒体一覧へ</a>
         </div>
       </section>
 

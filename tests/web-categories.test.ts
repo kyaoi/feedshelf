@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   CATEGORY_QUERY_PARAM,
@@ -107,4 +109,17 @@ test('buildCategoryPageViewModel filters articles by categoryId and marks select
   assert.equal(viewModel.articles[0].title, 'Physics article');
   assert.equal(viewModel.navigationItems[0].isSelected, true);
   assert.equal(viewModel.navigationItems[1].isSelected, false);
+});
+
+test('categories page keeps compatibility helper links to shelf-first routes', () => {
+  const html = fs.readFileSync(
+    path.resolve(__dirname, '..', 'public/categories/index.html'),
+    'utf8',
+  );
+
+  assert.match(html, /Category Compatibility/);
+  assert.match(html, /compatibility route/);
+  assert.match(html, /\.\.\/tags\//);
+  assert.match(html, /\.\.\/search\//);
+  assert.match(html, /\.\.\/sources\//);
 });

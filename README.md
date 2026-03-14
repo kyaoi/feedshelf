@@ -1,8 +1,8 @@
 # FeedShelf
 
-FeedShelf は、複数の公開 RSS / Atom フィードから記事情報を収集し、**新着 / カテゴリ別 / 媒体別** に一覧表示する静的 Web アプリです。
+FeedShelf は、複数の公開 RSS / Atom フィードから記事情報を収集し、**棚 (`shelf`) を起点に記事へ出会う shelf-first な静的 Web アプリ**です。
 
-v1 では **記事本文を保持せず、GitHub Actions で `public/data/*.json` を生成し、GitHub Pages で配信する** 構成を前提にしています。
+v1 では **記事本文を保持せず、GitHub Actions で `public/data/*.json` を生成し、GitHub Pages で配信する** 構成を前提にしています。Phase 6 以降の primary public JSON は `articles / shelves / sources / tags / search-index / meta` とし、`categories.json` は compatibility export として扱います。
 
 ## MVP の前提
 
@@ -11,6 +11,7 @@ v1 では **記事本文を保持せず、GitHub Actions で `public/data/*.json
 - 入力は公開 RSS / Atom のみ
 - 更新は GitHub Actions、公開は GitHub Pages を前提にする
 - Web UI は `public/` 配下の static HTML / CSS / JS として保つ
+- 主役の導線は `/`・`/tags/`・`/search/`・`/sources/` とし、`/categories/` は compatibility route として残す
 
 詳細な仕様は [`docs/SPEC_V1.md`](docs/SPEC_V1.md) を参照してください。
 
@@ -84,8 +85,10 @@ python -m http.server 4173 --directory public
 その後、ブラウザで以下を開いて確認します。
 
 - `http://localhost:4173/`
-- `http://localhost:4173/categories/`
+- `http://localhost:4173/tags/`
+- `http://localhost:4173/search/`
 - `http://localhost:4173/sources/`
+- `http://localhost:4173/categories/` （compatibility route）
 
 ## GitHub Actions / Pages
 

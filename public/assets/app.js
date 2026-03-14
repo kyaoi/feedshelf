@@ -14,11 +14,11 @@
     const UNKNOWN_PUBLISHED_AT_LABEL = '公開日時不明';
     const GENERIC_LOAD_ERROR = '公開データの読み込みに失敗しました。GitHub Pages または静的サーバー経由で開いているか確認してください。';
     const FILE_PROTOCOL_ERROR = 'file:// 直開きでは JSON を読み込めない場合があります。静的サーバー経由で開いてください。';
-    const MISSING_PUBLIC_DATA_ERROR = '公開データがまだ生成されていません。先に `pnpm run pipeline:run` を実行して `public/data/*.json` を作成してください。';
+    const MISSING_PUBLIC_DATA_ERROR = '公開データがまだ生成されていません。先に `pnpm run pipeline:update` を実行して `public/data/*.json` を作成してください。';
     const CATEGORY_QUERY_PARAM = 'id';
-    const MISSING_CATEGORY_SELECTION_MESSAGE = 'カテゴリが選択されていません。トップページまたはカテゴリ一覧から選んでください。';
-    const UNKNOWN_CATEGORY_MESSAGE = '指定されたカテゴリは見つかりませんでした。別のカテゴリを選んでください。';
-    const EMPTY_CATEGORY_ARTICLES_MESSAGE = 'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
+    const MISSING_CATEGORY_SELECTION_MESSAGE = 'カテゴリが選択されていません。compatibility route 上の一覧から選ぶか、棚カタログ・タグ・検索から探し直してください。';
+    const UNKNOWN_CATEGORY_MESSAGE = '指定されたカテゴリは見つかりませんでした。棚カタログへ戻るか、別のカテゴリを選んでください。';
+    const EMPTY_CATEGORY_ARTICLES_MESSAGE = 'このカテゴリの記事はまだありません。次回の生成を待つか、棚・タグ・媒体ページから別の導線を試してください。';
     const SOURCE_QUERY_PARAM = 'id';
     const TAG_QUERY_PARAM = 'id';
     const SEARCH_QUERY_PARAM = 'q';
@@ -506,7 +506,7 @@
                     ? `${formatDateTime(meta.generatedAt)} 更新`
                     : '更新時刻不明',
                 navigationItems,
-                title: 'カテゴリを選択してください',
+                title: 'カテゴリ互換一覧から選択してください',
                 description: MISSING_CATEGORY_SELECTION_MESSAGE,
                 articlesCountText: '0 件',
                 articles: [],
@@ -520,7 +520,7 @@
                     ? `${formatDateTime(meta.generatedAt)} 更新`
                     : '更新時刻不明',
                 navigationItems,
-                title: 'カテゴリが見つかりません',
+                title: 'カテゴリ互換導線でカテゴリが見つかりません',
                 description: UNKNOWN_CATEGORY_MESSAGE,
                 articlesCountText: '0 件',
                 articles: [],
@@ -537,7 +537,7 @@
                 : '更新時刻不明',
             navigationItems,
             title: `${selectedCategory.label} の記事一覧`,
-            description: `${selectedCategory.label} に分類された記事だけを新着順で表示しています。`,
+            description: `${selectedCategory.label} の legacy category deep link を compatibility route で表示しています。必要に応じて棚・タグ・検索へ戻って探し直せます。`,
             articlesCountText: `${selectedArticles.length} 件`,
             articles: buildArticleViewModels(selectedArticles),
             statusMessage: selectedArticles.length === 0 ? EMPTY_CATEGORY_ARTICLES_MESSAGE : '',
