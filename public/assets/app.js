@@ -20,9 +20,13 @@
     const UNKNOWN_CATEGORY_MESSAGE = '指定されたカテゴリは見つかりませんでした。別のカテゴリを選んでください。';
     const EMPTY_CATEGORY_ARTICLES_MESSAGE = 'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
     const SOURCE_QUERY_PARAM = 'id';
+    const TAG_QUERY_PARAM = 'id';
     const MISSING_SOURCE_SELECTION_MESSAGE = '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
     const UNKNOWN_SOURCE_MESSAGE = '指定された媒体は見つかりませんでした。別の媒体を選んでください。';
     const EMPTY_SOURCE_ARTICLES_MESSAGE = 'この媒体の記事はまだありません。次回の生成を待つか、別の媒体を選んでください。';
+    const MISSING_TAG_SELECTION_MESSAGE = 'タグが選択されていません。トップページまたはタグ一覧から選んでください。';
+    const UNKNOWN_TAG_MESSAGE = '指定されたタグは見つかりませんでした。別のタグを選んでください。';
+    const EMPTY_TAG_ARTICLES_MESSAGE = 'このタグの記事はまだありません。別のタグを選ぶか、次回の生成を待ってください。';
     const INVALID_ARTICLE_LINK_LABEL = '元記事リンクを確認できません。';
     function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
         const trimmed = String(basePath).replace(/\/+$/u, '') || '.';
@@ -31,6 +35,7 @@
             articles: `${prefix}/articles.json`,
             categories: `${prefix}/categories.json`,
             sources: `${prefix}/sources.json`,
+            tags: `${prefix}/tags.json`,
             meta: `${prefix}/meta.json`,
         };
     }
@@ -53,10 +58,11 @@
     async function loadHomePageData({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, } = {}) {
         const paths = buildDataPaths(basePath);
         try {
-            const [articles, categories, sources, meta] = await Promise.all([
+            const [articles, categories, sources, tags, meta] = await Promise.all([
                 fetchJson(fetchImpl, paths.articles),
                 fetchJson(fetchImpl, paths.categories),
                 fetchJson(fetchImpl, paths.sources),
+                fetchJson(fetchImpl, paths.tags),
                 fetchJson(fetchImpl, paths.meta),
             ]);
             return {
@@ -70,6 +76,7 @@
                 sources: Array.isArray(sources)
                     ? sources
                     : [],
+                tags: Array.isArray(tags) ? tags : [],
                 meta: meta && typeof meta === 'object' ? meta : {},
             };
         }
@@ -128,7 +135,7 @@
     function formatCount(value) {
         return Number.isFinite(Number(value)) ? String(Number(value)) : '0';
     }
-    function buildHomePageViewModel({ articles, categories, sources, meta, }) {
+    function buildHomePageViewModel({ articles, categories, sources, tags, meta, }) {
         return {
             generatedAtText: meta && meta.generatedAt
                 ? `${formatDateTime(meta.generatedAt)} 更新`
@@ -152,11 +159,46 @@
                 sources,
                 articles,
             }),
+            tags: buildTagNavigationItems(tags, {
+                hrefBuilder: buildTagHrefFromHome,
+            }),
             sources: buildSourceNavigationItems(sources, {
                 hrefBuilder: buildSourceHrefFromHome,
             }),
             articles: buildArticleViewModels(articles),
         };
+    }
+    function normalizeWhitespace(value) {
+        return String(value).replace(/\s+/gu, ' ').trim();
+    }
+    function normalizeTagCompareKey(value) {
+        if (typeof value !== 'string') {
+            return '';
+        }
+        return normalizeWhitespace(value.normalize('NFKC')).toLocaleLowerCase('en-US');
+    }
+    function uniqueLabels(values) {
+        const seen = new Set();
+        const result = [];
+        for (const value of values) {
+            if (typeof value !== 'string') {
+                continue;
+            }
+            const normalized = normalizeWhitespace(value.normalize('NFKC'));
+            const compareKey = normalizeTagCompareKey(normalized);
+            if (!compareKey || seen.has(compareKey)) {
+                continue;
+            }
+            seen.add(compareKey);
+            result.push(normalized);
+        }
+        return result;
+    }
+    function buildVisibleTags(article) {
+        return uniqueLabels([
+            ...(Array.isArray(article.entryTags) ? article.entryTags : []),
+            ...(Array.isArray(article.sourceTags) ? article.sourceTags : []),
+        ]).slice(0, 3);
     }
     function normalizeExternalArticleUrl(value) {
         if (typeof value !== 'string' || value.trim() === '') {
@@ -189,6 +231,7 @@
                 externalLinkDescription: externalUrl
                     ? '元記事で続きを読む'
                     : INVALID_ARTICLE_LINK_LABEL,
+                visibleTags: buildVisibleTags(article),
             };
         });
     }
@@ -234,6 +277,15 @@
                 .join(' / '),
             href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
             isSelected: selectedSourceId === source.id,
+        }));
+    }
+    function buildTagNavigationItems(tags, { selectedTagId = null, hrefBuilder = buildTagHrefFromHome, } = {}) {
+        return tags.map((tag) => ({
+            id: tag.id,
+            label: tag.label,
+            countLabel: `${formatCount(tag.articleCount)}件`,
+            href: typeof hrefBuilder === 'function' ? hrefBuilder(tag.id) : null,
+            isSelected: selectedTagId === tag.id,
         }));
     }
     function buildSourcePageViewModel({ sourceId, articles, sources, categories, meta, }) {
@@ -347,6 +399,59 @@
             selectedCategoryLabel: selectedCategory.label,
         };
     }
+    function articleHasTag(article, tagLabel) {
+        const compareKey = normalizeTagCompareKey(tagLabel);
+        if (!compareKey) {
+            return false;
+        }
+        return [...(article.sourceTags || []), ...(article.entryTags || [])].some((candidate) => normalizeTagCompareKey(candidate) === compareKey);
+    }
+    function buildTagPageViewModel({ tagId, articles, tags, meta, }) {
+        const navigationItems = buildTagNavigationItems(tags, {
+            selectedTagId: tagId,
+            hrefBuilder: buildTagHrefFromTagPage,
+        });
+        const selectedTag = tags.find((tag) => tag.id === tagId) || null;
+        const generatedAtText = meta && meta.generatedAt
+            ? `${formatDateTime(meta.generatedAt)} 更新`
+            : '更新時刻不明';
+        if (!tagId) {
+            return {
+                kind: 'missing-tag',
+                generatedAtText,
+                navigationItems,
+                title: 'タグを選択してください',
+                description: MISSING_TAG_SELECTION_MESSAGE,
+                articlesCountText: '0 件',
+                articles: [],
+                statusMessage: MISSING_TAG_SELECTION_MESSAGE,
+            };
+        }
+        if (!selectedTag) {
+            return {
+                kind: 'unknown-tag',
+                generatedAtText,
+                navigationItems,
+                title: 'タグが見つかりません',
+                description: UNKNOWN_TAG_MESSAGE,
+                articlesCountText: '0 件',
+                articles: [],
+                statusMessage: UNKNOWN_TAG_MESSAGE,
+            };
+        }
+        const selectedArticles = articles.filter((article) => articleHasTag(article, selectedTag.label));
+        return {
+            kind: selectedArticles.length === 0 ? 'empty-tag' : 'ready',
+            generatedAtText,
+            navigationItems,
+            title: `${selectedTag.label} の記事一覧`,
+            description: `${selectedTag.label} に関連する記事を新着順で表示しています。sourceTags と entryTags の両方を統合した導線です。`,
+            articlesCountText: `${selectedArticles.length} 件`,
+            articles: buildArticleViewModels(selectedArticles),
+            statusMessage: selectedArticles.length === 0 ? EMPTY_TAG_ARTICLES_MESSAGE : '',
+            selectedTagLabel: selectedTag.label,
+        };
+    }
     function renderStats(stats) {
         return stats
             .map((stat) => `
@@ -456,17 +561,26 @@
               </a>
             `
                 : '<span class="article-card__link article-card__link--disabled" aria-disabled="true">リンクなし</span>';
+            const visibleTagsMarkup = article.visibleTags.length > 0
+                ? `
+                <div class="article-card__tags" aria-label="記事タグ">
+                  ${article.visibleTags
+                    .map((tag) => `<span class="chip chip--muted">${escapeHtml(tag)}</span>`)
+                    .join('')}
+                </div>
+              `
+                : '';
             return `
           <li class="article-card ${article.imageUrl ? 'article-card--with-image' : ''}">
             <article class="article-card__content">
               <div class="article-card__meta">
                 <span class="meta-pill">${escapeHtml(article.sourceName)}</span>
-                <span class="meta-pill">${escapeHtml(article.categoryLabel)}</span>
                 <span class="meta-pill">${escapeHtml(article.publishedAtLabel)}</span>
               </div>
               <h3 class="article-card__title">
                 ${articleTitleMarkup}
               </h3>
+              ${visibleTagsMarkup}
               <p class="article-card__summary ${article.hasSummary ? '' : 'article-card__summary--missing'}">
                 ${escapeHtml(article.summary)}
               </p>
@@ -492,6 +606,12 @@
     function buildCategoryHrefFromSourcePage(categoryId) {
         return `../categories/?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
     }
+    function buildTagHrefFromHome(tagId) {
+        return `./tags/?${TAG_QUERY_PARAM}=${encodeURIComponent(tagId)}`;
+    }
+    function buildTagHrefFromTagPage(tagId) {
+        return `./?${TAG_QUERY_PARAM}=${encodeURIComponent(tagId)}`;
+    }
     function buildSourceHrefFromHome(sourceId) {
         return `./sources/?${SOURCE_QUERY_PARAM}=${encodeURIComponent(sourceId)}`;
     }
@@ -512,6 +632,13 @@
         const params = new URLSearchParams(locationRef.search);
         return params.get(SOURCE_QUERY_PARAM) || '';
     }
+    function getTagIdFromLocation(locationRef = browserScope.location) {
+        if (!locationRef || typeof locationRef.search !== 'string') {
+            return '';
+        }
+        const params = new URLSearchParams(locationRef.search);
+        return params.get(TAG_QUERY_PARAM) || '';
+    }
     function setStatus(documentRef, { kind, message }) {
         const statusElement = documentRef.getElementById('articles-status');
         const listElement = documentRef.getElementById('articles-list');
@@ -529,6 +656,7 @@
         const generatedAtElement = documentRef.getElementById('generated-at');
         const metaStatsElement = documentRef.getElementById('meta-stats');
         const shelvesElement = documentRef.getElementById('shelves-list');
+        const tagsElement = documentRef.getElementById('tags-list');
         const sourcesElement = documentRef.getElementById('sources-list');
         const articlesCountElement = documentRef.getElementById('articles-count');
         const statusElement = documentRef.getElementById('articles-status');
@@ -541,6 +669,9 @@
         }
         if (shelvesElement) {
             shelvesElement.innerHTML = renderShelfCards(viewModel.shelves);
+        }
+        if (tagsElement) {
+            tagsElement.innerHTML = renderChipItems(viewModel.tags);
         }
         if (sourcesElement) {
             sourcesElement.innerHTML = renderSourceItems(viewModel.sources);
@@ -655,6 +786,50 @@
         listElement.innerHTML = renderArticleItems(viewModel.articles);
         return viewModel;
     }
+    function renderTagPage(documentRef, payload, { tagId } = {}) {
+        const viewModel = buildTagPageViewModel({
+            tagId: tagId || '',
+            articles: payload.articles,
+            tags: payload.tags,
+            meta: payload.meta,
+        });
+        const generatedAtElement = documentRef.getElementById('generated-at');
+        const navElement = documentRef.getElementById('tag-nav');
+        const titleElement = documentRef.getElementById('tag-page-title');
+        const descriptionElement = documentRef.getElementById('tag-page-description');
+        const articlesCountElement = documentRef.getElementById('articles-count');
+        const statusElement = documentRef.getElementById('articles-status');
+        const listElement = documentRef.getElementById('articles-list');
+        if (generatedAtElement) {
+            generatedAtElement.textContent = viewModel.generatedAtText;
+        }
+        if (navElement) {
+            navElement.innerHTML = renderChipItems(viewModel.navigationItems);
+        }
+        if (titleElement) {
+            titleElement.textContent = viewModel.title;
+        }
+        if (descriptionElement) {
+            descriptionElement.textContent = viewModel.description;
+        }
+        if (articlesCountElement) {
+            articlesCountElement.textContent = viewModel.articlesCountText;
+        }
+        if (!statusElement || !listElement) {
+            return viewModel;
+        }
+        if (viewModel.kind !== 'ready') {
+            setStatus(documentRef, {
+                kind: 'warning',
+                message: viewModel.statusMessage,
+            });
+            return viewModel;
+        }
+        statusElement.hidden = true;
+        listElement.hidden = false;
+        listElement.innerHTML = renderArticleItems(viewModel.articles);
+        return viewModel;
+    }
     async function initHomePage({ basePath = DEFAULT_BASE_PATH, fetchImpl = browserScope.fetch, documentRef = browserScope.document, } = {}) {
         if (!documentRef) {
             return { kind: 'skipped' };
@@ -714,6 +889,26 @@
         });
         return payload;
     }
+    async function initTagPage({ basePath = '..', fetchImpl = browserScope.fetch, documentRef = browserScope.document, locationRef = browserScope.location, } = {}) {
+        if (!documentRef) {
+            return { kind: 'skipped' };
+        }
+        setStatus(documentRef, {
+            kind: 'loading',
+            message: '公開 JSON を読み込んでいます…',
+        });
+        const payload = await loadHomePageData({ basePath, fetchImpl });
+        if (payload.kind === 'ready') {
+            return renderTagPage(documentRef, payload, {
+                tagId: getTagIdFromLocation(locationRef),
+            });
+        }
+        setStatus(documentRef, {
+            kind: payload.kind === 'missing-data' ? 'warning' : 'error',
+            message: payload.message,
+        });
+        return payload;
+    }
     const exported = {
         CATEGORY_QUERY_PARAM,
         DEFAULT_BASE_PATH,
@@ -761,6 +956,18 @@
         renderStats,
         setStatus,
         EMPTY_SOURCE_ARTICLES_MESSAGE,
+        EMPTY_TAG_ARTICLES_MESSAGE,
+        MISSING_TAG_SELECTION_MESSAGE,
+        TAG_QUERY_PARAM,
+        UNKNOWN_TAG_MESSAGE,
+        articleHasTag,
+        buildTagHrefFromHome,
+        buildTagHrefFromTagPage,
+        buildTagNavigationItems,
+        buildTagPageViewModel,
+        getTagIdFromLocation,
+        initTagPage,
+        renderTagPage,
     };
     if (commonJsModule && typeof commonJsModule === 'object') {
         commonJsModule.exports = exported;
@@ -774,11 +981,14 @@
                 : '';
             const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
             const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
+            const isTagPage = /\/tags\/(?:index\.html)?$/u.test(pathname);
             const initializer = isCategoryPage
                 ? initCategoryPage
                 : isSourcePage
                     ? initSourcePage
-                    : initHomePage;
+                    : isTagPage
+                        ? initTagPage
+                        : initHomePage;
             initializer().catch((error) => {
                 console.error('[feedshelf] failed to initialize page', error);
             });

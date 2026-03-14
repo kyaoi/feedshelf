@@ -224,7 +224,7 @@ Phase 6 の進め方:
 #### 6-G. Implementation backlog（docs freeze 後に着手）
 
 - [ ] `FS-UX-10` shelf-first route shell と root / shelf / source bridge の主要 UI を実装する
-- [ ] `FS-TAG-10` `sourceTags` / `entryTags` / `tags.json` を使った tag list / tag detail / article card tag 表示を実装する
+- [x] `FS-TAG-10` `sourceTags` / `entryTags` / `tags.json` を使った tag list / tag detail / article card tag 表示を実装する
 - [ ] `FS-SEARCH-10` build-time search index と `/search/` の client-side 検索 UI を実装する
 - [ ] `FS-FEED-10` `data/shelves.yaml` / `data/feeds.json` / public JSON 生成を Phase 6 契約へ更新する
 - [ ] `FS-QA-10` Phase 6 拡張の tests / docs / acceptance / migration verification を実装へ反映する
@@ -236,7 +236,7 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- `FS-PHASE6-01` で Phase 6 docs の最終同期まで完了し、次の task は `FS-UX-10` とする
+- `FS-UX-10` と `FS-TAG-10` を実装済みにし、次の task は `FS-SEARCH-10` とする
 - 実装中に Phase 6 契約の変更が必要になった場合は、先に affected task / docs / tests / public JSON 契約への影響を分析し、必要なら docs task を挟む
 
 ## メモ

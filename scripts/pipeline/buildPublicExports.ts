@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -9,6 +10,7 @@ import type {
   PublicExports,
   PublicMeta,
   PublicSourceSummary,
+  PublicTagSummary,
 } from '../../src/shared/contracts.ts';
 
 function toIsoTimestamp(value: string): string {
@@ -35,6 +37,55 @@ function compareByNewestTime(left: string, right: string): number {
   }
 
   return 0;
+}
+
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function uniqueTags(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+
+    const normalized = normalizeWhitespace(value.normalize('NFKC'));
+    if (normalized === '') {
+      continue;
+    }
+
+    const compareKey = normalized.toLocaleLowerCase('en-US');
+    if (seen.has(compareKey)) {
+      continue;
+    }
+
+    seen.add(compareKey);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+export function normalizeTagCompareKey(label: string): string {
+  return normalizeWhitespace(String(label).normalize('NFKC')).toLocaleLowerCase(
+    'en-US',
+  );
+}
+
+export function buildTagId(label: string): string {
+  const compareKey = normalizeTagCompareKey(label);
+  if (compareKey === '') {
+    throw new Error('Unable to build tag id from empty label.');
+  }
+
+  return `tag-${crypto
+    .createHash('sha256')
+    .update(compareKey)
+    .digest('hex')
+    .slice(0, 12)}`;
 }
 
 export function slugifyCategoryLabel(label: string): string {
@@ -98,21 +149,35 @@ function comparePublicArticles(
 
 function buildPublicArticles(
   articles: CanonicalArticle[],
+  feeds: FeedDefinition[],
 ): PublicArticleSummary[] {
+  const feedMap = new Map<string, FeedDefinition>(
+    feeds.map((feed) => [feed.id, feed]),
+  );
+
   return articles
-    .map((article) => ({
-      id: article.id,
-      title: article.title,
-      url: article.url,
-      summary: article.summary,
-      publishedAt: article.publishedAt,
-      sortAt: selectSortAt(article),
-      sourceId: article.feedId,
-      sourceName: article.sourceName,
-      categoryId: slugifyCategoryLabel(article.category),
-      categoryLabel: article.category,
-      imageUrl: article.imageUrl,
-    }))
+    .map((article) => {
+      const feed = feedMap.get(article.feedId);
+      if (!feed) {
+        throw new Error(`Unknown feed for article export: ${article.feedId}`);
+      }
+
+      return {
+        id: article.id,
+        title: article.title,
+        url: article.url,
+        summary: article.summary,
+        publishedAt: article.publishedAt,
+        sortAt: selectSortAt(article),
+        sourceId: article.feedId,
+        sourceName: article.sourceName,
+        categoryId: slugifyCategoryLabel(article.category),
+        categoryLabel: article.category,
+        imageUrl: article.imageUrl,
+        sourceTags: uniqueTags(feed.tags || []),
+        entryTags: uniqueTags(article.tags || []),
+      };
+    })
     .sort(comparePublicArticles);
 }
 
@@ -179,6 +244,7 @@ function buildSources(
       categoryLabel: categoryRegistry.get(categoryId) || feed.category,
       articleCount: 0,
       latestSortAt: article.sortAt,
+      tags: uniqueTags(feed.tags || []),
     };
 
     existing.articleCount += 1;
@@ -202,6 +268,81 @@ function buildSources(
   });
 }
 
+function buildTags(publicArticles: PublicArticleSummary[]): PublicTagSummary[] {
+  const stats = new Map<
+    string,
+    {
+      id: string;
+      label: string;
+      articleIds: Set<string>;
+      sourceIds: Set<string>;
+      latestSortAt: string;
+      hasSourceLabel: boolean;
+    }
+  >();
+
+  for (const article of publicArticles) {
+    const tagCandidates = [
+      ...article.sourceTags.map((label) => ({ label, isSourceTag: true })),
+      ...article.entryTags.map((label) => ({ label, isSourceTag: false })),
+    ];
+
+    for (const candidate of tagCandidates) {
+      const compareKey = normalizeTagCompareKey(candidate.label);
+      if (compareKey === '') {
+        continue;
+      }
+
+      const existing = stats.get(compareKey) || {
+        id: buildTagId(candidate.label),
+        label: candidate.label,
+        articleIds: new Set<string>(),
+        sourceIds: new Set<string>(),
+        latestSortAt: article.sortAt,
+        hasSourceLabel: candidate.isSourceTag,
+      };
+
+      if (candidate.isSourceTag && !existing.hasSourceLabel) {
+        existing.label = candidate.label;
+        existing.id = buildTagId(candidate.label);
+        existing.hasSourceLabel = true;
+      }
+
+      existing.articleIds.add(article.id);
+      existing.sourceIds.add(article.sourceId);
+      if (compareByNewestTime(article.sortAt, existing.latestSortAt) < 0) {
+        existing.latestSortAt = article.sortAt;
+      }
+
+      stats.set(compareKey, existing);
+    }
+  }
+
+  return Array.from(stats.values())
+    .map((tag) => ({
+      id: tag.id,
+      label: tag.label,
+      articleCount: tag.articleIds.size,
+      sourceCount: tag.sourceIds.size,
+      latestSortAt: tag.latestSortAt,
+    }))
+    .sort((left, right) => {
+      if (left.articleCount !== right.articleCount) {
+        return right.articleCount - left.articleCount;
+      }
+
+      const timeOrder = compareByNewestTime(
+        left.latestSortAt,
+        right.latestSortAt,
+      );
+      if (timeOrder !== 0) {
+        return timeOrder;
+      }
+
+      return left.label.localeCompare(right.label, 'en');
+    });
+}
+
 export function buildPublicExports({
   articles,
   feeds,
@@ -212,20 +353,23 @@ export function buildPublicExports({
   generatedAt?: string;
 }): PublicExports {
   const categoryRegistry = buildCategoryRegistry(articles);
-  const publicArticles = buildPublicArticles(articles);
+  const publicArticles = buildPublicArticles(articles, feeds);
   const categories = buildCategories(publicArticles, categoryRegistry);
   const sources = buildSources(publicArticles, feeds, categoryRegistry);
+  const tags = buildTags(publicArticles);
   const meta: PublicMeta = {
     generatedAt: toIsoTimestamp(generatedAt || new Date().toISOString()),
     articleCount: publicArticles.length,
     sourceCount: sources.length,
     categoryCount: categories.length,
+    tagCount: tags.length,
   };
 
   return {
     articles: publicArticles,
     categories,
     sources,
+    tags,
     meta,
   };
 }
@@ -256,6 +400,10 @@ export async function writePublicExports({
     writeJsonFile(
       path.join(resolvedOutputDir, 'sources.json'),
       publicExports.sources,
+    ),
+    writeJsonFile(
+      path.join(resolvedOutputDir, 'tags.json'),
+      publicExports.tags,
     ),
     writeJsonFile(
       path.join(resolvedOutputDir, 'meta.json'),

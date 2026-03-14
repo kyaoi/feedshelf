@@ -221,6 +221,20 @@ h2 {
   border: 1px solid var(--border);
 }
 
+
+.chip--muted {
+  padding: 6px 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.article-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .chip__count,
 .source-pill__count {
   padding: 2px 8px;

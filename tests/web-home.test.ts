@@ -17,11 +17,12 @@ test('buildDataPaths builds public JSON paths under ./data by default', () => {
     articles: './data/articles.json',
     categories: './data/categories.json',
     sources: './data/sources.json',
+    tags: './data/tags.json',
     meta: './data/meta.json',
   });
 });
 
-test('loadHomePageData loads articles/categories/sources/meta together', async () => {
+test('loadHomePageData loads articles/categories/sources/tags/meta together', async () => {
   const calls: string[] = [];
   const fixtures: Record<string, unknown> = {
     './data/articles.json': [
@@ -32,10 +33,13 @@ test('loadHomePageData loads articles/categories/sources/meta together', async (
         summary: 'Summary',
         publishedAt: '2026-03-09T00:00:00Z',
         sortAt: '2026-03-09T00:00:00Z',
+        sourceId: 'example-source',
         sourceName: 'Example Source',
         categoryId: 'example',
         categoryLabel: 'Example Category',
         imageUrl: null,
+        sourceTags: ['Cloud'],
+        entryTags: ['Kubernetes'],
       },
     ],
     './data/categories.json': [
@@ -48,6 +52,16 @@ test('loadHomePageData loads articles/categories/sources/meta together', async (
         categoryLabel: 'Example Category',
         language: 'en',
         articleCount: 1,
+        tags: ['Cloud'],
+      },
+    ],
+    './data/tags.json': [
+      {
+        id: 'tag-cloud',
+        label: 'Cloud',
+        articleCount: 1,
+        sourceCount: 1,
+        latestSortAt: '2026-03-09T00:00:00Z',
       },
     ],
     './data/meta.json': {
@@ -55,6 +69,7 @@ test('loadHomePageData loads articles/categories/sources/meta together', async (
       articleCount: 1,
       sourceCount: 1,
       categoryCount: 1,
+      tagCount: 1,
     },
   };
 
@@ -72,11 +87,13 @@ test('loadHomePageData loads articles/categories/sources/meta together', async (
     './data/articles.json',
     './data/categories.json',
     './data/sources.json',
+    './data/tags.json',
     './data/meta.json',
   ]);
   assert.equal(result.articles.length, 1);
   assert.equal(result.categories.length, 1);
   assert.equal(result.sources.length, 1);
+  assert.equal(result.tags.length, 1);
   assert.equal(result.meta.articleCount, 1);
 });
 
@@ -106,10 +123,13 @@ test('buildHomePageViewModel fills nullable article fields with display-safe val
         summary: null,
         publishedAt: null,
         sortAt: null,
+        sourceId: 'example-source',
         sourceName: 'Example Source',
         categoryId: 'example-category',
         categoryLabel: 'Example Category',
         imageUrl: null,
+        sourceTags: ['Cloud'],
+        entryTags: ['Kubernetes'],
       },
     ],
     categories: [
@@ -122,6 +142,16 @@ test('buildHomePageViewModel fills nullable article fields with display-safe val
         categoryLabel: 'Example Category',
         language: 'en',
         articleCount: 4,
+        tags: ['Cloud'],
+      },
+    ],
+    tags: [
+      {
+        id: 'tag-cloud',
+        label: 'Cloud',
+        articleCount: 4,
+        sourceCount: 1,
+        latestSortAt: '2026-03-09T00:00:00Z',
       },
     ],
     meta: {
@@ -129,19 +159,22 @@ test('buildHomePageViewModel fills nullable article fields with display-safe val
       articleCount: 4,
       sourceCount: 1,
       categoryCount: 1,
+      tagCount: 1,
     },
   });
 
   assert.equal(viewModel.articles[0].summary, MISSING_SUMMARY_LABEL);
   assert.equal(viewModel.articles[0].publishedAtLabel, '公開日時不明');
+  assert.deepEqual(viewModel.articles[0].visibleTags, ['Kubernetes', 'Cloud']);
   assert.equal(viewModel.shelves[0].countLabel, '4 件');
   assert.equal(viewModel.shelves[0].sourceCountLabel, '1 媒体');
   assert.equal(viewModel.shelves[0].href, './categories/?id=example-category');
+  assert.equal(viewModel.tags[0].href, './tags/?id=tag-cloud');
   assert.equal(viewModel.sources[0].metaLabel, 'Example Category / en');
   assert.match(viewModel.generatedAtText, /更新$/);
 });
 
-test('renderArticleItems escapes HTML in titles and summaries', () => {
+test('renderArticleItems escapes HTML in titles, summaries, and visible tags', () => {
   const markup = renderArticleItems([
     {
       title: '<script>alert(1)</script>',
@@ -152,11 +185,15 @@ test('renderArticleItems escapes HTML in titles and summaries', () => {
       summary: '<b>unsafe</b>',
       hasSummary: true,
       imageUrl: null,
+      visibleTags: ['<b>tag</b>'],
+      canOpenExternal: true,
+      externalLinkDescription: '元記事で続きを読む',
     },
   ]);
 
   assert.match(markup, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.match(markup, /&lt;b&gt;unsafe&lt;\/b&gt;/);
+  assert.match(markup, /&lt;b&gt;tag&lt;\/b&gt;/);
   assert.doesNotMatch(markup, /<script>alert/);
 });
 
@@ -184,19 +221,24 @@ test('buildHomePageViewModel marks invalid external links as unavailable', () =>
         summary: null,
         publishedAt: '2026-03-09T00:00:00Z',
         sortAt: '2026-03-09T00:00:00Z',
+        sourceId: 'example-source',
         sourceName: 'Example Source',
         categoryId: 'example-category',
         categoryLabel: 'Example Category',
         imageUrl: null,
+        sourceTags: ['Cloud'],
+        entryTags: [],
       },
     ],
     categories: [],
     sources: [],
+    tags: [],
     meta: {
       generatedAt: '2026-03-09T00:00:00Z',
       articleCount: 1,
       sourceCount: 0,
       categoryCount: 0,
+      tagCount: 0,
     },
   });
 
@@ -219,6 +261,7 @@ test('renderArticleItems disables external link button when article URL is unsaf
       summary: 'Summary',
       hasSummary: true,
       imageUrl: null,
+      visibleTags: ['Cloud'],
       canOpenExternal: false,
       externalLinkDescription: INVALID_ARTICLE_LINK_LABEL,
     },
@@ -227,6 +270,7 @@ test('renderArticleItems disables external link button when article URL is unsaf
   assert.match(markup, /元記事リンクを確認できません。/);
   assert.match(markup, /article-card__link article-card__link--disabled/);
   assert.match(markup, /aria-disabled="true"/);
+  assert.match(markup, /Cloud/);
   assert.doesNotMatch(markup, /target="_blank"/);
   assert.doesNotMatch(markup, /href="javascript:/);
 });

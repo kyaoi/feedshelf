@@ -10,6 +10,8 @@ interface PublicArticleSummaryLike {
   categoryId: string;
   categoryLabel: string;
   imageUrl: string | null;
+  sourceTags?: string[];
+  entryTags?: string[];
 }
 
 interface PublicCategorySummaryLike {
@@ -28,6 +30,15 @@ interface PublicSourceSummaryLike {
   siteUrl?: string;
   categoryId?: string;
   latestSortAt?: string;
+  tags?: string[];
+}
+
+interface PublicTagSummaryLike {
+  id: string;
+  label: string;
+  articleCount: number;
+  sourceCount?: number;
+  latestSortAt?: string;
 }
 
 interface PublicMetaLike {
@@ -35,6 +46,7 @@ interface PublicMetaLike {
   articleCount?: number;
   sourceCount?: number;
   categoryCount?: number;
+  tagCount?: number;
 }
 
 interface ReadyPayload {
@@ -42,6 +54,7 @@ interface ReadyPayload {
   articles: PublicArticleSummaryLike[];
   categories: PublicCategorySummaryLike[];
   sources: PublicSourceSummaryLike[];
+  tags: PublicTagSummaryLike[];
   meta: PublicMetaLike;
 }
 
@@ -73,6 +86,7 @@ interface ArticleViewModel {
   imageUrl: string | null;
   canOpenExternal: boolean;
   externalLinkDescription: string;
+  visibleTags: string[];
 }
 
 interface CategoryNavigationItem {
@@ -102,10 +116,13 @@ interface SourceNavigationItem {
   isSelected: boolean;
 }
 
+type TagNavigationItem = CategoryNavigationItem;
+
 interface HomePageViewModel {
   generatedAtText: string;
   stats: StatViewModel[];
   shelves: ShelfCardViewModel[];
+  tags: TagNavigationItem[];
   sources: SourceNavigationItem[];
   articles: ArticleViewModel[];
 }
@@ -133,6 +150,18 @@ interface SourcePageViewModel {
   articles: ArticleViewModel[];
   statusMessage: string;
   selectedSourceName?: string;
+}
+
+interface TagPageViewModel {
+  kind: 'missing-tag' | 'unknown-tag' | 'empty-tag' | 'ready';
+  generatedAtText: string;
+  navigationItems: TagNavigationItem[];
+  title: string;
+  description: string;
+  articlesCountText: string;
+  articles: ArticleViewModel[];
+  statusMessage: string;
+  selectedTagLabel?: string;
 }
 
 interface StatusOptions {
@@ -199,12 +228,19 @@ type FeedShelfGlobalScope = typeof globalThis & {
   const EMPTY_CATEGORY_ARTICLES_MESSAGE =
     'このカテゴリの記事はまだありません。次回の生成を待つか、別のカテゴリを選んでください。';
   const SOURCE_QUERY_PARAM = 'id';
+  const TAG_QUERY_PARAM = 'id';
   const MISSING_SOURCE_SELECTION_MESSAGE =
     '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
   const UNKNOWN_SOURCE_MESSAGE =
     '指定された媒体は見つかりませんでした。別の媒体を選んでください。';
   const EMPTY_SOURCE_ARTICLES_MESSAGE =
     'この媒体の記事はまだありません。次回の生成を待つか、別の媒体を選んでください。';
+  const MISSING_TAG_SELECTION_MESSAGE =
+    'タグが選択されていません。トップページまたはタグ一覧から選んでください。';
+  const UNKNOWN_TAG_MESSAGE =
+    '指定されたタグは見つかりませんでした。別のタグを選んでください。';
+  const EMPTY_TAG_ARTICLES_MESSAGE =
+    'このタグの記事はまだありません。別のタグを選ぶか、次回の生成を待ってください。';
   const INVALID_ARTICLE_LINK_LABEL = '元記事リンクを確認できません。';
 
   function buildDataPaths(basePath = DEFAULT_BASE_PATH) {
@@ -215,6 +251,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       articles: `${prefix}/articles.json`,
       categories: `${prefix}/categories.json`,
       sources: `${prefix}/sources.json`,
+      tags: `${prefix}/tags.json`,
       meta: `${prefix}/meta.json`,
     };
   }
@@ -251,10 +288,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
     const paths = buildDataPaths(basePath);
 
     try {
-      const [articles, categories, sources, meta] = await Promise.all([
+      const [articles, categories, sources, tags, meta] = await Promise.all([
         fetchJson<unknown>(fetchImpl, paths.articles),
         fetchJson<unknown>(fetchImpl, paths.categories),
         fetchJson<unknown>(fetchImpl, paths.sources),
+        fetchJson<unknown>(fetchImpl, paths.tags),
         fetchJson<unknown>(fetchImpl, paths.meta),
       ]);
 
@@ -269,6 +307,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
         sources: Array.isArray(sources)
           ? (sources as PublicSourceSummaryLike[])
           : [],
+        tags: Array.isArray(tags) ? (tags as PublicTagSummaryLike[]) : [],
         meta: meta && typeof meta === 'object' ? (meta as PublicMetaLike) : {},
       };
     } catch (error) {
@@ -346,6 +385,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     articles,
     categories,
     sources,
+    tags,
     meta,
   }: ReadyPayload): HomePageViewModel {
     return {
@@ -372,11 +412,57 @@ type FeedShelfGlobalScope = typeof globalThis & {
         sources,
         articles,
       }),
+      tags: buildTagNavigationItems(tags, {
+        hrefBuilder: buildTagHrefFromHome,
+      }),
       sources: buildSourceNavigationItems(sources, {
         hrefBuilder: buildSourceHrefFromHome,
       }),
       articles: buildArticleViewModels(articles),
     };
+  }
+
+  function normalizeWhitespace(value: string): string {
+    return String(value).replace(/\s+/gu, ' ').trim();
+  }
+
+  function normalizeTagCompareKey(value: string | null | undefined): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    return normalizeWhitespace(value.normalize('NFKC')).toLocaleLowerCase(
+      'en-US',
+    );
+  }
+
+  function uniqueLabels(values: Array<string | null | undefined>): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+
+    for (const value of values) {
+      if (typeof value !== 'string') {
+        continue;
+      }
+
+      const normalized = normalizeWhitespace(value.normalize('NFKC'));
+      const compareKey = normalizeTagCompareKey(normalized);
+      if (!compareKey || seen.has(compareKey)) {
+        continue;
+      }
+
+      seen.add(compareKey);
+      result.push(normalized);
+    }
+
+    return result;
+  }
+
+  function buildVisibleTags(article: PublicArticleSummaryLike): string[] {
+    return uniqueLabels([
+      ...(Array.isArray(article.entryTags) ? article.entryTags : []),
+      ...(Array.isArray(article.sourceTags) ? article.sourceTags : []),
+    ]).slice(0, 3);
   }
 
   function normalizeExternalArticleUrl(
@@ -417,6 +503,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
         externalLinkDescription: externalUrl
           ? '元記事で続きを読む'
           : INVALID_ARTICLE_LINK_LABEL,
+        visibleTags: buildVisibleTags(article),
       };
     });
   }
@@ -498,6 +585,25 @@ type FeedShelfGlobalScope = typeof globalThis & {
         .join(' / '),
       href: typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
       isSelected: selectedSourceId === source.id,
+    }));
+  }
+
+  function buildTagNavigationItems(
+    tags: PublicTagSummaryLike[],
+    {
+      selectedTagId = null,
+      hrefBuilder = buildTagHrefFromHome,
+    }: {
+      selectedTagId?: string | null;
+      hrefBuilder?: ((tagId: string) => string) | null;
+    } = {},
+  ): TagNavigationItem[] {
+    return tags.map((tag) => ({
+      id: tag.id,
+      label: tag.label,
+      countLabel: `${formatCount(tag.articleCount)}件`,
+      href: typeof hrefBuilder === 'function' ? hrefBuilder(tag.id) : null,
+      isSelected: selectedTagId === tag.id,
     }));
   }
 
@@ -659,6 +765,85 @@ type FeedShelfGlobalScope = typeof globalThis & {
     };
   }
 
+  function articleHasTag(
+    article: PublicArticleSummaryLike,
+    tagLabel: string,
+  ): boolean {
+    const compareKey = normalizeTagCompareKey(tagLabel);
+    if (!compareKey) {
+      return false;
+    }
+
+    return [...(article.sourceTags || []), ...(article.entryTags || [])].some(
+      (candidate) => normalizeTagCompareKey(candidate) === compareKey,
+    );
+  }
+
+  function buildTagPageViewModel({
+    tagId,
+    articles,
+    tags,
+    meta,
+  }: {
+    tagId: string;
+    articles: PublicArticleSummaryLike[];
+    tags: PublicTagSummaryLike[];
+    meta: PublicMetaLike;
+  }): TagPageViewModel {
+    const navigationItems = buildTagNavigationItems(tags, {
+      selectedTagId: tagId,
+      hrefBuilder: buildTagHrefFromTagPage,
+    });
+    const selectedTag = tags.find((tag) => tag.id === tagId) || null;
+    const generatedAtText =
+      meta && meta.generatedAt
+        ? `${formatDateTime(meta.generatedAt)} 更新`
+        : '更新時刻不明';
+
+    if (!tagId) {
+      return {
+        kind: 'missing-tag',
+        generatedAtText,
+        navigationItems,
+        title: 'タグを選択してください',
+        description: MISSING_TAG_SELECTION_MESSAGE,
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: MISSING_TAG_SELECTION_MESSAGE,
+      };
+    }
+
+    if (!selectedTag) {
+      return {
+        kind: 'unknown-tag',
+        generatedAtText,
+        navigationItems,
+        title: 'タグが見つかりません',
+        description: UNKNOWN_TAG_MESSAGE,
+        articlesCountText: '0 件',
+        articles: [],
+        statusMessage: UNKNOWN_TAG_MESSAGE,
+      };
+    }
+
+    const selectedArticles = articles.filter((article) =>
+      articleHasTag(article, selectedTag.label),
+    );
+
+    return {
+      kind: selectedArticles.length === 0 ? 'empty-tag' : 'ready',
+      generatedAtText,
+      navigationItems,
+      title: `${selectedTag.label} の記事一覧`,
+      description: `${selectedTag.label} に関連する記事を新着順で表示しています。sourceTags と entryTags の両方を統合した導線です。`,
+      articlesCountText: `${selectedArticles.length} 件`,
+      articles: buildArticleViewModels(selectedArticles),
+      statusMessage:
+        selectedArticles.length === 0 ? EMPTY_TAG_ARTICLES_MESSAGE : '',
+      selectedTagLabel: selectedTag.label,
+    };
+  }
+
   function renderStats(stats: StatViewModel[]): string {
     return stats
       .map(
@@ -789,18 +974,31 @@ type FeedShelfGlobalScope = typeof globalThis & {
               </a>
             `
           : '<span class="article-card__link article-card__link--disabled" aria-disabled="true">リンクなし</span>';
+        const visibleTagsMarkup =
+          article.visibleTags.length > 0
+            ? `
+                <div class="article-card__tags" aria-label="記事タグ">
+                  ${article.visibleTags
+                    .map(
+                      (tag) =>
+                        `<span class="chip chip--muted">${escapeHtml(tag)}</span>`,
+                    )
+                    .join('')}
+                </div>
+              `
+            : '';
 
         return `
           <li class="article-card ${article.imageUrl ? 'article-card--with-image' : ''}">
             <article class="article-card__content">
               <div class="article-card__meta">
                 <span class="meta-pill">${escapeHtml(article.sourceName)}</span>
-                <span class="meta-pill">${escapeHtml(article.categoryLabel)}</span>
                 <span class="meta-pill">${escapeHtml(article.publishedAtLabel)}</span>
               </div>
               <h3 class="article-card__title">
                 ${articleTitleMarkup}
               </h3>
+              ${visibleTagsMarkup}
               <p class="article-card__summary ${article.hasSummary ? '' : 'article-card__summary--missing'}">
                 ${escapeHtml(article.summary)}
               </p>
@@ -830,6 +1028,14 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
   function buildCategoryHrefFromSourcePage(categoryId: string): string {
     return `../categories/?${CATEGORY_QUERY_PARAM}=${encodeURIComponent(categoryId)}`;
+  }
+
+  function buildTagHrefFromHome(tagId: string): string {
+    return `./tags/?${TAG_QUERY_PARAM}=${encodeURIComponent(tagId)}`;
+  }
+
+  function buildTagHrefFromTagPage(tagId: string): string {
+    return `./?${TAG_QUERY_PARAM}=${encodeURIComponent(tagId)}`;
   }
 
   function buildSourceHrefFromHome(sourceId: string): string {
@@ -862,6 +1068,17 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return params.get(SOURCE_QUERY_PARAM) || '';
   }
 
+  function getTagIdFromLocation(
+    locationRef: LocationLike | null | undefined = browserScope.location,
+  ): string {
+    if (!locationRef || typeof locationRef.search !== 'string') {
+      return '';
+    }
+
+    const params = new URLSearchParams(locationRef.search);
+    return params.get(TAG_QUERY_PARAM) || '';
+  }
+
   function setStatus(
     documentRef: Document,
     { kind, message }: StatusOptions,
@@ -885,6 +1102,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     const generatedAtElement = documentRef.getElementById('generated-at');
     const metaStatsElement = documentRef.getElementById('meta-stats');
     const shelvesElement = documentRef.getElementById('shelves-list');
+    const tagsElement = documentRef.getElementById('tags-list');
     const sourcesElement = documentRef.getElementById('sources-list');
     const articlesCountElement = documentRef.getElementById('articles-count');
     const statusElement = documentRef.getElementById('articles-status');
@@ -900,6 +1118,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
     if (shelvesElement) {
       shelvesElement.innerHTML = renderShelfCards(viewModel.shelves);
+    }
+
+    if (tagsElement) {
+      tagsElement.innerHTML = renderChipItems(viewModel.tags);
     }
 
     if (sourcesElement) {
@@ -1054,6 +1276,65 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return viewModel;
   }
 
+  function renderTagPage(
+    documentRef: Document,
+    payload: ReadyPayload,
+    { tagId }: { tagId?: string } = {},
+  ): TagPageViewModel {
+    const viewModel = buildTagPageViewModel({
+      tagId: tagId || '',
+      articles: payload.articles,
+      tags: payload.tags,
+      meta: payload.meta,
+    });
+    const generatedAtElement = documentRef.getElementById('generated-at');
+    const navElement = documentRef.getElementById('tag-nav');
+    const titleElement = documentRef.getElementById('tag-page-title');
+    const descriptionElement = documentRef.getElementById(
+      'tag-page-description',
+    );
+    const articlesCountElement = documentRef.getElementById('articles-count');
+    const statusElement = documentRef.getElementById('articles-status');
+    const listElement = documentRef.getElementById('articles-list');
+
+    if (generatedAtElement) {
+      generatedAtElement.textContent = viewModel.generatedAtText;
+    }
+
+    if (navElement) {
+      navElement.innerHTML = renderChipItems(viewModel.navigationItems);
+    }
+
+    if (titleElement) {
+      titleElement.textContent = viewModel.title;
+    }
+
+    if (descriptionElement) {
+      descriptionElement.textContent = viewModel.description;
+    }
+
+    if (articlesCountElement) {
+      articlesCountElement.textContent = viewModel.articlesCountText;
+    }
+
+    if (!statusElement || !listElement) {
+      return viewModel;
+    }
+
+    if (viewModel.kind !== 'ready') {
+      setStatus(documentRef, {
+        kind: 'warning',
+        message: viewModel.statusMessage,
+      });
+      return viewModel;
+    }
+
+    statusElement.hidden = true;
+    listElement.hidden = false;
+    listElement.innerHTML = renderArticleItems(viewModel.articles);
+    return viewModel;
+  }
+
   async function initHomePage({
     basePath = DEFAULT_BASE_PATH,
     fetchImpl = browserScope.fetch,
@@ -1154,6 +1435,38 @@ type FeedShelfGlobalScope = typeof globalThis & {
     return payload;
   }
 
+  async function initTagPage({
+    basePath = '..',
+    fetchImpl = browserScope.fetch,
+    documentRef = browserScope.document,
+    locationRef = browserScope.location,
+  }: SourcePageInitOptions = {}): Promise<
+    TagPageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }
+  > {
+    if (!documentRef) {
+      return { kind: 'skipped' };
+    }
+
+    setStatus(documentRef, {
+      kind: 'loading',
+      message: '公開 JSON を読み込んでいます…',
+    });
+
+    const payload = await loadHomePageData({ basePath, fetchImpl });
+
+    if (payload.kind === 'ready') {
+      return renderTagPage(documentRef, payload, {
+        tagId: getTagIdFromLocation(locationRef),
+      });
+    }
+
+    setStatus(documentRef, {
+      kind: payload.kind === 'missing-data' ? 'warning' : 'error',
+      message: payload.message,
+    });
+    return payload;
+  }
+
   const exported = {
     CATEGORY_QUERY_PARAM,
     DEFAULT_BASE_PATH,
@@ -1201,6 +1514,18 @@ type FeedShelfGlobalScope = typeof globalThis & {
     renderStats,
     setStatus,
     EMPTY_SOURCE_ARTICLES_MESSAGE,
+    EMPTY_TAG_ARTICLES_MESSAGE,
+    MISSING_TAG_SELECTION_MESSAGE,
+    TAG_QUERY_PARAM,
+    UNKNOWN_TAG_MESSAGE,
+    articleHasTag,
+    buildTagHrefFromHome,
+    buildTagHrefFromTagPage,
+    buildTagNavigationItems,
+    buildTagPageViewModel,
+    getTagIdFromLocation,
+    initTagPage,
+    renderTagPage,
   };
 
   if (commonJsModule && typeof commonJsModule === 'object') {
@@ -1218,11 +1543,14 @@ type FeedShelfGlobalScope = typeof globalThis & {
           : '';
       const isCategoryPage = /\/categories\/(?:index\.html)?$/u.test(pathname);
       const isSourcePage = /\/sources\/(?:index\.html)?$/u.test(pathname);
+      const isTagPage = /\/tags\/(?:index\.html)?$/u.test(pathname);
       const initializer = isCategoryPage
         ? initCategoryPage
         : isSourcePage
           ? initSourcePage
-          : initHomePage;
+          : isTagPage
+            ? initTagPage
+            : initHomePage;
 
       initializer().catch((error: unknown) => {
         console.error('[feedshelf] failed to initialize page', error);

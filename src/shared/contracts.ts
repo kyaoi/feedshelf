@@ -6,6 +6,7 @@ export interface FeedDefinition {
   siteUrl: string;
   language: string;
   enabled: boolean;
+  tags?: string[];
 }
 
 export interface CanonicalArticle {
@@ -38,6 +39,8 @@ export interface PublicArticleSummary {
   categoryId: string;
   categoryLabel: string;
   imageUrl: string | null;
+  sourceTags: string[];
+  entryTags: string[];
 }
 
 export interface PublicCategorySummary {
@@ -56,6 +59,15 @@ export interface PublicSourceSummary {
   categoryLabel: string;
   articleCount: number;
   latestSortAt: string;
+  tags: string[];
+}
+
+export interface PublicTagSummary {
+  id: string;
+  label: string;
+  articleCount: number;
+  sourceCount: number;
+  latestSortAt: string;
 }
 
 export interface PublicMeta {
@@ -63,12 +75,14 @@ export interface PublicMeta {
   articleCount: number;
   sourceCount: number;
   categoryCount: number;
+  tagCount: number;
 }
 
 export interface PublicExports {
   articles: PublicArticleSummary[];
   categories: PublicCategorySummary[];
   sources: PublicSourceSummary[];
+  tags: PublicTagSummary[];
   meta: PublicMeta;
 }
 
@@ -96,6 +110,7 @@ export interface PipelineSummary {
   publicArticles: number;
   publicCategories: number;
   publicSources: number;
+  publicTags: number;
 }
 
 export interface FeedFetchFailure {

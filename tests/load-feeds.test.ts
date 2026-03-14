@@ -27,6 +27,8 @@ const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <pubDate>Fri, 07 Mar 2026 09:00:00 +0900</pubDate>
       <guid>rss-item-1</guid>
       <author>rss@example.com (RSS Author)</author>
+      <category>RSS</category>
+      <category> Cloud </category>
       <media:content url="https://example.com/image.jpg" medium="image" />
     </item>
     <item>
@@ -48,6 +50,8 @@ const ATOM_XML = `<?xml version="1.0" encoding="utf-8"?>
     <author>
       <name>Atom Author</name>
     </author>
+    <category term="Atom" />
+    <category term="Cloud" />
   </entry>
 </feed>`;
 
@@ -59,6 +63,7 @@ const RSS_FEED = {
   siteUrl: 'https://example.com/',
   language: 'en',
   enabled: true,
+  tags: ['RSS Source'],
 };
 
 const ATOM_FEED = {
@@ -69,6 +74,7 @@ const ATOM_FEED = {
   siteUrl: 'https://example.com/',
   language: 'en',
   enabled: true,
+  tags: ['Atom Source'],
 };
 
 test('loadFeeds parses and validates feed definitions', async () => {
@@ -80,6 +86,7 @@ test('loadFeeds parses and validates feed definitions', async () => {
   const feeds = await loadFeeds(feedsPath);
   assert.equal(feeds.length, 1);
   assert.equal(feeds[0].id, 'rss-feed');
+  assert.deepEqual(feeds[0].tags, ['RSS Source']);
 });
 
 test('loadFeeds rejects missing required fields', async () => {
@@ -106,6 +113,25 @@ test('loadFeeds rejects missing required fields', async () => {
     loadFeeds(feedsPath),
     /must have boolean field: enabled/,
   );
+});
+
+test('loadFeeds rejects invalid optional tags entries', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-invalid-tags-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        tags: ['ok', 123],
+      },
+    ]),
+  );
+
+  await assert.rejects(loadFeeds(feedsPath), /invalid tags\[1\] value/);
 });
 
 test('parseArgs accepts --feeds, --output-dir, and --dry-run', () => {
@@ -149,7 +175,7 @@ test('normalizeFeedDocument converts RSS items into canonical article objects', 
     fetchedAt: '2026-03-08T06:00:00.000Z',
     author: 'rss@example.com (RSS Author)',
     imageUrl: 'https://example.com/image.jpg',
-    tags: [],
+    tags: ['RSS', 'Cloud'],
     sourceItemId: 'rss-item-1',
     seenInFeeds: ['rss-feed'],
   });
@@ -176,7 +202,7 @@ test('normalizeFeedDocument converts Atom entries into canonical article objects
     fetchedAt: '2026-03-08T06:00:00.000Z',
     author: 'Atom Author',
     imageUrl: null,
-    tags: [],
+    tags: ['Atom', 'Cloud'],
     sourceItemId: 'tag:example.com,2026:atom-1',
     seenInFeeds: ['atom-feed'],
   });
@@ -348,7 +374,7 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
         fetchedAt: '2026-03-08T06:00:00.000Z',
         author: null,
         imageUrl: null,
-        tags: [],
+        tags: ['RSS'],
         sourceItemId: null,
         seenInFeeds: ['rss-feed'],
       },
@@ -365,7 +391,7 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
         fetchedAt: '2026-03-08T06:05:00.000Z',
         author: null,
         imageUrl: 'https://example.com/newer.jpg',
-        tags: [],
+        tags: ['Cloud'],
         sourceItemId: null,
         seenInFeeds: ['atom-feed'],
       },
@@ -387,6 +413,8 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
       categoryId: 'examples',
       categoryLabel: 'Examples',
       imageUrl: 'https://example.com/newer.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['Cloud'],
     },
     {
       id: 'article-a',
@@ -400,6 +428,8 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
       categoryId: 'examples',
       categoryLabel: 'Examples',
       imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['RSS'],
     },
   ]);
 
@@ -422,6 +452,7 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
       categoryLabel: 'Examples',
       articleCount: 1,
       latestSortAt: '2026-03-08T06:05:00.000Z',
+      tags: ['Atom Source'],
     },
     {
       id: 'rss-feed',
@@ -432,14 +463,24 @@ test('buildPublicExports creates listing-ready JSON payloads', () => {
       categoryLabel: 'Examples',
       articleCount: 1,
       latestSortAt: '2026-03-07T00:00:00.000Z',
+      tags: ['RSS Source'],
     },
   ]);
 
+  assert.equal(publicExports.tags.length, 4);
+  assert.deepEqual(publicExports.tags[0], {
+    id: publicExports.tags[0].id,
+    label: 'Atom Source',
+    articleCount: 1,
+    sourceCount: 1,
+    latestSortAt: '2026-03-08T06:05:00.000Z',
+  });
   assert.deepEqual(publicExports.meta, {
     generatedAt: '2026-03-08T07:00:00.000Z',
     articleCount: 2,
     sourceCount: 2,
     categoryCount: 1,
+    tagCount: 4,
   });
 });
 
@@ -534,12 +575,13 @@ test('runPipeline reports public JSON counts in dry-run mode', async () => {
     publicArticles: 2,
     publicCategories: 1,
     publicSources: 2,
+    publicTags: 5,
   });
   assert.match(lines.join('\n'), /normalizedArticles=2/);
   assert.match(lines.join('\n'), /dedupedArticles=2 duplicatesCollapsed=0/);
   assert.match(
     lines.join('\n'),
-    /publicArticles=2 publicCategories=1 publicSources=2/,
+    /publicArticles=2 publicCategories=1 publicSources=2 publicTags=5/,
   );
   assert.match(lines.join('\n'), /FS-PIPE-04 public JSON ready/);
   await assert.rejects(fs.access(outputDir));
@@ -578,6 +620,7 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
   assert.equal(summary.publicArticles, 2);
   assert.equal(summary.publicCategories, 1);
   assert.equal(summary.publicSources, 2);
+  assert.equal(summary.publicTags, 5);
 
   const articles = JSON.parse(
     await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
@@ -588,6 +631,9 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
   const sources = JSON.parse(
     await fs.readFile(path.join(outputDir, 'sources.json'), 'utf8'),
   );
+  const tags = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'tags.json'), 'utf8'),
+  );
   const meta = JSON.parse(
     await fs.readFile(path.join(outputDir, 'meta.json'), 'utf8'),
   );
@@ -595,6 +641,8 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
   assert.equal(articles.length, 2);
   assert.equal(articles[0].title, 'Atom title');
   assert.equal(articles[0].categoryId, 'examples');
+  assert.deepEqual(articles[0].sourceTags, ['Atom Source']);
+  assert.deepEqual(articles[0].entryTags, ['Atom', 'Cloud']);
   assert.deepEqual(categories, [
     {
       id: 'examples',
@@ -607,10 +655,12 @@ test('runPipeline writes public JSON files when dry-run is false', async () => {
     sources.map((source: { id: string }) => source.id),
     ['atom-feed', 'rss-feed'],
   );
+  assert.equal(tags.length, 5);
   assert.deepEqual(meta, {
     generatedAt: '2026-03-08T07:00:00.000Z',
     articleCount: 2,
     sourceCount: 2,
     categoryCount: 1,
+    tagCount: 5,
   });
 });

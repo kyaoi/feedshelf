@@ -20,6 +20,7 @@ interface CreateArticleOptions {
   author: string | null;
   imageUrl: string | null;
   sourceItemId: string | null;
+  tags: string[];
 }
 
 interface ArticleIdentityInput {
@@ -138,6 +139,70 @@ function extractRawTagText(block: string, tagNames: string[]): string | null {
   }
 
   return null;
+}
+
+function normalizeTagLabel(value: string): string | null {
+  const normalized = normalizeWhitespace(
+    decodeEntities(value).normalize('NFKC'),
+  );
+  return normalized === '' ? null : normalized;
+}
+
+function uniqueTags(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+
+    const normalized = normalizeTagLabel(value);
+    if (normalized === null) {
+      continue;
+    }
+
+    const compareKey = normalized.toLocaleLowerCase('en-US');
+    if (seen.has(compareKey)) {
+      continue;
+    }
+
+    seen.add(compareKey);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+function extractRssCategoryTags(block: string): string[] {
+  const pattern = /<category\b[^>]*>([\s\S]*?)<\/category>/gi;
+  return uniqueTags(
+    collectMatches(pattern, block).map((value) => toDisplayText(value)),
+  );
+}
+
+function extractAtomCategoryTags(block: string): string[] {
+  const pattern = /<category\b([^>]*)\/?>(?:<\/category>)?/gi;
+  const values: string[] = [];
+  let match = pattern.exec(block);
+
+  while (match) {
+    const attributesFragment = match[1];
+    if (typeof attributesFragment === 'string') {
+      const attributes = parseAttributes(attributesFragment);
+      const candidate =
+        (typeof attributes.term === 'string' && attributes.term) ||
+        (typeof attributes.label === 'string' && attributes.label) ||
+        '';
+      if (candidate !== '') {
+        values.push(candidate);
+      }
+    }
+    match = pattern.exec(block);
+  }
+
+  pattern.lastIndex = 0;
+  return uniqueTags(values);
 }
 
 function parseAttributes(fragment: string): Record<string, string> {
@@ -341,6 +406,7 @@ function createArticle({
   author,
   imageUrl,
   sourceItemId,
+  tags,
 }: CreateArticleOptions): CanonicalArticle | null {
   if (title === null || url === null) {
     return null;
@@ -365,7 +431,7 @@ function createArticle({
     fetchedAt: normalizeFetchedAt(fetchedAt),
     author,
     imageUrl,
-    tags: [],
+    tags,
     sourceItemId,
     seenInFeeds: [feed.id],
   };
@@ -396,6 +462,7 @@ function normalizeRssItem(
     author: extractTagText(itemXml, ['author', 'dc:creator']),
     imageUrl: extractImageUrl(itemXml),
     sourceItemId: extractRawTagText(itemXml, ['guid']),
+    tags: extractRssCategoryTags(itemXml),
   });
 }
 
@@ -426,6 +493,7 @@ function normalizeAtomEntry(
     author,
     imageUrl: extractImageUrl(entryXml),
     sourceItemId: extractRawTagText(entryXml, ['id']),
+    tags: extractAtomCategoryTags(entryXml),
   });
 }
 

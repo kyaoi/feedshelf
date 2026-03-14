@@ -115,6 +115,7 @@ export async function runPipeline(
     publicArticles: publicExports.meta.articleCount,
     publicCategories: publicExports.meta.categoryCount,
     publicSources: publicExports.meta.sourceCount,
+    publicTags: publicExports.meta.tagCount,
   };
 
   logger.log(
@@ -129,7 +130,7 @@ export async function runPipeline(
   }
 
   logger.log(
-    `[pipeline] publicArticles=${summary.publicArticles} publicCategories=${summary.publicCategories} publicSources=${summary.publicSources} outputDir=${path.relative(process.cwd(), outputDir) || 'public/data'}`,
+    `[pipeline] publicArticles=${summary.publicArticles} publicCategories=${summary.publicCategories} publicSources=${summary.publicSources} publicTags=${summary.publicTags} outputDir=${path.relative(process.cwd(), outputDir) || 'public/data'}`,
   );
 
   if (options.dryRun) {

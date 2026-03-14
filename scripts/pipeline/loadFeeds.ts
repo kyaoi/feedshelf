@@ -39,6 +39,18 @@ export function validateFeedDefinition(
     throw new Error(`Feed at index ${index} must have boolean field: enabled`);
   }
 
+  const tags = Array.isArray(feed.tags)
+    ? feed.tags.map((tag, tagIndex) => {
+        if (typeof tag !== 'string' || tag.trim() === '') {
+          throw new Error(
+            `Feed at index ${index} has invalid tags[${tagIndex}] value.`,
+          );
+        }
+
+        return tag;
+      })
+    : [];
+
   return {
     id: feed.id as string,
     name: feed.name as string,
@@ -47,6 +59,7 @@ export function validateFeedDefinition(
     siteUrl: feed.siteUrl as string,
     language: feed.language as string,
     enabled: feed.enabled,
+    tags,
   };
 }
 
