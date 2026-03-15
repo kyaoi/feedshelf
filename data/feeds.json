@@ -175,7 +175,7 @@
     "feedUrl": "https://zenn.dev/topics/python/feed",
     "siteUrl": "https://zenn.dev/topics/python",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it", "science"],
     "tags": ["Python", "数値計算", "理系開発"]
   },
@@ -185,7 +185,7 @@
     "feedUrl": "https://zenn.dev/topics/rust/feed",
     "siteUrl": "https://zenn.dev/topics/rust",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["Rust", "CLI", "実装"]
   },
@@ -195,7 +195,7 @@
     "feedUrl": "https://zenn.dev/topics/ai/feed",
     "siteUrl": "https://zenn.dev/topics/ai",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["ai"],
     "tags": ["AI", "実装", "活用"]
   },
@@ -205,7 +205,7 @@
     "feedUrl": "https://zenn.dev/topics/productivityweekly/feed",
     "siteUrl": "https://zenn.dev/topics/productivityweekly",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["生産性", "開発体験", "週刊まとめ"]
   },
@@ -215,7 +215,7 @@
     "feedUrl": "https://zenn.dev/topics/neovim/feed",
     "siteUrl": "https://zenn.dev/topics/neovim",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["Neovim", "エディタ", "個人開発"]
   },
@@ -225,7 +225,7 @@
     "feedUrl": "https://zenn.dev/topics/linux/feed",
     "siteUrl": "https://zenn.dev/topics/linux",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["Linux", "開発環境", "個人開発"]
   },
@@ -235,7 +235,7 @@
     "feedUrl": "https://zenn.dev/topics/archlinux/feed",
     "siteUrl": "https://zenn.dev/topics/archlinux",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["ArchLinux", "Linux", "開発環境"]
   },
@@ -245,7 +245,7 @@
     "feedUrl": "https://zenn.dev/topics/llm/feed",
     "siteUrl": "https://zenn.dev/topics/llm",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["ai"],
     "tags": ["LLM", "生成AI", "活用"]
   },
@@ -305,7 +305,7 @@
     "feedUrl": "https://www.reddit.com/r/Python/.rss",
     "siteUrl": "https://www.reddit.com/r/Python/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it", "science"],
     "tags": ["Python", "コミュニティ", "海外開発"]
   },
@@ -315,7 +315,7 @@
     "feedUrl": "https://www.reddit.com/r/rust/.rss",
     "siteUrl": "https://www.reddit.com/r/rust/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["Rust", "コミュニティ", "海外開発"]
   },
@@ -325,7 +325,7 @@
     "feedUrl": "https://www.reddit.com/r/linux/.rss",
     "siteUrl": "https://www.reddit.com/r/linux/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["Linux", "コミュニティ", "海外開発"]
   },
@@ -335,7 +335,7 @@
     "feedUrl": "https://www.reddit.com/r/archlinux/.rss",
     "siteUrl": "https://www.reddit.com/r/archlinux/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["ArchLinux", "コミュニティ", "海外開発"]
   },
@@ -345,7 +345,7 @@
     "feedUrl": "https://www.reddit.com/r/neovim/.rss",
     "siteUrl": "https://www.reddit.com/r/neovim/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["Neovim", "コミュニティ", "海外開発"]
   },
@@ -355,7 +355,7 @@
     "feedUrl": "https://www.reddit.com/r/LocalLLaMA/.rss",
     "siteUrl": "https://www.reddit.com/r/LocalLLaMA/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["ai"],
     "tags": ["AI", "ローカルLLM", "コミュニティ"]
   },
@@ -365,7 +365,7 @@
     "feedUrl": "https://www.reddit.com/r/MachineLearning/.rss",
     "siteUrl": "https://www.reddit.com/r/MachineLearning/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["ai"],
     "tags": ["AI", "機械学習", "コミュニティ"]
   },
@@ -375,7 +375,7 @@
     "feedUrl": "https://www.reddit.com/r/Physics/.rss",
     "siteUrl": "https://www.reddit.com/r/Physics/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["science"],
     "tags": ["物理", "コミュニティ", "理系"]
   }

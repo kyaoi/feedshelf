@@ -204,9 +204,10 @@ test('runUpdatePipeline keeps partial failures and passes shelvesPath through', 
   assert.equal(fs.existsSync(path.join(outputDir, 'shelves.json')), true);
 });
 
-test('workflow file keeps public data update automation wired', () => {
+test('workflow file keeps public data update automation wired with cautious polling cadence', () => {
   const workflow = readWorkflow();
   assert.match(workflow, /cron:/);
+  assert.match(workflow, /17 \*\/12 \* \* \*/);
   assert.match(workflow, /pnpm run pipeline:update/);
   assert.match(workflow, /path:\s*\.\/public/);
 });

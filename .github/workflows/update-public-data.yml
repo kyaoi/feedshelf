@@ -3,7 +3,7 @@ name: Update public data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: '17 */12 * * *'
 
 permissions:
   contents: read

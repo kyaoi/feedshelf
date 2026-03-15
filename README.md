@@ -103,6 +103,10 @@ python -m http.server 4173 --directory public
   - `build-public-data` job で依存解決、品質ゲート、`pnpm run pipeline:update`、Pages artifact upload を行う
   - `deploy-github-pages` job で Pages へ deploy する
 - enabled feed が全件取得失敗した場合は、deploy を進めず前回成功サイトを保護する
+- source policy は cautious default を採り、既定では site 自身または first-party help / docs で feed 提供が確認しやすい source を優先する
+- community source や undocumented topic feed は、法務判断や取得条件の追加確認が済むまで `enabled=false` のまま保持してよい
+- update cadence は過剰取得を避けるため既定で 12 時間ごと (`17 */12 * * *`) とする
+- 公開 JSON の `summary` は raw HTML 全文や長文再配信を避け、短い excerpt に正規化して扱う
 
 ## 品質ゲートが失敗したときの運用
 

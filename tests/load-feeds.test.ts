@@ -66,6 +66,20 @@ const ATOM_XML = `<?xml version="1.0" encoding="utf-8"?>
   </entry>
 </feed>`;
 
+const LONG_SUMMARY_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Long Summary RSS</title>
+    <item>
+      <title>Long summary article</title>
+      <link>https://example.com/articles/long-summary</link>
+      <description><![CDATA[<p>This article explores Linux setup, Python tooling, numerical experiments, editor workflows, and LLM-assisted development in enough detail to exceed the public summary limit while still remaining readable after truncation for cautious public re-distribution. It also compares terminal workflows, dataset cleanup, numerical plotting habits, and the tradeoffs of using community feeds inside a static site pipeline so that the resulting description is clearly longer than the excerpt threshold used for public summaries.</p>]]></description>
+      <pubDate>Fri, 07 Mar 2026 09:00:00 +0900</pubDate>
+      <guid>rss-item-long-summary</guid>
+    </item>
+  </channel>
+</rss>`;
+
 const RSS_FEED = {
   id: 'rss-feed',
   name: 'Example RSS',
@@ -368,6 +382,20 @@ test('normalizeFeedDocument converts Atom entries into canonical article objects
   assert.deepEqual(articles[0].entryTags, ['Atom', 'Cloud']);
 });
 
+test('normalizeFeedDocument truncates long summaries into short public excerpts', () => {
+  const articles = normalizeFeedDocument({
+    feed: RSS_FEED,
+    xml: LONG_SUMMARY_XML,
+    fetchedAt: '2026-03-08T06:00:00Z',
+  });
+
+  assert.equal(articles.length, 1);
+  assert.ok(articles[0].summary !== null);
+  assert.ok((articles[0].summary || '').length <= 281);
+  assert.match(articles[0].summary || '', /…$/);
+  assert.doesNotMatch(articles[0].summary || '', /<p>|<\/p>/);
+});
+
 test('dedupeArticles merges shelfIds, sourceTags, and entryTags across duplicate items', () => {
   const deduped = dedupeArticles([
     {
@@ -573,37 +601,7 @@ test('repository feed registry keeps every shelf populated by enabled sources', 
   );
 });
 
-test('repository feed registry keeps profile-aligned topic feeds for it and ai shelves', async () => {
-  const feeds = (await loadFeeds(
-    path.resolve(__dirname, '..', 'data/feeds.json'),
-  )) as FeedDefinition[];
-
-  const enabledItIds = feeds
-    .filter(
-      (feed: FeedDefinition) => feed.enabled && feed.shelfIds.includes('it'),
-    )
-    .map((feed: FeedDefinition) => feed.id);
-  const enabledAiIds = feeds
-    .filter(
-      (feed: FeedDefinition) => feed.enabled && feed.shelfIds.includes('ai'),
-    )
-    .map((feed: FeedDefinition) => feed.id);
-
-  assert.ok(
-    enabledItIds.some(
-      (id: string) => id.includes('neovim') || id.includes('archlinux'),
-    ),
-    'it shelf should keep at least one Linux/editor profile source such as neovim or archlinux.',
-  );
-  assert.ok(
-    enabledAiIds.some(
-      (id: string) => id.includes('llm') || id.includes('machinelearning'),
-    ),
-    'ai shelf should keep at least one LLM/community profile source such as llm or machinelearning.',
-  );
-});
-
-test('repository feed registry trims broad feeds while keeping profile-aligned sources enabled', async () => {
+test('repository feed registry keeps documented first-party feeds enabled by default', async () => {
   const feeds = (await loadFeeds(
     path.resolve(__dirname, '..', 'data/feeds.json'),
   )) as FeedDefinition[];
@@ -612,12 +610,44 @@ test('repository feed registry trims broad feeds while keeping profile-aligned s
     feeds.map((feed: FeedDefinition) => [feed.id, feed]),
   );
 
-  assert.equal(byId.get('zenn-feed')?.enabled, false);
-  assert.equal(byId.get('hacker-news')?.enabled, false);
-  assert.equal(byId.get('reddit-programming')?.enabled, false);
-
+  assert.equal(byId.get('itmedia-news')?.enabled, true);
+  assert.equal(byId.get('itmedia-aiplus')?.enabled, true);
   assert.equal(byId.get('qiita-popular')?.enabled, true);
   assert.equal(byId.get('gigazine')?.enabled, true);
-  assert.equal(byId.get('zenn-topic-neovim')?.enabled, true);
-  assert.equal(byId.get('zenn-topic-llm')?.enabled, true);
+  assert.equal(byId.get('gihyo')?.enabled, true);
+  assert.equal(byId.get('codezine')?.enabled, true);
+  assert.equal(byId.get('hatena-hotentry-it')?.enabled, true);
+  assert.equal(byId.get('openai-news')?.enabled, true);
+  assert.equal(byId.get('publickey')?.enabled, true);
+});
+
+test('repository feed registry disables cautious sources whose official feed guarantees are weaker', async () => {
+  const feeds = (await loadFeeds(
+    path.resolve(__dirname, '..', 'data/feeds.json'),
+  )) as FeedDefinition[];
+
+  const byId = new Map<string, FeedDefinition>(
+    feeds.map((feed: FeedDefinition) => [feed.id, feed]),
+  );
+
+  for (const feed of feeds) {
+    if (feed.id.startsWith('reddit-')) {
+      assert.equal(
+        feed.enabled,
+        false,
+        `${feed.id} should stay disabled by default.`,
+      );
+    }
+    if (feed.id.startsWith('zenn-')) {
+      assert.equal(
+        feed.enabled,
+        false,
+        `${feed.id} should stay disabled by default.`,
+      );
+    }
+  }
+
+  assert.equal(byId.get('hacker-news')?.enabled, false);
+  assert.equal(byId.get('sciencedaily-technology')?.enabled, false);
+  assert.equal(byId.get('nasa-news')?.enabled, false);
 });

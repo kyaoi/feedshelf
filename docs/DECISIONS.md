@@ -893,3 +893,22 @@
 - 理由: 記事量の拡張後は、chronological な全体 feed や広すぎる aggregator/community feed が棚の温度感をぼかしやすく、日本語中心・個人開発/Linux/LLM 寄りの読み口を維持したい場合は topic feed を残して broad feed を抑える方が最小差分で調整しやすいため
 - 影響: source registry では削除ではなく `enabled=false` を優先し、必要になれば後で再度有効化できる
 - 影響: `it` 棚は broad English feed を少し減らしても、Qiita / Zenn topic / gihyo / GIGAZINE / DevelopersIO で十分な記事量を維持する前提とする
+
+
+## D-127: post-v1 の default source policy は documented feed 優先の cautious default とする
+
+- 決定: site 自身または first-party help / docs で feed 提供が確認しやすい source を既定で有効化し、community source や undocumented topic feed は evidence が揃うまで `enabled=false` にしてよい
+- 理由: FeedShelf v1 は source 数の最大化よりも、継続的に安全運用しやすい registry を優先するため
+- 影響: Reddit や Zenn topic/global のような慎重枠は registry に残しても default では無効化してよい
+
+## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
+
+- 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
+- 理由: 読みやすさを保ちつつ、再配信面を保守的に保つため
+- 影響: normalize pipeline は長い `description` / `content` を短い excerpt へ切り詰め、UI は excerpt 前提で表示する
+
+## D-129: default polling cadence は 12 時間ごととする
+
+- 決定: GitHub Actions の update workflow は既定で 12 時間ごとに起動する
+- 理由: v1 の curated source 数と静的サイト運用では 3 時間ごとの polling は過剰であり、source への負荷を抑えたいから
+- 影響: `.github/workflows/update-public-data.yml` と workflow test は `17 */12 * * *` を前提にする

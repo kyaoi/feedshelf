@@ -1368,3 +1368,10 @@ docs freeze 後の最小実装順は次を基本とする。
 この順序は、まず user-facing IA を成立させ、その後に discovery 補助導線を重ね、最後に input / export / acceptance を締めるための最小差分順とする。
 
 Phase 6 では UI 実装だけでなく、情報設計・データ契約・検索・tag・contributor flow を 1 つの V1 extension として扱う。
+
+## Documented Feed Preference (post-v1 cautious policy)
+
+- post-v1 の default source policy では、site 自身または first-party help / docs で RSS / Atom 提供が確認しやすい source を優先して `enabled=true` にする
+- undocumented な topic feed、community aggregator、利用条件の解釈が揺れやすい source は registry に保持しても `enabled=false` を既定としてよい
+- FeedShelf v1 の公開面では raw article HTML や長文再配信を避け、`summary` は短い public excerpt に丸めた表示用文字列として扱う
+- update workflow の既定 cadence は 12 時間ごととし、過剰取得を避ける

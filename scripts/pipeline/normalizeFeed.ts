@@ -9,6 +9,7 @@ const TRACKING_QUERY_PREFIXES = ['utm_'];
 const TRACKING_QUERY_KEYS = new Set(['fbclid', 'gclid', 'mc_cid', 'mc_eid']);
 const RSS_ITEM_PATTERN = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
 const ATOM_ENTRY_PATTERN = /<entry\b[^>]*>([\s\S]*?)<\/entry>/gi;
+const MAX_PUBLIC_SUMMARY_LENGTH = 280;
 
 interface CreateArticleOptions {
   feed: FeedDefinition;
@@ -85,6 +86,25 @@ function toDisplayText(value: string): string | null {
     '$1',
   );
   return normalized === '' ? null : normalized;
+}
+
+function toPublicExcerpt(value: string | null): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  if (value.length <= MAX_PUBLIC_SUMMARY_LENGTH) {
+    return value;
+  }
+
+  const sliced = value.slice(0, MAX_PUBLIC_SUMMARY_LENGTH + 1);
+  const boundary = Math.max(sliced.lastIndexOf(' '), sliced.lastIndexOf('　'));
+  const excerptSource =
+    boundary >= 160
+      ? sliced.slice(0, boundary)
+      : value.slice(0, MAX_PUBLIC_SUMMARY_LENGTH);
+  const excerpt = excerptSource.replace(/[、。.,!?;:・]+$/u, '').trimEnd();
+  return excerpt === '' ? null : `${excerpt}…`;
 }
 
 function escapeTagName(tagName: string): string {
@@ -426,7 +446,7 @@ function createArticle({
     language: feed.language,
     title,
     url,
-    summary,
+    summary: toPublicExcerpt(summary),
     publishedAt,
     fetchedAt: normalizeFetchedAt(fetchedAt),
     author,
