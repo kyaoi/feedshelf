@@ -870,3 +870,11 @@
 - 理由: Feed 精査や DX 縮退の前に見た目と回遊性だけを改善したいが、この段階で data contract や pipeline behavior まで同時に動かすと差分が広がり、diffship loop での原因切り分けが難しくなるため
 - 影響: generated shelf route と fixed route は同じ UI トーンへ寄せるが、受け入れ上は既存 tests が確認している route / JSON / compatibility behavior を維持する
 - 影響: lint / formatter の縮退可否は別タスクで扱い、UI refresh task と混ぜない
+
+
+## D-124: post-v1 の curated source 拡張は personal-fit を優先し、hard-science source は `enabled=false` で残してよい
+
+- 決定: post-v1 の source 精査では、物理専攻の大学生かつエンジニア志向の reader profile を前提に、GIGAZINE / Qiita / Zenn / DevelopersIO / CodeZine / Reddit のような読みやすい community-oriented source を優先して厚くし、NASA や hard-science 一次ソースが読み口に合わない場合は削除より `enabled=false` を選んでよい
+- 理由: FeedShelf v1 は厳密な網羅性より「毎日開きたくなる棚」を優先しており、source registry も `enabled` を通じて保留 source を保持できるため、source を完全削除するより軽く棚の温度感を調整しやすいため
+- 影響: `science` 棚は宇宙ニュース専用ではなく、物理・Python・理系エンジニア寄りの軽い読み物を含んでよい
+- 影響: subreddit の公開 RSS は `.rss` suffix を使う安定した public feed として扱ってよく、`feeds.json` では community source であることが分かる `tags[]` を付けて運用する

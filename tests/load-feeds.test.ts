@@ -4,6 +4,9 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 
+type FeedDefinition = import('../src/shared/contracts.ts').FeedDefinition;
+type ShelvesDocument = import('../src/shared/contracts.ts').ShelvesDocument;
+
 const { loadFeeds } = require('../scripts/pipeline/loadFeeds');
 const { loadShelves } = require('../scripts/pipeline/loadShelves');
 const {
@@ -529,4 +532,43 @@ test('runPipeline writes shelves.json, shelf route shells, and reports shelf/cat
   assert.match(shelfRouteHtml, /data-feedshelf-page="shelf"/);
   assert.match(shelfRouteHtml, /data-shelf-id="examples"/);
   assert.match(shelfRouteHtml, /related-sources-title/);
+});
+
+test('repository feed registry keeps every shelf populated by enabled sources', async () => {
+  const feeds: FeedDefinition[] = await loadFeeds(
+    path.resolve(__dirname, '..', 'data/feeds.json'),
+  );
+  const shelves: ShelvesDocument = await loadShelves(
+    path.resolve(__dirname, '..', 'data/shelves.yaml'),
+  );
+
+  const enabledFeeds = feeds.filter((feed: FeedDefinition) => feed.enabled);
+  const enabledByShelf = new Map<string, number>();
+
+  for (const shelf of shelves.shelves) {
+    enabledByShelf.set(shelf.id, 0);
+  }
+
+  for (const feed of enabledFeeds) {
+    for (const shelfId of feed.shelfIds) {
+      enabledByShelf.set(shelfId, (enabledByShelf.get(shelfId) || 0) + 1);
+    }
+  }
+
+  for (const shelf of shelves.shelves) {
+    assert.ok(
+      (enabledByShelf.get(shelf.id) || 0) > 0,
+      `Shelf ${shelf.id} must keep at least one enabled source.`,
+    );
+  }
+
+  const scienceEnabledIds = enabledFeeds
+    .filter((feed: FeedDefinition) => feed.shelfIds.includes('science'))
+    .map((feed: FeedDefinition) => feed.id);
+  assert.ok(
+    scienceEnabledIds.some(
+      (id: string) => id !== 'sciencedaily-technology' && id !== 'nasa-news',
+    ),
+    'science shelf should not rely only on hard-science sources.',
+  );
 });

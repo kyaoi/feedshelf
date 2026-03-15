@@ -6,10 +6,10 @@ site:
 shelves:
   - id: it
     title: IT
-    description: 日本IT・Web・開発・クラウド寄りの記事をまとめて追う棚
+    description: 日本IT・Web・開発・Linux・生産性寄りの記事をまとめて追う棚
   - id: ai
     title: AI
-    description: AI モデル・API・プロダクト・応用・研究寄りの記事を眺める棚
+    description: LLM・生成AI・AI活用・ローカルモデル寄りの記事を眺める棚
   - id: science
     title: Science
-    description: 科学・宇宙・研究・技術ニュース寄りの記事をまとめて辿る棚
+    description: 物理・科学トピック・Python/数値計算・理系エンジニア寄りの記事を辿る棚

@@ -27,7 +27,7 @@
     "language": "en",
     "enabled": true,
     "shelfIds": ["ai"],
-    "tags": ["AI", "研究", "生成AI"]
+    "tags": ["AI", "プロダクト", "生成AI"]
   },
   {
     "id": "sciencedaily-technology",
@@ -35,7 +35,7 @@
     "feedUrl": "https://www.sciencedaily.com/rss/top/technology.xml",
     "siteUrl": "https://www.sciencedaily.com/news/top/technology/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["science"],
     "tags": ["科学", "テクノロジー"]
   },
@@ -45,8 +45,218 @@
     "feedUrl": "https://www.nasa.gov/news-release/feed/",
     "siteUrl": "https://www.nasa.gov/news/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["science"],
     "tags": ["科学", "宇宙"]
+  },
+  {
+    "id": "itmedia-aiplus",
+    "name": "ITmedia AI+ 新着",
+    "feedUrl": "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
+    "siteUrl": "https://www.itmedia.co.jp/aiplus/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["生成AI", "業界動向", "実装事例"]
+  },
+  {
+    "id": "gigazine",
+    "name": "GIGAZINE",
+    "feedUrl": "https://gigazine.net/news/rss_2.0/",
+    "siteUrl": "https://gigazine.net/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it", "science"],
+    "tags": ["話題", "ソフトウェア", "科学読み物"]
+  },
+  {
+    "id": "qiita-popular",
+    "name": "Qiita Popular",
+    "feedUrl": "https://qiita.com/popular-items/feed.atom",
+    "siteUrl": "https://qiita.com/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["日本開発", "実装", "人気記事"]
+  },
+  {
+    "id": "qiita-tag-python",
+    "name": "Qiita Python Tag",
+    "feedUrl": "https://qiita.com/tags/python/feed.atom",
+    "siteUrl": "https://qiita.com/tags/python",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it", "science"],
+    "tags": ["Python", "数値計算", "自動化"]
+  },
+  {
+    "id": "qiita-tag-rust",
+    "name": "Qiita Rust Tag",
+    "feedUrl": "https://qiita.com/tags/rust/feed.atom",
+    "siteUrl": "https://qiita.com/tags/rust",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Rust", "CLI", "実装"]
+  },
+  {
+    "id": "qiita-tag-ai",
+    "name": "Qiita AI Tag",
+    "feedUrl": "https://qiita.com/tags/AI/feed.atom",
+    "siteUrl": "https://qiita.com/tags/AI",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["AI", "実装", "生成AI"]
+  },
+  {
+    "id": "qiita-tag-linux",
+    "name": "Qiita Linux Tag",
+    "feedUrl": "https://qiita.com/tags/linux/feed.atom",
+    "siteUrl": "https://qiita.com/tags/linux",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Linux", "開発環境", "運用"]
+  },
+  {
+    "id": "zenn-feed",
+    "name": "Zenn Feed",
+    "feedUrl": "https://zenn.dev/feed",
+    "siteUrl": "https://zenn.dev/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["日本開発", "個人開発", "実装"]
+  },
+  {
+    "id": "zenn-topic-python",
+    "name": "Zenn Python Topic",
+    "feedUrl": "https://zenn.dev/topics/python/feed",
+    "siteUrl": "https://zenn.dev/topics/python",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it", "science"],
+    "tags": ["Python", "数値計算", "理系開発"]
+  },
+  {
+    "id": "zenn-topic-rust",
+    "name": "Zenn Rust Topic",
+    "feedUrl": "https://zenn.dev/topics/rust/feed",
+    "siteUrl": "https://zenn.dev/topics/rust",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Rust", "CLI", "実装"]
+  },
+  {
+    "id": "zenn-topic-ai",
+    "name": "Zenn AI Topic",
+    "feedUrl": "https://zenn.dev/topics/ai/feed",
+    "siteUrl": "https://zenn.dev/topics/ai",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["AI", "実装", "活用"]
+  },
+  {
+    "id": "zenn-topic-productivityweekly",
+    "name": "Zenn Productivity Weekly Topic",
+    "feedUrl": "https://zenn.dev/topics/productivityweekly/feed",
+    "siteUrl": "https://zenn.dev/topics/productivityweekly",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["生産性", "開発体験", "週刊まとめ"]
+  },
+  {
+    "id": "developersio",
+    "name": "DevelopersIO",
+    "feedUrl": "https://dev.classmethod.jp/feed/",
+    "siteUrl": "https://dev.classmethod.jp/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["実務", "クラウド", "開発ブログ"]
+  },
+  {
+    "id": "codezine",
+    "name": "CodeZine 新着記事",
+    "feedUrl": "http://rss.rssad.jp/rss/codezine/new/20/index.xml",
+    "siteUrl": "https://codezine.jp/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["実務", "開発", "アーキテクチャ"]
+  },
+  {
+    "id": "hatena-hotentry-it",
+    "name": "はてなブックマーク テクノロジー人気",
+    "feedUrl": "https://b.hatena.ne.jp/hotentry/it.rss",
+    "siteUrl": "https://b.hatena.ne.jp/hotentry/it",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["話題", "人気記事", "テクノロジー"]
+  },
+  {
+    "id": "reddit-programming",
+    "name": "Reddit r/programming",
+    "feedUrl": "https://www.reddit.com/r/programming/.rss",
+    "siteUrl": "https://www.reddit.com/r/programming/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["コミュニティ", "プログラミング", "海外開発"]
+  },
+  {
+    "id": "reddit-python",
+    "name": "Reddit r/Python",
+    "feedUrl": "https://www.reddit.com/r/Python/.rss",
+    "siteUrl": "https://www.reddit.com/r/Python/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it", "science"],
+    "tags": ["Python", "コミュニティ", "海外開発"]
+  },
+  {
+    "id": "reddit-rust",
+    "name": "Reddit r/rust",
+    "feedUrl": "https://www.reddit.com/r/rust/.rss",
+    "siteUrl": "https://www.reddit.com/r/rust/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Rust", "コミュニティ", "海外開発"]
+  },
+  {
+    "id": "reddit-linux",
+    "name": "Reddit r/linux",
+    "feedUrl": "https://www.reddit.com/r/linux/.rss",
+    "siteUrl": "https://www.reddit.com/r/linux/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Linux", "コミュニティ", "海外開発"]
+  },
+  {
+    "id": "reddit-localllama",
+    "name": "Reddit r/LocalLLaMA",
+    "feedUrl": "https://www.reddit.com/r/LocalLLaMA/.rss",
+    "siteUrl": "https://www.reddit.com/r/LocalLLaMA/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["AI", "ローカルLLM", "コミュニティ"]
+  },
+  {
+    "id": "reddit-physics",
+    "name": "Reddit r/Physics",
+    "feedUrl": "https://www.reddit.com/r/Physics/.rss",
+    "siteUrl": "https://www.reddit.com/r/Physics/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["science"],
+    "tags": ["物理", "コミュニティ", "理系"]
   }
 ]

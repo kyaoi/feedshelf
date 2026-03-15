@@ -244,8 +244,9 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- Feed 収集対象の精査に入る前に、visual refresh 後の導線・余白・card hierarchy が棚-first 体験として十分かを確認する
-- lint / formatter の縮退判断は UI refresh と切り離した別タスクとして扱い、route / data contract の変更と混ぜない
+- post-v1 の source 精査では、hard-science 一次ソースを増やすより、GIGAZINE / Qiita / Zenn / DevelopersIO / CodeZine / Reddit などの読みやすい community-oriented source を厚くして、毎日開きたくなる棚体験を優先する
+- `data/feeds.json` の source 追加・無効化・棚紐付けで対応できる範囲を保ち、route / public JSON 契約の変更と混ぜない
+- lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
 - `FS-DATA-05` 〜 `FS-DATA-08` の deferred backlog は v2 以降候補として必要時に再優先付けする
@@ -265,6 +266,7 @@ Phase 6 の進め方:
 - 6-C Tag docs sweep では、`sourceTags` と `entryTags` の責務分離、`tagId` / `label` / compare key、`/tags/` の一覧・detail・fallback、`entryTags` best-effort 抽出の境界をまとめて固定し、Tag 実装が `tags.json` + `articles.json` の再利用だけで開始できる状態にした
 - 6-D Search docs sweep では、`/search/` の helper state / no-result state、deterministic な query 正規化、field-separated `search-index.json`、`title > sourceName > tags > freshness` の ranking をまとめて固定し、Search 実装が `search-index.json` + `articles.json` の再利用だけで開始できる状態にした
 - 6-E Feed docs sweep では、`shelves.yaml` と `feeds.json` の編集境界、初期棚セット (`it` / `ai` / `science`)、curated source 選定基準、feed 拡張時の QA 観点をまとめて固定し、将来の contributor が registry 変更だけで安全に棚・source を増やせる状態にした
+- post-v1 の curated source 拡張では、NASA や hard-science 一次ソースを主役に戻すより、GIGAZINE / Qiita / Zenn / DevelopersIO / CodeZine / subreddit RSS のような読みやすい source を厚くし、`science` も物理・Python・理系エンジニア寄りの軽めな棚として運用してよい
 - 6-F acceptance docs sweep では、旧MVP acceptance を baseline としつつ、最終的な v1 完了判定を shelf-first 拡張込みへ更新した。`/categories/` は compatibility route として扱い、`categories.json` は必要なら互換 export に留め、Phase 6 の primary public JSON は `articles/shelves/sources/tags/search-index/meta` を正本にする
 - `FS-PHASE6-00` では、Phase 6 を「docs task を先に全部完了させ、その後に `*-10` 系の implementation task へ進む」運用として固定する
 - `FS-PHASE6-01` では、実装前の最終点検として primary public JSON の列挙、旧MVP acceptance と最終 v1 acceptance の関係、章構造の整合を同期した

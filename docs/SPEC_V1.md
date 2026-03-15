@@ -429,15 +429,15 @@ GitHub Pages 単一サイト前提で、v1 の root-level route namespace は次
 
 v1 extension の初期 rollout では、棚の数をむやみに増やさず、まず以下の 3 棚を正本候補とする。
 
-- `it`: 日本IT / Web / 開発 / クラウド / プロダクト寄りの記事を集める棚
-- `ai`: AI モデル / API / プロダクト / 応用 / 研究寄りの記事を集める棚
-- `science`: 科学 / 宇宙 / 研究 / 技術ニュース寄りの記事を集める棚
+- `it`: 日本IT / Web / 開発 / Linux / 生産性寄りの記事を集める棚
+- `ai`: LLM / 生成AI / AI活用 / ローカルモデル寄りの記事を集める棚
+- `science`: 物理 / 科学トピック / Python / 数値計算 / 理系エンジニア寄りの記事を集める棚
 
-初期 source の割り当ては、少なくとも次のような移行が自然である。
+初期 curated set の代表例は、少なくとも次のような割り当てが自然である。
 
-- `itmedia-news`, `publickey` -> `it`
-- `openai-news` -> `ai`
-- `sciencedaily-technology`, `nasa-news` -> `science`
+- `itmedia-news`, `publickey`, `gigazine`, `qiita-popular`, `zenn-feed`, `developersio`, `codezine`, `hatena-hotentry-it` -> `it`
+- `openai-news`, `itmedia-aiplus`, `qiita-tag-ai`, `zenn-topic-ai`, `reddit-localllama` -> `ai`
+- `gigazine`, `qiita-tag-python`, `zenn-topic-python`, `reddit-python`, `reddit-physics` -> `science`
 
 補足:
 
@@ -525,9 +525,16 @@ contributor が Phase 6 で行う主な編集操作は、次の 3 種に分け�
 - 棚の目的と継続的に整合する記事が見込める
 - FeedShelf の discovery-first UI で過度にノイズにならない
 
+post-v1 の personal-curation では、一次ソースの権威性だけでなく、次も重視する。
+
+- 毎日開きたくなる温度感があること
+- 実装・開発環境・AI活用・理系エンジニア寄りの話題を継続的に拾えること
+- Qiita / Zenn / subreddit RSS のような community source でも、公開 feed が安定していれば候補に含めてよいこと
+- hard-science な source が棚の読み口を壊す場合は、削除ではなく `enabled=false` で残してよいこと
+
 初期 curated set では、次のような conservative な運用を取る。
 
-- 1 棚あたりの source 数は少数から始め、まずは 2〜6 source 程度でもよい
+- 1 棚あたりの source 数は少数から始めてもよいが、personal-curation で読み口が固まっている場合は、温度感の近い source を 8〜10 件程度までまとめて追加してもよい
 - 同一組織の mirror / duplicate feed を並べすぎない
 - 一時的な話題だけで source を追加せず、継続的な読み口として成立するかを優先する
 - `tags[]` は source の性格を示す broad tag に留め、棚名の焼き直しや一過性のイベント名を多用しない
