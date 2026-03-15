@@ -886,3 +886,10 @@
 - 理由: 物理専攻かつエンジニア志向の reader profile では、source 数だけ増やすと棚の温度感がぼやけやすい一方、topic feed を増やすと「Linux / editor / LLM / 個人開発」に寄った記事量を増やしやすいため
 - 影響: `it` 棚は Linux / editor / 個人開発寄り、`ai` 棚は LLM / 実装寄りの source 比率が上がる
 - 影響: 将来さらに source を増やす場合も、まず topic/tag feed を検討し、それでも不足する場合に broad media を追加する
+
+## D-126: topic feed が揃った後は broad chronological / aggregator feed を一部 `enabled=false` に戻してよい
+
+- 決定: post-v1 の source 第3波では、Qiita / Zenn / Reddit の profile-aligned topic feed が十分に揃った後、`Zenn Feed` / `Hacker News` / `r/programming` のような broad feed を少数 `enabled=false` に戻してよい
+- 理由: 記事量の拡張後は、chronological な全体 feed や広すぎる aggregator/community feed が棚の温度感をぼかしやすく、日本語中心・個人開発/Linux/LLM 寄りの読み口を維持したい場合は topic feed を残して broad feed を抑える方が最小差分で調整しやすいため
+- 影響: source registry では削除ではなく `enabled=false` を優先し、必要になれば後で再度有効化できる
+- 影響: `it` 棚は broad English feed を少し減らしても、Qiita / Zenn topic / gihyo / GIGAZINE / DevelopersIO で十分な記事量を維持する前提とする

@@ -602,3 +602,22 @@ test('repository feed registry keeps profile-aligned topic feeds for it and ai s
     'ai shelf should keep at least one LLM/community profile source such as llm or machinelearning.',
   );
 });
+
+test('repository feed registry trims broad feeds while keeping profile-aligned sources enabled', async () => {
+  const feeds = (await loadFeeds(
+    path.resolve(__dirname, '..', 'data/feeds.json'),
+  )) as FeedDefinition[];
+
+  const byId = new Map<string, FeedDefinition>(
+    feeds.map((feed: FeedDefinition) => [feed.id, feed]),
+  );
+
+  assert.equal(byId.get('zenn-feed')?.enabled, false);
+  assert.equal(byId.get('hacker-news')?.enabled, false);
+  assert.equal(byId.get('reddit-programming')?.enabled, false);
+
+  assert.equal(byId.get('qiita-popular')?.enabled, true);
+  assert.equal(byId.get('gigazine')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-neovim')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-llm')?.enabled, true);
+});

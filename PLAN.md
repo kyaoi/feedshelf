@@ -246,6 +246,7 @@ Phase 6 の進め方:
 
 - post-v1 の source 精査では、hard-science 一次ソースを増やすより、GIGAZINE / Qiita / Zenn / DevelopersIO / CodeZine / Reddit などの読みやすい community-oriented source を厚くして、毎日開きたくなる棚体験を優先する
 - source の第2波では、`gihyo` のような読み物系 general tech source と、Qiita / Zenn / Reddit の `neovim` / `archlinux` / `llm` のような profile-aligned topic feed を優先し、あなた向けの温度感を維持したまま記事量を増やす
+- source の第3波では、profile-aligned topic feed が十分に揃ったあとに `Zenn Feed` / `Hacker News` / `r/programming` のような broad feed を少数 `enabled=false` へ戻し、日本語中心・個人開発/Linux/LLM 寄りの温度感を優先する
 - `data/feeds.json` の source 追加・無効化・棚紐付けで対応できる範囲を保ち、route / public JSON 契約の変更と混ぜない
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない

@@ -165,7 +165,7 @@
     "feedUrl": "https://zenn.dev/feed",
     "siteUrl": "https://zenn.dev/",
     "language": "ja",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["日本開発", "個人開発", "実装"]
   },
@@ -285,7 +285,7 @@
     "feedUrl": "https://news.ycombinator.com/rss",
     "siteUrl": "https://news.ycombinator.com/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["海外開発", "リンク集", "話題"]
   },
@@ -295,7 +295,7 @@
     "feedUrl": "https://www.reddit.com/r/programming/.rss",
     "siteUrl": "https://www.reddit.com/r/programming/",
     "language": "en",
-    "enabled": true,
+    "enabled": false,
     "shelfIds": ["it"],
     "tags": ["コミュニティ", "プログラミング", "海外開発"]
   },

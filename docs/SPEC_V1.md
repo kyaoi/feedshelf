@@ -537,6 +537,7 @@ post-v1 の personal-curation では、一次ソースの権威性だけでな�
 
 - 1 棚あたりの source 数は少数から始めてもよいが、personal-curation で読み口が固まっている場合は、温度感の近い source を 8〜10 件程度までまとめて追加してもよい
 - 同一組織の mirror / duplicate feed を並べすぎない
+- profile-aligned な topic / tag feed が十分に揃った後は、chronological な全体 feed や broad aggregator feed を `enabled=false` に戻して温度感を整えてよい
 - 一時的な話題だけで source を追加せず、継続的な読み口として成立するかを優先する
 - `tags[]` は source の性格を示す broad tag に留め、棚名の焼き直しや一過性のイベント名を多用しない
 
