@@ -60,7 +60,7 @@ Biome の初期 gate では、既存 runtime の無関係な書き換えを避�
 
 `data/feeds.json` に少なくとも 1 件の `enabled: true` な feed を入れてください。
 
-あわせて、`feeds.json.shelfIds[]` は `data/shelves.yaml` に存在する棚 ID だけを参照してください。棚を rename / delete したのに `feeds.json` 側を更新し忘れると、`pnpm run pipeline:update` は fail-fast で停止します。
+あわせて、`feeds.json.shelfIds[]` は `data/shelves.yaml` に存在する棚 ID だけを参照し、各 source の `id` は `feeds.json` 内で一意に保ってください。棚を rename / delete したのに `feeds.json` 側を更新し忘れたり、duplicate な source id を入れたりすると、`pnpm run pipeline:update` は fail-fast で停止します。
 
 このリポジトリでは、**enabled feed が 0 件のまま `pnpm run pipeline:update` を実行すると意図的に失敗** します。これは、空の更新で既存公開データを上書きしないためです。
 

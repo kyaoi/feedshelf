@@ -229,7 +229,7 @@ test('Phase 6 shelf-route evidence stays aligned across docs, tests, and PLAN', 
   assert.match(plan, /Phase 6 implementation backlog は完了済み/);
 });
 
-test('feed and shelf registry join validation stays aligned across README, docs, and tests', () => {
+test('feed and shelf registry validation stays aligned across README, docs, and tests', () => {
   const readme = fs.readFileSync(
     path.resolve(__dirname, '..', 'README.md'),
     'utf8',
@@ -254,18 +254,30 @@ test('feed and shelf registry join validation stays aligned across README, docs,
     path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
     'utf8',
   );
+  const loadFeedsSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/loadFeeds.ts'),
+    'utf8',
+  );
 
   assert.match(readme, /feeds\.json\.shelfIds\[\]/);
+  assert.match(readme, /source の `id`/);
   assert.match(readme, /fail-fast/);
+  assert.match(
+    spec,
+    /`feeds\.json` 内の各 source `id` は一意でなければならない/,
+  );
   assert.match(
     spec,
     /`feeds\.json\.shelfIds\[\]` の各値は `shelves\.yaml` に存在しなければならない/,
   );
   assert.match(decisions, /join を fail-fast で検証する/);
+  assert.match(decisions, /source `id` の重複を拒否/);
   assert.match(traceability, /FS-127/);
+  assert.match(traceability, /FS-128/);
   assert.match(traceability, /tests\/load-feeds\.test\.ts/);
-  assert.match(plan, /orphaned source \/ article export/);
+  assert.match(plan, /source identity 衝突/);
   assert.match(runPipelineSource, /Unknown shelfId referenced by feed/);
+  assert.match(loadFeedsSource, /Duplicate feed id/);
   assert.equal(
     fs.existsSync(path.resolve(__dirname, '..', 'tests/load-feeds.test.ts')),
     true,

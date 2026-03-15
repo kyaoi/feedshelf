@@ -20,6 +20,7 @@ function isFeedDefinitionRecord(value: unknown): value is FeedDefinitionRecord {
 export function validateFeedDefinition(
   feed: unknown,
   index: number,
+  seenIds: Set<string>,
 ): FeedDefinition {
   if (!isFeedDefinitionRecord(feed)) {
     throw new Error(`Feed at index ${index} must be an object.`);
@@ -32,6 +33,10 @@ export function validateFeedDefinition(
         `Feed at index ${index} is missing required string field: ${field}`,
       );
     }
+  }
+
+  if (seenIds.has(feed.id as string)) {
+    throw new Error(`Duplicate feed id: ${feed.id as string}`);
   }
 
   if (typeof feed.enabled !== 'boolean') {
@@ -66,6 +71,8 @@ export function validateFeedDefinition(
       })
     : [];
 
+  seenIds.add(feed.id as string);
+
   return {
     id: feed.id as string,
     name: feed.name as string,
@@ -87,5 +94,8 @@ export async function loadFeeds(feedsPath: string): Promise<FeedDefinition[]> {
     throw new Error('data/feeds.json must contain a JSON array.');
   }
 
-  return parsed.map((feed, index) => validateFeedDefinition(feed, index));
+  const seenIds = new Set<string>();
+  return parsed.map((feed, index) =>
+    validateFeedDefinition(feed, index, seenIds),
+  );
 }

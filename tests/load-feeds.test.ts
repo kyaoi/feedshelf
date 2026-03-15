@@ -116,6 +116,26 @@ test('loadFeeds rejects missing shelfIds', async () => {
   await assert.rejects(loadFeeds(feedsPath), /non-empty array field: shelfIds/);
 });
 
+test('loadFeeds rejects duplicate feed ids', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-duplicate-feed-id-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      RSS_FEED,
+      {
+        ...ATOM_FEED,
+        id: RSS_FEED.id,
+      },
+    ]),
+  );
+
+  await assert.rejects(loadFeeds(feedsPath), /Duplicate feed id: rss-feed/);
+});
+
 test('loadShelves parses shelves.yaml and validates reserved ids', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-shelves-'),

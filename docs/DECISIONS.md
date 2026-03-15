@@ -800,6 +800,13 @@
 - 影響: contributor が棚 rename / delete 後の `feeds.json` 更新を忘れた場合でも、`pipeline:update` が明確なエラーで停止し、GitHub Pages へ壊れた shelf-first surface を出しにくくなる
 - 影響: README / traceability / tests では、registry join の fail-fast guard を Phase 6 維持の evidence として追跡する
 
+## D-119D: `feeds.json` の source `id` は registry 内で fail-fast に一意性検証する
+
+- 決定: `loadFeeds` は `data/feeds.json` を読む時点で source `id` の重複を拒否し、duplicate な `id` を含む registry をそのまま pipeline へ流さない
+- 理由: `sourceId` は public JSON、source detail filter、search / tag 集計の join key であり、同じ `id` を複数 source が共有すると identity 衝突を後段で静かに広げてしまうため
+- 影響: contributor は source を追加するときに `id` を stable かつ unique に保つ必要があり、rename や feed 差し替え時も別 source と同じ `id` を再利用しない
+- 影響: docs / README / traceability / tests では、cross-registry guard だけでなく duplicate source id guard も Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない
