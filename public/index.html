@@ -13,39 +13,94 @@
   </head>
   <body>
     <header class="hero">
-      <div class="container hero__inner">
-        <p class="eyebrow">FeedShelf / Phase 6</p>
-        <h1>棚から読みたい記事に出会うための静的 RSS シェルフ</h1>
-        <p class="lead">
-          まず棚を選び、そこから注目記事・新着・媒体へ降りていく shelf-first な入口です。各棚は `/<shelfId>/` の専用 route で開けます。
-        </p>
+      <div class="container">
+        <div class="hero-card hero-card--home">
+          <div class="hero__main">
+            <p class="eyebrow">FeedShelf / Phase 6</p>
+            <h1>棚から読みたい記事に出会うための静的 RSS シェルフ</h1>
+            <p class="lead">
+              まず棚を選び、そこから注目記事・新着・媒体へ降りていく shelf-first な入口です。各棚は
+              <span class="code-inline">/&lt;shelfId&gt;/</span>
+              の専用 route で開けます。
+            </p>
+            <div class="hero-links">
+              <a class="hero-link" href="#shelves-title">棚から探す</a>
+              <a class="hero-link hero-link--secondary" href="#search-title">横断検索</a>
+              <a class="hero-link hero-link--secondary" href="#articles-title">新着を見る</a>
+            </div>
+          </div>
+          <aside class="hero__aside">
+            <div class="hero-surface">
+              <p class="panel__eyebrow">Browse</p>
+              <h2>入口を選ぶ</h2>
+              <p class="muted">棚を主軸にしつつ、タグ・媒体・検索からも読みたい記事にたどり着けます。</p>
+              <div class="hero-badge-list">
+                <a class="hero-badge" href="#shelves-title">棚カタログ</a>
+                <a class="hero-badge" href="#tags-title">タグ</a>
+                <a class="hero-badge" href="#sources-title">媒体</a>
+                <a class="hero-badge" href="#search-title">検索</a>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </header>
 
     <main class="container layout">
-      <section class="panel" aria-labelledby="meta-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">公開データ</p>
-            <h2 id="meta-title">更新状況</h2>
+      <div class="section-grid section-grid--home-top">
+        <section class="panel" aria-labelledby="meta-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">公開データ</p>
+              <h2 id="meta-title">更新状況</h2>
+            </div>
+            <p id="generated-at" class="muted">読み込み中…</p>
           </div>
-          <p id="generated-at" class="muted">読み込み中…</p>
-        </div>
-        <dl id="meta-stats" class="stats-grid" aria-live="polite">
-          <div class="stat-card">
-            <dt>記事数</dt>
-            <dd>—</dd>
+          <dl id="meta-stats" class="stats-grid" aria-live="polite">
+            <div class="stat-card">
+              <dt>記事数</dt>
+              <dd>—</dd>
+            </div>
+            <div class="stat-card">
+              <dt>媒体数</dt>
+              <dd>—</dd>
+            </div>
+            <div class="stat-card">
+              <dt>棚数</dt>
+              <dd>—</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel" aria-labelledby="search-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Search</p>
+              <h2 id="search-title">横断検索で探す</h2>
+            </div>
+            <p class="muted">棚やタグで辿りきれない topic / 媒体名を補助的に探せます。</p>
           </div>
-          <div class="stat-card">
-            <dt>媒体数</dt>
-            <dd>—</dd>
+          <form class="search-form" action="./search/" method="get">
+            <label class="search-form__label" for="home-search-query">タイトル・媒体名・タグ名</label>
+            <div class="search-form__controls">
+              <input
+                id="home-search-query"
+                class="search-form__input"
+                type="search"
+                name="q"
+                placeholder="例: kubernetes publickey cloud"
+                autocomplete="off"
+              />
+              <button class="search-form__button" type="submit">検索ページへ</button>
+            </div>
+          </form>
+          <div class="helper-links">
+            <a class="chip chip--muted" href="#tags-title">タグ導線へ</a>
+            <a class="chip chip--muted" href="#sources-title">媒体導線へ</a>
+            <a class="chip chip--muted" href="#articles-title">全体の新着へ</a>
           </div>
-          <div class="stat-card">
-            <dt>棚数</dt>
-            <dd>—</dd>
-          </div>
-        </dl>
-      </section>
+        </section>
+      </div>
 
       <section class="panel" aria-labelledby="shelves-title">
         <div class="panel__heading">
@@ -60,56 +115,33 @@
         </div>
       </section>
 
+      <div class="section-grid section-grid--home-discovery">
+        <section class="panel" aria-labelledby="tags-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Tags</p>
+              <h2 id="tags-title">タグから探す</h2>
+            </div>
+            <p class="muted">sourceTags と entryTags をまとめた補助導線です。</p>
+          </div>
+          <div id="tags-list" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
+          </div>
+        </section>
 
-      <section class="panel" aria-labelledby="search-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Search</p>
-            <h2 id="search-title">横断検索で探す</h2>
+        <section class="panel" aria-labelledby="sources-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Sources</p>
+              <h2 id="sources-title">媒体ディレクトリ</h2>
+            </div>
+            <p class="muted">媒体から入りたいときの補助導線です。</p>
           </div>
-          <p class="muted">棚やタグで辿りきれない topic / 媒体名を補助的に探せます。</p>
-        </div>
-        <form class="search-form" action="./search/" method="get">
-          <label class="search-form__label" for="home-search-query">タイトル・媒体名・タグ名</label>
-          <div class="search-form__controls">
-            <input
-              id="home-search-query"
-              class="search-form__input"
-              type="search"
-              name="q"
-              placeholder="例: kubernetes publickey cloud"
-              autocomplete="off"
-            />
-            <button class="search-form__button" type="submit">検索ページへ</button>
+          <div id="sources-list" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
           </div>
-        </form>
-      </section>
-
-      <section class="panel" aria-labelledby="tags-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Tags</p>
-            <h2 id="tags-title">タグから探す</h2>
-          </div>
-          <p class="muted">sourceTags と entryTags をまとめた補助導線です。</p>
-        </div>
-        <div id="tags-list" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="sources-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Sources</p>
-            <h2 id="sources-title">媒体ディレクトリ</h2>
-          </div>
-          <p class="muted">媒体から入りたいときの補助導線です。</p>
-        </div>
-        <div id="sources-list" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <section class="panel" aria-labelledby="articles-title">
         <div class="panel__heading">

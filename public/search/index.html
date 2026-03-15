@@ -13,13 +13,28 @@
   </head>
   <body>
     <header class="hero hero--compact">
-      <div class="container hero__inner">
-        <a class="back-link" href="../">← トップへ戻る</a>
-        <p class="eyebrow">FeedShelf / Search</p>
-        <h1 id="search-page-title">横断検索で探す</h1>
-        <p id="search-page-description" class="lead">
-          タイトル・媒体名・タグ名から記事を探せる補助 discovery 導線です。
-        </p>
+      <div class="container">
+        <div class="hero-card">
+          <div class="hero__main">
+            <a class="back-link" href="../">← トップへ戻る</a>
+            <p class="eyebrow">FeedShelf / Search</p>
+            <h1 id="search-page-title">横断検索で探す</h1>
+            <p id="search-page-description" class="lead">
+              タイトル・媒体名・タグ名から記事を探せる補助 discovery 導線です。
+            </p>
+          </div>
+          <aside class="hero__aside">
+            <div class="hero-surface">
+              <p class="panel__eyebrow">Navigate</p>
+              <h2>他の入口も使う</h2>
+              <div class="hero-badge-list">
+                <a class="hero-badge" href="../">棚カタログへ戻る</a>
+                <a class="hero-badge" href="../tags/">タグ一覧へ</a>
+                <a class="hero-badge" href="../sources/">媒体一覧へ</a>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </header>
 
@@ -33,9 +48,7 @@
           <p id="generated-at" class="muted">読み込み中…</p>
         </div>
         <form class="search-form" action="./" method="get">
-          <label class="search-form__label" for="search-query-input"
-            >タイトル・媒体名・タグ名</label
-          >
+          <label class="search-form__label" for="search-query-input">タイトル・媒体名・タグ名</label>
           <div class="search-form__controls">
             <input
               id="search-query-input"

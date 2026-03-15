@@ -862,3 +862,11 @@
 - 理由: compatibility layer は UI・route・public JSON・README・テストの複数面へ波及するため、どれか 1 つだけ先行して変えると「実装は動くが docs と受け入れ条件が古い」状態になりやすいため
 - 影響: `FS-QA-10` は新しい shelf-first surface の受け入れ確認だけでなく、必要なら `/categories/` compatibility behavior の継続確認も担う
 - 影響: 将来 compatibility route を廃止する場合も、まず影響分析と docs 更新を行ってから実装へ進む
+
+
+## D-123: post-v1 の UI refresh は route / public JSON 契約を変えない visual refresh として行う
+
+- 決定: post-v1 の UI 改善は、まず `public/*.html` / generated `/<shelfId>/index.html` / `public/assets/styles.css` / `src/web/app.ts` の visual refresh に限定し、route policy・public JSON・search/tag/source/shelf の filter 契約は変えない
+- 理由: Feed 精査や DX 縮退の前に見た目と回遊性だけを改善したいが、この段階で data contract や pipeline behavior まで同時に動かすと差分が広がり、diffship loop での原因切り分けが難しくなるため
+- 影響: generated shelf route と fixed route は同じ UI トーンへ寄せるが、受け入れ上は既存 tests が確認している route / JSON / compatibility behavior を維持する
+- 影響: lint / formatter の縮退可否は別タスクで扱い、UI refresh task と混ぜない

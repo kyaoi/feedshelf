@@ -757,7 +757,7 @@
     function renderCategoryChip(category) {
         const selectedClassName = category.isSelected ? ' chip--selected' : '';
         const content = `
-      <span>${escapeHtml(category.label)}</span>
+      <span class="chip__label">${escapeHtml(category.label)}</span>
       <span class="chip__count">${escapeHtml(category.countLabel)}</span>
     `;
         if (category.href) {
@@ -807,7 +807,7 @@
     function renderSourcePill(source) {
         const selectedClassName = source.isSelected ? ' source-pill--selected' : '';
         const content = `
-      <span>${escapeHtml(source.name)}</span>
+      <span class="source-pill__label">${escapeHtml(source.name)}</span>
       <span class="source-pill__count">${escapeHtml(source.countLabel)}</span>
       ${source.metaLabel ? `<span class="source-pill__meta">${escapeHtml(source.metaLabel)}</span>` : ''}
     `;
@@ -847,6 +847,9 @@
               </a>
             `
                 : '<span class="article-card__link article-card__link--disabled" aria-disabled="true">リンクなし</span>';
+            const categoryMetaMarkup = article.categoryLabel
+                ? `<span class="meta-pill meta-pill--category">${escapeHtml(article.categoryLabel)}</span>`
+                : '';
             const visibleTagsMarkup = article.visibleTags.length > 0
                 ? `
                 <div class="article-card__tags" aria-label="記事タグ">
@@ -860,6 +863,7 @@
           <li class="article-card ${article.imageUrl ? 'article-card--with-image' : ''}">
             <article class="article-card__content">
               <div class="article-card__meta">
+                ${categoryMetaMarkup}
                 <span class="meta-pill">${escapeHtml(article.sourceName)}</span>
                 <span class="meta-pill">${escapeHtml(article.publishedAtLabel)}</span>
               </div>

@@ -234,8 +234,18 @@ Phase 6 の進め方:
 - 実装タスクの順番が shelf-first UI の骨格 → tag / search → input / export 更新 → acceptance で追跡できる
 - 仕様変更が必要になった場合に docs task を挟んでから実装へ戻る運用が守られている
 
+### Post-v1 visual refresh
+
+- [x] `FS-UX-20` static shell / generated shelf route / article card の visual refresh を行う
+
+完了条件:
+- `articles / shelves / sources / tags / search-index / meta` などの public JSON 契約を変えずに、root / fixed route / generated shelf route を同一トーンで刷新できる
+- CSS と軽量 markup 更新のみで、棚-first 導線・compatibility route・generated shelf route の責務を崩さない
+
 ## 直近の次タスク
 
+- Feed 収集対象の精査に入る前に、visual refresh 後の導線・余白・card hierarchy が棚-first 体験として十分かを確認する
+- lint / formatter の縮退判断は UI refresh と切り離した別タスクとして扱い、route / data contract の変更と混ぜない
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
 - `FS-DATA-05` 〜 `FS-DATA-08` の deferred backlog は v2 以降候補として必要時に再優先付けする

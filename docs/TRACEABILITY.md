@@ -6,6 +6,7 @@
 | FS-002 | カテゴリ別に絞り込める | `public/categories/index.html` / `src/web/app.ts` / `public/assets/app.js` | `tests/web-categories.test.ts` で `?id=<categoryId>` の絞り込みが確認できる |
 | FS-003 | 媒体別に絞り込める | `public/sources/index.html` / `src/web/app.ts` / `public/assets/app.js` | `tests/web-sources.test.ts` で `?id=<sourceId>` の絞り込みが確認できる |
 | FS-004 | 各記事から元記事へ遷移できる | `src/web/app.ts` / `public/assets/app.js` / 記事カードリンク | `tests/web-home.test.ts` で safe external URL handling が確認できる |
+| FS-004A | visual refresh 後も shelf-first / search / source / tag / compatibility / generated shelf route の surface を同一トーンで維持できる | `public/index.html` / `public/categories/index.html` / `public/search/index.html` / `public/sources/index.html` / `public/tags/index.html` / `scripts/pipeline/buildPublicExports.ts` / `src/web/app.ts` / `public/assets/styles.css` | `tests/web-home.test.ts`・`tests/web-shelf.test.ts`・既存 page tests で route / helper copy / generated shelf route の主要 surface を維持できる |
 | FS-005 | RSS / Atom を共通形式へ正規化できる | `scripts/pipeline/normalizeFeed.ts` / `scripts/pipeline/normalizeFeed.js` | `tests/load-feeds.test.ts` で canonical article object への正規化が確認できる |
 | FS-006 | 重複記事を抑制できる | `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/dedupeArticles.js` | `tests/load-feeds.test.ts` で dedupe が確認できる |
 | FS-007 | GitHub Actions で定期更新できる | `.github/workflows/update-public-data.yml` / `scripts/pipeline/update.ts` / `PLAN.md` | `tests/update-workflow.test.ts` で schedule / manual trigger / concurrency / quality gate / pipeline invocation / artifact upload の境界が確認できる |

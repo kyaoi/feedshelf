@@ -13,45 +13,63 @@
   </head>
   <body>
     <header class="hero hero--compact">
-      <div class="container hero__inner">
-        <a class="back-link" href="../">← トップへ戻る</a>
-        <p class="eyebrow">FeedShelf / Category Compatibility</p>
-        <h1 id="category-page-title">カテゴリ互換一覧</h1>
-        <p id="category-page-description" class="lead">
-          旧カテゴリ導線を壊さないための compatibility route です。棚・タグ・検索・媒体ページへ戻りながら、既存 deep link も確認できます。
-        </p>
+      <div class="container">
+        <div class="hero-card">
+          <div class="hero__main">
+            <a class="back-link" href="../">← トップへ戻る</a>
+            <p class="eyebrow">FeedShelf / Category Compatibility</p>
+            <h1 id="category-page-title">カテゴリ互換一覧</h1>
+            <p id="category-page-description" class="lead">
+              旧カテゴリ導線を壊さないための compatibility route です。棚・タグ・検索・媒体ページへ戻りながら、既存 deep link も確認できます。
+            </p>
+          </div>
+          <aside class="hero__aside">
+            <div class="hero-surface">
+              <p class="panel__eyebrow">Navigate</p>
+              <h2>主役の導線へ戻る</h2>
+              <div class="hero-badge-list">
+                <a class="hero-badge" href="../">棚カタログへ</a>
+                <a class="hero-badge" href="../tags/">タグ一覧へ</a>
+                <a class="hero-badge" href="../search/">検索ページへ</a>
+                <a class="hero-badge" href="../sources/">媒体一覧へ</a>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </header>
 
     <main class="container layout">
-      <section class="panel" aria-labelledby="category-nav-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">カテゴリ</p>
-            <h2 id="category-nav-title">カテゴリ一覧</h2>
+      <div class="section-grid section-grid--detail-top">
+        <section class="panel" aria-labelledby="category-nav-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">カテゴリ</p>
+              <h2 id="category-nav-title">カテゴリ一覧</h2>
+            </div>
+            <p id="generated-at" class="muted">読み込み中…</p>
           </div>
-          <p id="generated-at" class="muted">読み込み中…</p>
-        </div>
-        <div id="category-nav" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
-      </section>
+          <div id="category-nav" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
+          </div>
+        </section>
 
-      <section class="panel" aria-labelledby="compatibility-links-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Compatibility</p>
-            <h2 id="compatibility-links-title">棚-first 導線へ戻る</h2>
+        <section class="panel" aria-labelledby="compatibility-links-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Compatibility</p>
+              <h2 id="compatibility-links-title">棚-first 導線へ戻る</h2>
+            </div>
+            <p class="muted">legacy category deep link を残しつつ、主役の導線へ戻れます。</p>
           </div>
-          <p class="muted">legacy category deep link を残しつつ、主役の導線へ戻れます。</p>
-        </div>
-        <div class="chip-list helper-links">
-          <a class="chip chip--muted" href="../">棚カタログへ</a>
-          <a class="chip chip--muted" href="../tags/">タグ一覧へ</a>
-          <a class="chip chip--muted" href="../search/">検索ページへ</a>
-          <a class="chip chip--muted" href="../sources/">媒体一覧へ</a>
-        </div>
-      </section>
+          <div class="chip-list helper-links">
+            <a class="chip chip--muted" href="../">棚カタログへ</a>
+            <a class="chip chip--muted" href="../tags/">タグ一覧へ</a>
+            <a class="chip chip--muted" href="../search/">検索ページへ</a>
+            <a class="chip chip--muted" href="../sources/">媒体一覧へ</a>
+          </div>
+        </section>
+      </div>
 
       <section class="panel" aria-labelledby="articles-title">
         <div class="panel__heading">

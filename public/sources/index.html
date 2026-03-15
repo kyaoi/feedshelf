@@ -13,42 +13,59 @@
   </head>
   <body>
     <header class="hero hero--compact">
-      <div class="container hero__inner">
-        <a class="back-link" href="../">← トップへ戻る</a>
-        <p class="eyebrow">FeedShelf / Source</p>
-        <h1 id="source-page-title">媒体を選択してください</h1>
-        <p id="source-page-description" class="lead">
-          トップページまたは媒体一覧から対象媒体を選ぶと、該当記事だけを表示します。
-        </p>
+      <div class="container">
+        <div class="hero-card">
+          <div class="hero__main">
+            <a class="back-link" href="../">← トップへ戻る</a>
+            <p class="eyebrow">FeedShelf / Source</p>
+            <h1 id="source-page-title">媒体を選択してください</h1>
+            <p id="source-page-description" class="lead">
+              トップページまたは媒体一覧から対象媒体を選ぶと、該当記事だけを表示します。
+            </p>
+          </div>
+          <aside class="hero__aside">
+            <div class="hero-surface">
+              <p class="panel__eyebrow">Navigate</p>
+              <h2>棚やタグへ戻る</h2>
+              <div class="hero-badge-list">
+                <a class="hero-badge" href="../">棚カタログへ</a>
+                <a class="hero-badge" href="../tags/">タグ一覧へ</a>
+                <a class="hero-badge" href="../search/">検索ページへ</a>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </header>
 
     <main class="container layout">
-      <section class="panel" aria-labelledby="source-nav-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">媒体</p>
-            <h2 id="source-nav-title">媒体一覧</h2>
+      <div class="section-grid section-grid--detail-top">
+        <section class="panel" aria-labelledby="source-nav-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">媒体</p>
+              <h2 id="source-nav-title">媒体一覧</h2>
+            </div>
+            <p id="generated-at" class="muted">読み込み中…</p>
           </div>
-          <p id="generated-at" class="muted">読み込み中…</p>
-        </div>
-        <div id="source-nav" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
-      </section>
+          <div id="source-nav" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
+          </div>
+        </section>
 
-      <section class="panel" aria-labelledby="related-shelves-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Shelves</p>
-            <h2 id="related-shelves-title">関連する棚へ戻る</h2>
+        <section class="panel" aria-labelledby="related-shelves-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Shelves</p>
+              <h2 id="related-shelves-title">関連する棚へ戻る</h2>
+            </div>
+            <p class="muted">棚一覧へ戻って別の媒体や記事へ探索を広げられます。</p>
           </div>
-          <p class="muted">棚一覧へ戻って別の媒体や記事へ探索を広げられます。</p>
-        </div>
-        <div id="related-shelves" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
-      </section>
+          <div id="related-shelves" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
+          </div>
+        </section>
+      </div>
 
       <section class="panel" aria-labelledby="articles-title">
         <div class="panel__heading">

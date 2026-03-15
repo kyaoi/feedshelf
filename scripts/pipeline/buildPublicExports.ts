@@ -464,29 +464,59 @@ function renderShelfRouteHtml(shelf: ShelfDefinition): string {
   </head>
   <body data-feedshelf-page="shelf" data-shelf-id="${shelfId}">
     <header class="hero hero--compact">
-      <div class="container hero__inner">
-        <a class="back-link" href="../">← トップへ戻る</a>
-        <p class="eyebrow">FeedShelf / Shelf</p>
-        <h1 id="shelf-page-title">${shelfTitle}</h1>
-        <p id="shelf-page-description" class="lead">
-          ${shelfDescription}
-        </p>
+      <div class="container">
+        <div class="hero-card">
+          <div class="hero__main">
+            <a class="back-link" href="../">← トップへ戻る</a>
+            <p class="eyebrow">FeedShelf / Shelf</p>
+            <h1 id="shelf-page-title">${shelfTitle}</h1>
+            <p id="shelf-page-description" class="lead">
+              ${shelfDescription}
+            </p>
+          </div>
+          <aside class="hero__aside">
+            <div class="hero-surface">
+              <p class="panel__eyebrow">Navigate</p>
+              <h2>探索を広げる</h2>
+              <div class="hero-badge-list">
+                <a class="hero-badge" href="#featured-title">注目記事へ</a>
+                <a class="hero-badge" href="#related-sources-title">関連する媒体へ</a>
+                <a class="hero-badge" href="#articles-title">新着記事へ</a>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </header>
 
     <main class="container layout">
-      <section class="panel" aria-labelledby="shelf-nav-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Shelves</p>
-            <h2 id="shelf-nav-title">棚一覧</h2>
+      <div class="section-grid section-grid--detail-top">
+        <section class="panel" aria-labelledby="shelf-nav-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Shelves</p>
+              <h2 id="shelf-nav-title">棚一覧</h2>
+            </div>
+            <p id="generated-at" class="muted">読み込み中…</p>
           </div>
-          <p id="generated-at" class="muted">読み込み中…</p>
-        </div>
-        <div id="shelf-nav" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
-      </section>
+          <div id="shelf-nav" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="related-sources-title">
+          <div class="panel__heading">
+            <div>
+              <p class="panel__eyebrow">Sources</p>
+              <h2 id="related-sources-title">関連する媒体</h2>
+            </div>
+            <p class="muted">この棚に属する媒体から source detail へ移動できます。</p>
+          </div>
+          <div id="related-sources" class="chip-list" aria-live="polite">
+            <p class="placeholder-text">読み込み中…</p>
+          </div>
+        </section>
+      </div>
 
       <section class="panel" aria-labelledby="featured-title">
         <div class="panel__heading">
@@ -499,19 +529,6 @@ function renderShelfRouteHtml(shelf: ShelfDefinition): string {
         <ol id="featured-list" class="article-list" aria-live="polite">
           <li class="placeholder-text">読み込み中…</li>
         </ol>
-      </section>
-
-      <section class="panel" aria-labelledby="related-sources-title">
-        <div class="panel__heading">
-          <div>
-            <p class="panel__eyebrow">Sources</p>
-            <h2 id="related-sources-title">関連する媒体</h2>
-          </div>
-          <p class="muted">この棚に属する媒体から source detail へ移動できます。</p>
-        </div>
-        <div id="related-sources" class="chip-list" aria-live="polite">
-          <p class="placeholder-text">読み込み中…</p>
-        </div>
       </section>
 
       <section class="panel" aria-labelledby="articles-title">
