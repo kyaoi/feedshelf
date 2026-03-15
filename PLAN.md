@@ -43,7 +43,7 @@ FeedShelf の v1 を、仕様先行・最小差分・GitHub Pages 前提で安�
 - [ ] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する
 - [ ] `FS-DATA-06` host 固有の canonical URL 解決と redirect 解決を追加する
 - [ ] `FS-DATA-07` fuzzy dedupe を安全な閾値つきで導入する
-- [ ] `FS-DATA-08` JSON sharding / pagination / search index を検討する
+- [ ] `FS-DATA-08` JSON sharding / pagination を検討する
 
 完了条件:
 - v1 で見送った dedupe / canonicalization / provenance の拡張点が、後続タスクとして見失われない
@@ -251,7 +251,7 @@ Phase 6 の進め方:
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
-- `FS-DATA-05` 〜 `FS-DATA-08` の deferred backlog は v2 以降候補として必要時に再優先付けする
+- `FS-DATA-05` 〜 `FS-DATA-07` の deferred backlog は v2 以降候補として必要時に再優先付けし、`search index` は Phase 6 で v1 scope に繰り上げて完了済みとして扱う
 
 ## メモ
 
