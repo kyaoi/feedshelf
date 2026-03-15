@@ -543,6 +543,7 @@ contributor が Phase 6 で行う主な編集操作は、次の 3 種に分け�
 - `shelfIds` は必須の配列とし、空配列を許容しない
 - `shelfIds[]` の各値は `shelves.yaml` に存在しなければならない
 - `tags` は省略可能だが、与える場合は配列でなければならず、source の性格を表す手動タグとして扱う
+- `tags[]` の各要素は非空文字列でなければならず、空文字列や非文字列を許容しない
 - `tags[]` は tag compare key（NFKC・trim・空白縮約・ASCII-Latin case 差吸収）で見て source 内一意でなければならない
 - `tags` は 0〜5 件程度の broad tag を推奨し、棚名そのもの、language label、短期イベント名だけで埋めない
 - `entryTags` は `feeds.json` に手入力せず、pipeline で RSS / Atom metadata から best-effort 生成する

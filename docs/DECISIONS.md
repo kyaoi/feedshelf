@@ -828,6 +828,13 @@
 - 影響: contributor は manual tag を使わないなら `tags` を省略し、使う場合だけ string array で与える
 - 影響: README / SPEC / TRACEABILITY / tests では、duplicate manual tag guard に加えて `tags` field shape guard も Phase 6 維持の evidence として追跡する
 
+## D-119H: manual `tags[]` の各要素は非空文字列のみを受け入れる
+
+- 決定: `loadFeeds` は `data/feeds.json` を読む時点で、manual `tags[]` の各要素が非空文字列でない source を reject し、空文字列や非文字列の tag value を pipeline へ流さない
+- 理由: source manual tag は curator-managed metadata の入力面であり、空や非文字列の要素を silent に無視すると tag directory・search・visible tag 補完の欠落が editor typo 由来なのか意図なのか判別しづらくなるため
+- 影響: contributor は manual tag を使う場合、各要素を空白だけでない文字列として与える
+- 影響: README / SPEC / TRACEABILITY / tests では、`tags` field shape guard や duplicate manual tag guard に加えて invalid manual tag value guard も Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

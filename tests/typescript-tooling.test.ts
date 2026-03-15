@@ -265,6 +265,7 @@ test('feed and shelf registry validation stays aligned across README, docs, and 
   assert.match(readme, /fail-fast/);
   assert.match(readme, /compare key/);
   assert.match(readme, /manual `tags` は省略するか配列/);
+  assert.match(readme, /非空文字列/);
   assert.match(
     spec,
     /`feeds\.json` 内の各 source `id` は一意でなければならない/,
@@ -274,6 +275,7 @@ test('feed and shelf registry validation stays aligned across README, docs, and 
     /各 source の `shelfIds\[\]` 内で同じ shelf を重複させてはならない/,
   );
   assert.match(spec, /`tags` は省略可能だが、与える場合は配列でなければならず/);
+  assert.match(spec, /`tags\[\]` の各要素は非空文字列でなければならず/);
   assert.match(
     spec,
     /`tags\[\]` は tag compare key.*source 内一意でなければならない/,
@@ -287,19 +289,23 @@ test('feed and shelf registry validation stays aligned across README, docs, and 
   assert.match(decisions, /source 内で重複を fail-fast に拒否する/);
   assert.match(decisions, /manual `tags\[\]` は compare key 上で重複/);
   assert.match(decisions, /manual `tags` field は省略または配列/);
+  assert.match(decisions, /manual `tags\[\]` の各要素は非空文字列/);
   assert.match(traceability, /FS-127/);
   assert.match(traceability, /FS-128/);
   assert.match(traceability, /FS-129/);
   assert.match(traceability, /FS-130/);
   assert.match(traceability, /FS-131/);
+  assert.match(traceability, /FS-132/);
   assert.match(traceability, /tests\/load-feeds\.test\.ts/);
   assert.match(plan, /冗長な棚属先/);
   assert.match(plan, /tag field shape mismatch/);
+  assert.match(plan, /空 manual tag/);
   assert.match(plan, /冗長 tag summary/);
   assert.match(runPipelineSource, /Unknown shelfId referenced by feed/);
   assert.match(loadFeedsSource, /Duplicate feed id/);
   assert.match(loadFeedsSource, /duplicate shelfIds value/);
   assert.match(loadFeedsSource, /must have array field: tags/);
+  assert.match(loadFeedsSource, /has invalid tags\[/);
   assert.match(loadFeedsSource, /duplicate tags value/);
   assert.equal(
     fs.existsSync(path.resolve(__dirname, '..', 'tests/load-feeds.test.ts')),

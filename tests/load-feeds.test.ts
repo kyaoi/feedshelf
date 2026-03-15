@@ -202,6 +202,28 @@ test('loadFeeds rejects non-array tags field', async () => {
   );
 });
 
+test('loadFeeds rejects empty or non-string manual tag values', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-invalid-tag-value-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        tags: ['AI', '   ', 42],
+      },
+    ]),
+  );
+
+  await assert.rejects(
+    loadFeeds(feedsPath),
+    /Feed at index 0 has invalid tags\[1\] value\./,
+  );
+});
+
 test('loadShelves parses shelves.yaml and validates reserved ids', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-shelves-'),
