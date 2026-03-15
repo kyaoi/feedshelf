@@ -814,6 +814,13 @@
 - 影響: contributor は source を複数棚へ属させてよいが、同じ shelf id を 1 source 内で繰り返さない
 - 影響: README / SPEC / TRACEABILITY / tests では、unknown shelf guard や duplicate source id guard に加えて duplicate shelf membership guard も Phase 6 維持の evidence として追跡する
 
+## D-119F: 各 source の manual `tags[]` は compare key 上で重複を fail-fast に拒否する
+
+- 決定: `loadFeeds` は `data/feeds.json` を読む時点で、同一 source の manual `tags[]` に compare key（NFKC・trim・空白縮約・ASCII-Latin case 差吸収）上で重複する値がある場合を拒否し、duplicate manual tags を pipeline へ流さない
+- 理由: source manual tag は `sourceTags` / `tags.json` / `search-index.json` / visible tag 補完へ波及する curator-managed metadata であり、表記揺れだけの duplicate を silent に正規化すると input registry の意図が見えなくなるため
+- 影響: contributor は `AI` と ` ai ` のような compare-key 上同一な manual tag を同一 source に併記しない
+- 影響: README / SPEC / TRACEABILITY / tests では、registry fail-fast guard の一部として duplicate manual tag guard も Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

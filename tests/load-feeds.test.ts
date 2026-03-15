@@ -158,6 +158,28 @@ test('loadFeeds rejects duplicate shelfIds within one feed', async () => {
   );
 });
 
+test('loadFeeds rejects duplicate manual tags within one feed by normalized compare key', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-duplicate-tags-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        tags: ['AI', ' ai '],
+      },
+    ]),
+  );
+
+  await assert.rejects(
+    loadFeeds(feedsPath),
+    /Feed at index 0 has duplicate tags value: {2}ai /,
+  );
+});
+
 test('loadShelves parses shelves.yaml and validates reserved ids', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-shelves-'),

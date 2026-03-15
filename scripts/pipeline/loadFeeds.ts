@@ -13,6 +13,14 @@ const REQUIRED_STRING_FIELDS = [
 
 type FeedDefinitionRecord = Record<string, unknown>;
 
+function normalizeTagCompareKey(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('en-US');
+}
+
 function isFeedDefinitionRecord(value: unknown): value is FeedDefinitionRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -67,6 +75,7 @@ export function validateFeedDefinition(
     return shelfId;
   });
 
+  const seenTagCompareKeys = new Set<string>();
   const tags = Array.isArray(feed.tags)
     ? feed.tags.map((tag, tagIndex) => {
         if (typeof tag !== 'string' || tag.trim() === '') {
@@ -75,6 +84,14 @@ export function validateFeedDefinition(
           );
         }
 
+        const compareKey = normalizeTagCompareKey(tag);
+        if (seenTagCompareKeys.has(compareKey)) {
+          throw new Error(
+            `Feed at index ${index} has duplicate tags value: ${tag}`,
+          );
+        }
+
+        seenTagCompareKeys.add(compareKey);
         return tag;
       })
     : [];
