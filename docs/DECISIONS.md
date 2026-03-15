@@ -807,6 +807,13 @@
 - 影響: contributor は source を追加するときに `id` を stable かつ unique に保つ必要があり、rename や feed 差し替え時も別 source と同じ `id` を再利用しない
 - 影響: docs / README / traceability / tests では、cross-registry guard だけでなく duplicate source id guard も Phase 6 維持の evidence として追跡する
 
+## D-119E: 各 source の `shelfIds[]` は source 内で重複を fail-fast に拒否する
+
+- 決定: `loadFeeds` は `data/feeds.json` を読む時点で、同一 source の `shelfIds[]` に同じ shelf id が複数回入っている場合を拒否し、duplicate shelf membership を pipeline へ流さない
+- 理由: `shelfIds[]` は source が属する棚集合を表す registry join key であり、同じ shelf を重複させても意味がないうえ、`sources.json` / `articles.json` / source bridge に冗長な属先がそのまま残って後段の挙動を読みにくくするため
+- 影響: contributor は source を複数棚へ属させてよいが、同じ shelf id を 1 source 内で繰り返さない
+- 影響: README / SPEC / TRACEABILITY / tests では、unknown shelf guard や duplicate source id guard に加えて duplicate shelf membership guard も Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

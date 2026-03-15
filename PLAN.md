@@ -303,4 +303,4 @@ Phase 6 の進め方:
 - FS-UX-10 では `/` の shelf catalog 化に加えて、`/<shelfId>/` の route shell と `/sources/` から棚 route へ戻る bridge までを checked-in asset / pipeline 生成へ反映した
 - Phase 6 実装後の維持では、pipeline export が managed な `/<shelfId>/` route shell を再生成し、棚削除・rename 後に stale route を残さないことも evidence に含める
 - Phase 6 実装後の維持では、generated な shelf route shell に埋め込む `title` / `description` を plain text として扱い、HTML special chars を escape して Pages 上の route shell を壊さないことも evidence に含める
-- Phase 6 実装後の維持では、`feeds.json.shelfIds[]` が `shelves.yaml` に存在する棚だけを参照していることと、source `id` が registry 内で重複していないことを pipeline / loader が fail-fast で検証し、rename / delete 後の orphaned export や source identity 衝突を出さないことも evidence に含める
+- Phase 6 実装後の維持では、`feeds.json.shelfIds[]` が `shelves.yaml` に存在する棚だけを参照していること、各 source の `shelfIds[]` 内で同じ棚を重複させないこと、source `id` が registry 内で重複していないことを pipeline / loader が fail-fast で検証し、rename / delete 後の orphaned export、冗長な棚属先、source identity 衝突を出さないことも evidence に含める

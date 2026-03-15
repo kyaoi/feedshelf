@@ -486,6 +486,7 @@ source を追加・無効化・棚へ紐付け・source tag を調整したい�
 - 1 source は 1 つ以上の shelf に属する
 - 1 shelf は 0 個以上の source を持ちうる
 - `feeds.json` 内の各 source `id` は一意でなければならない
+- 各 source の `shelfIds[]` 内で同じ shelf を重複させてはならない
 - `feeds.json.shelfIds[]` の各値は `shelves.yaml` に存在しなければならない
 - shelf を削除または rename する場合は、参照する全 source の `shelfIds[]` も同時に更新する
 - shelf を削除または rename したあとの次回 `pipeline:update` では、generated な `/<oldShelfId>/index.html` route shell を掃除し、fixed route や hand-authored page を誤って削除しない
@@ -1012,6 +1013,7 @@ Phase 6 では次の公開 JSON を基本候補とする。
 
 - registry 整合性
   - `shelfIds[]` がすべて `shelves.yaml` 上の実在 shelf を参照している
+  - 各 source の `shelfIds[]` 内で同じ shelf を重複させていない
   - `shelfId` / `sourceId` が重複していない
   - reserved id と衝突する shelf を追加していない
 - source / feed の重複

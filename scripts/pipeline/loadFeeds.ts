@@ -49,6 +49,7 @@ export function validateFeedDefinition(
     );
   }
 
+  const seenShelfIds = new Set<string>();
   const shelfIds = feed.shelfIds.map((shelfId, shelfIndex) => {
     if (typeof shelfId !== 'string' || shelfId.trim() === '') {
       throw new Error(
@@ -56,6 +57,13 @@ export function validateFeedDefinition(
       );
     }
 
+    if (seenShelfIds.has(shelfId)) {
+      throw new Error(
+        `Feed at index ${index} has duplicate shelfIds value: ${shelfId}`,
+      );
+    }
+
+    seenShelfIds.add(shelfId);
     return shelfId;
   });
 

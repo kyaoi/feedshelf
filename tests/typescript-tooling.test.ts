@@ -260,7 +260,8 @@ test('feed and shelf registry validation stays aligned across README, docs, and 
   );
 
   assert.match(readme, /feeds\.json\.shelfIds\[\]/);
-  assert.match(readme, /source の `id`/);
+  assert.match(readme, /各 source の `id`/);
+  assert.match(readme, /同じ source の `shelfIds\[\]` に同一棚を重複させず/);
   assert.match(readme, /fail-fast/);
   assert.match(
     spec,
@@ -268,16 +269,23 @@ test('feed and shelf registry validation stays aligned across README, docs, and 
   );
   assert.match(
     spec,
+    /各 source の `shelfIds\[\]` 内で同じ shelf を重複させてはならない/,
+  );
+  assert.match(
+    spec,
     /`feeds\.json\.shelfIds\[\]` の各値は `shelves\.yaml` に存在しなければならない/,
   );
   assert.match(decisions, /join を fail-fast で検証する/);
   assert.match(decisions, /source `id` の重複を拒否/);
+  assert.match(decisions, /source 内で重複を fail-fast に拒否する/);
   assert.match(traceability, /FS-127/);
   assert.match(traceability, /FS-128/);
+  assert.match(traceability, /FS-129/);
   assert.match(traceability, /tests\/load-feeds\.test\.ts/);
-  assert.match(plan, /source identity 衝突/);
+  assert.match(plan, /冗長な棚属先/);
   assert.match(runPipelineSource, /Unknown shelfId referenced by feed/);
   assert.match(loadFeedsSource, /Duplicate feed id/);
+  assert.match(loadFeedsSource, /duplicate shelfIds value/);
   assert.equal(
     fs.existsSync(path.resolve(__dirname, '..', 'tests/load-feeds.test.ts')),
     true,
