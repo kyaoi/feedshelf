@@ -224,6 +224,50 @@ test('loadFeeds rejects empty or non-string manual tag values', async () => {
   );
 });
 
+test('loadFeeds rejects non-http feedUrl values', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-invalid-feed-url-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        feedUrl: 'mailto:tips@example.com',
+      },
+    ]),
+  );
+
+  await assert.rejects(
+    loadFeeds(feedsPath),
+    /Feed at index 0 must have absolute http\/https URL field: feedUrl/,
+  );
+});
+
+test('loadFeeds rejects non-http siteUrl values', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-invalid-site-url-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        siteUrl: '/relative-path',
+      },
+    ]),
+  );
+
+  await assert.rejects(
+    loadFeeds(feedsPath),
+    /Feed at index 0 must have absolute http\/https URL field: siteUrl/,
+  );
+});
+
 test('loadShelves parses shelves.yaml and validates reserved ids', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-shelves-'),

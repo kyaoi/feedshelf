@@ -536,8 +536,8 @@ contributor が Phase 6 で行う主な編集操作は、次の 3 種に分け�
 
 - `id` は ASCII の kebab-case を推奨し、URL や生成物キーに再利用できる安定値とする
 - `name` は UI 表示名として使える文字列とする
-- `feedUrl` は取得対象の公開 RSS / Atom URL とする
-- `siteUrl` は媒体トップまたはフィードに対応するサイトURLとする
+- `feedUrl` は取得対象の公開 RSS / Atom URL とし、absolute な `http/https` URL でなければならない
+- `siteUrl` は媒体トップまたはフィードに対応するサイトURLとし、absolute な `http/https` URL でなければならない
 - `language` は `ja`, `en` などの短い言語コードを想定する
 - `enabled=false` の source は取得対象から除外してよい
 - `shelfIds` は必須の配列とし、空配列を許容しない

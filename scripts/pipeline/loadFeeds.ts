@@ -10,6 +10,7 @@ const REQUIRED_STRING_FIELDS = [
   'siteUrl',
   'language',
 ] as const;
+const HTTP_URL_FIELDS = ['feedUrl', 'siteUrl'] as const;
 
 type FeedDefinitionRecord = Record<string, unknown>;
 
@@ -23,6 +24,25 @@ function normalizeTagCompareKey(value: string): string {
 
 function isFeedDefinitionRecord(value: unknown): value is FeedDefinitionRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateAbsoluteHttpUrlField(
+  value: string,
+  field: (typeof HTTP_URL_FIELDS)[number],
+  index: number,
+): string {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('unsupported protocol');
+    }
+  } catch {
+    throw new Error(
+      `Feed at index ${index} must have absolute http/https URL field: ${field}`,
+    );
+  }
+
+  return value;
 }
 
 export function validateFeedDefinition(
@@ -45,6 +65,10 @@ export function validateFeedDefinition(
 
   if (seenIds.has(feed.id as string)) {
     throw new Error(`Duplicate feed id: ${feed.id as string}`);
+  }
+
+  for (const field of HTTP_URL_FIELDS) {
+    validateAbsoluteHttpUrlField(feed[field] as string, field, index);
   }
 
   if (typeof feed.enabled !== 'boolean') {

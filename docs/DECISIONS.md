@@ -835,6 +835,13 @@
 - 影響: contributor は manual tag を使う場合、各要素を空白だけでない文字列として与える
 - 影響: README / SPEC / TRACEABILITY / tests では、`tags` field shape guard や duplicate manual tag guard に加えて invalid manual tag value guard も Phase 6 維持の evidence として追跡する
 
+## D-119I: `feedUrl` / `siteUrl` は absolute な `http/https` URL のみを受け入れる
+
+- 決定: `loadFeeds` は `data/feeds.json` を読む時点で、各 source の `feedUrl` / `siteUrl` が absolute な `http/https` URL でない場合を reject し、相対 URL や非 `http/https` scheme を pipeline へ流さない
+- 理由: source registry の URL は fetch 対象と source profile の外部導線の両方で使われるため、壊れた URL を「非空文字列だからOK」として通すと update failure や無効な source bridge を後段まで持ち込んで原因切り分けが遅れるため
+- 影響: contributor は `feedUrl` / `siteUrl` を absolute な `http/https` URL で記述し、mailto・相対 path・未解決 placeholder を registry に入れない
+- 影響: README / SPEC / TRACEABILITY / tests では、registry fail-fast guard の一部として source URL shape guard も Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

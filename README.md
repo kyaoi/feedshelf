@@ -60,7 +60,7 @@ Biome の初期 gate では、既存 runtime の無関係な書き換えを避�
 
 `data/feeds.json` に少なくとも 1 件の `enabled: true` な feed を入れてください。
 
-あわせて、`feeds.json.shelfIds[]` は `data/shelves.yaml` に存在する棚 ID だけを参照し、同じ source の `shelfIds[]` に同一棚を重複させず、各 source の `id` は `feeds.json` 内で一意に保ってください。manual `tags` は省略するか配列で与え、使う場合の `tags[]` 各要素は非空文字列でなければならず、compare key（NFKC・trim・空白縮約・ASCII-Latin case 差吸収）で見ても重複させない前提です。棚を rename / delete したのに `feeds.json` 側を更新し忘れたり、同一 source に duplicate な shelf id や duplicate な source id、非配列の `tags`、空や非文字列の manual tag、compare-key 上 duplicate な manual tag を入れたりすると、`pnpm run pipeline:update` は fail-fast で停止します。
+あわせて、`feeds.json.shelfIds[]` は `data/shelves.yaml` に存在する棚 ID だけを参照し、同じ source の `shelfIds[]` に同一棚を重複させず、各 source の `id` は `feeds.json` 内で一意に保ってください。`feedUrl` / `siteUrl` は absolute な `http/https` URL とし、manual `tags` は省略するか配列で与え、使う場合の `tags[]` 各要素は非空文字列でなければならず、compare key（NFKC・trim・空白縮約・ASCII-Latin case 差吸収）で見ても重複させない前提です。棚を rename / delete したのに `feeds.json` 側を更新し忘れたり、同一 source に duplicate な shelf id や duplicate な source id、相対 URL や非 `http/https` の `feedUrl` / `siteUrl`、非配列の `tags`、空や非文字列の manual tag、compare-key 上 duplicate な manual tag を入れたりすると、`pnpm run pipeline:update` は fail-fast で停止します。
 
 このリポジトリでは、**enabled feed が 0 件のまま `pnpm run pipeline:update` を実行すると意図的に失敗** します。これは、空の更新で既存公開データを上書きしないためです。
 
