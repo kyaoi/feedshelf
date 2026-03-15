@@ -793,6 +793,13 @@
 - 影響: route shell 生成は reserved route / stale route cleanup だけでなく text safety も担う
 - 影響: `FS-QA-10` / post-Phase-6 maintenance では、棚 metadata に HTML special chars が含まれても generated shelf route が壊れないことを tests で確認する
 
+## D-119C: pipeline は `feeds.json.shelfIds[]` と `shelves.yaml` の join を fail-fast で検証する
+
+- 決定: `runPipeline` は public JSON を生成する前に、`feeds.json.shelfIds[]` の各値が `shelves.yaml` の現行棚集合に存在することを検証し、未知の `shelfId` があれば即座に失敗させる
+- 理由: shelf を rename / delete したのに `feeds.json` 側の参照だけ古いままだと、orphaned source / article export や「棚一覧に存在しない属先」を含む不整合を後段で作れてしまうため
+- 影響: contributor が棚 rename / delete 後の `feeds.json` 更新を忘れた場合でも、`pipeline:update` が明確なエラーで停止し、GitHub Pages へ壊れた shelf-first surface を出しにくくなる
+- 影響: README / traceability / tests では、registry join の fail-fast guard を Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない

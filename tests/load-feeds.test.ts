@@ -131,6 +131,39 @@ test('loadShelves parses shelves.yaml and validates reserved ids', async () => {
   await assert.rejects(loadShelves(shelvesPath), /reserved/);
 });
 
+test('runPipeline rejects feeds whose shelfIds are missing from shelves.yaml', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-cross-registry-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        shelfIds: ['unknown-shelf'],
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  await assert.rejects(
+    runPipeline({
+      feedsPath,
+      shelvesPath,
+      outputDir: path.join(tempDir, 'public/data'),
+      dryRun: true,
+      generatedAt: '2026-03-09T00:10:00Z',
+      logger: {
+        log() {},
+      },
+    }),
+    /Unknown shelfId referenced by feed rss-feed: unknown-shelf/,
+  );
+});
+
 test('parseArgs accepts --feeds, --shelves, --output-dir, and --dry-run', () => {
   const parsed = parseArgs([
     '--feeds',
