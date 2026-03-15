@@ -435,13 +435,14 @@ v1 extension の初期 rollout では、棚の数をむやみに増やさず、�
 
 初期 curated set の代表例は、少なくとも次のような割り当てが自然である。
 
-- `itmedia-news`, `publickey`, `gigazine`, `qiita-popular`, `zenn-feed`, `developersio`, `codezine`, `hatena-hotentry-it` -> `it`
-- `openai-news`, `itmedia-aiplus`, `qiita-tag-ai`, `zenn-topic-ai`, `reddit-localllama` -> `ai`
+- `itmedia-news`, `publickey`, `gihyo`, `gigazine`, `qiita-popular`, `qiita-tag-linux`, `qiita-tag-neovim`, `qiita-tag-archlinux`, `zenn-feed`, `zenn-topic-linux`, `zenn-topic-neovim`, `zenn-topic-archlinux`, `developersio`, `codezine`, `hatena-hotentry-it`, `hacker-news` -> `it`
+- `openai-news`, `itmedia-aiplus`, `qiita-tag-ai`, `qiita-tag-llm`, `zenn-topic-ai`, `zenn-topic-llm`, `reddit-localllama`, `reddit-machinelearning` -> `ai`
 - `gigazine`, `qiita-tag-python`, `zenn-topic-python`, `reddit-python`, `reddit-physics` -> `science`
 
 補足:
 
 - 1 source が複数棚に属してよいが、初期 rollout では棚の役割が曖昧にならないよう安易な多重所属を増やしすぎない
+- broad media を無制限に増やすより、reader profile に直結する tag / topic feed（例: `neovim`, `archlinux`, `llm`）を優先して足し、棚の温度感を崩さずに記事量を増やす
 - 新棚は「単なる tag ではなく、独立した読み方・導線が必要か」を満たす場合にのみ追加する
 - 初期棚は 3 つ程度の broad shelf から始め、empty shelf や source 0 件棚を量産しない
 - 新棚追加時は、少なくとも 2 件以上の継続的に扱いたい enabled source 候補があるか、近い将来の source 追加計画がある状態を推奨する

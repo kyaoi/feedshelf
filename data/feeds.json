@@ -20,6 +20,16 @@
     "tags": ["日本IT", "開発", "クラウド"]
   },
   {
+    "id": "gihyo",
+    "name": "gihyo.jp 新着",
+    "feedUrl": "https://gihyo.jp/feed/rss2",
+    "siteUrl": "https://gihyo.jp/",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["日本開発", "技術記事", "読み物"]
+  },
+  {
     "id": "openai-news",
     "name": "OpenAI News",
     "feedUrl": "https://openai.com/news/rss.xml",
@@ -120,6 +130,36 @@
     "tags": ["Linux", "開発環境", "運用"]
   },
   {
+    "id": "qiita-tag-neovim",
+    "name": "Qiita neovim",
+    "feedUrl": "https://qiita.com/tags/neovim/feed.atom",
+    "siteUrl": "https://qiita.com/tags/neovim",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Neovim", "エディタ", "開発環境"]
+  },
+  {
+    "id": "qiita-tag-archlinux",
+    "name": "Qiita archlinux",
+    "feedUrl": "https://qiita.com/tags/archlinux/feed.atom",
+    "siteUrl": "https://qiita.com/tags/archlinux",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["ArchLinux", "Linux", "開発環境"]
+  },
+  {
+    "id": "qiita-tag-llm",
+    "name": "Qiita LLM",
+    "feedUrl": "https://qiita.com/tags/llm/feed.atom",
+    "siteUrl": "https://qiita.com/tags/llm",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["LLM", "生成AI", "実装"]
+  },
+  {
     "id": "zenn-feed",
     "name": "Zenn Feed",
     "feedUrl": "https://zenn.dev/feed",
@@ -170,6 +210,46 @@
     "tags": ["生産性", "開発体験", "週刊まとめ"]
   },
   {
+    "id": "zenn-topic-neovim",
+    "name": "Zenn Neovim",
+    "feedUrl": "https://zenn.dev/topics/neovim/feed",
+    "siteUrl": "https://zenn.dev/topics/neovim",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Neovim", "エディタ", "個人開発"]
+  },
+  {
+    "id": "zenn-topic-linux",
+    "name": "Zenn Linux",
+    "feedUrl": "https://zenn.dev/topics/linux/feed",
+    "siteUrl": "https://zenn.dev/topics/linux",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Linux", "開発環境", "個人開発"]
+  },
+  {
+    "id": "zenn-topic-archlinux",
+    "name": "Zenn Arch Linux",
+    "feedUrl": "https://zenn.dev/topics/archlinux/feed",
+    "siteUrl": "https://zenn.dev/topics/archlinux",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["ArchLinux", "Linux", "開発環境"]
+  },
+  {
+    "id": "zenn-topic-llm",
+    "name": "Zenn LLM",
+    "feedUrl": "https://zenn.dev/topics/llm/feed",
+    "siteUrl": "https://zenn.dev/topics/llm",
+    "language": "ja",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["LLM", "生成AI", "活用"]
+  },
+  {
     "id": "developersio",
     "name": "DevelopersIO",
     "feedUrl": "https://dev.classmethod.jp/feed/",
@@ -198,6 +278,16 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["話題", "人気記事", "テクノロジー"]
+  },
+  {
+    "id": "hacker-news",
+    "name": "Hacker News",
+    "feedUrl": "https://news.ycombinator.com/rss",
+    "siteUrl": "https://news.ycombinator.com/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["海外開発", "リンク集", "話題"]
   },
   {
     "id": "reddit-programming",
@@ -240,6 +330,26 @@
     "tags": ["Linux", "コミュニティ", "海外開発"]
   },
   {
+    "id": "reddit-archlinux",
+    "name": "Reddit r/archlinux",
+    "feedUrl": "https://www.reddit.com/r/archlinux/.rss",
+    "siteUrl": "https://www.reddit.com/r/archlinux/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["ArchLinux", "コミュニティ", "海外開発"]
+  },
+  {
+    "id": "reddit-neovim",
+    "name": "Reddit r/neovim",
+    "feedUrl": "https://www.reddit.com/r/neovim/.rss",
+    "siteUrl": "https://www.reddit.com/r/neovim/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["it"],
+    "tags": ["Neovim", "コミュニティ", "海外開発"]
+  },
+  {
     "id": "reddit-localllama",
     "name": "Reddit r/LocalLLaMA",
     "feedUrl": "https://www.reddit.com/r/LocalLLaMA/.rss",
@@ -248,6 +358,16 @@
     "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["AI", "ローカルLLM", "コミュニティ"]
+  },
+  {
+    "id": "reddit-machinelearning",
+    "name": "Reddit r/MachineLearning",
+    "feedUrl": "https://www.reddit.com/r/MachineLearning/.rss",
+    "siteUrl": "https://www.reddit.com/r/MachineLearning/",
+    "language": "en",
+    "enabled": true,
+    "shelfIds": ["ai"],
+    "tags": ["AI", "機械学習", "コミュニティ"]
   },
   {
     "id": "reddit-physics",

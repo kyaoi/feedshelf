@@ -878,3 +878,11 @@
 - 理由: FeedShelf v1 は厳密な網羅性より「毎日開きたくなる棚」を優先しており、source registry も `enabled` を通じて保留 source を保持できるため、source を完全削除するより軽く棚の温度感を調整しやすいため
 - 影響: `science` 棚は宇宙ニュース専用ではなく、物理・Python・理系エンジニア寄りの軽い読み物を含んでよい
 - 影響: subreddit の公開 RSS は `.rss` suffix を使う安定した public feed として扱ってよく、`feeds.json` では community source であることが分かる `tags[]` を付けて運用する
+
+
+## D-125: 記事量を増やす第2波では broad media の追加より profile-aligned tag / topic feed を優先する
+
+- 決定: post-v1 の source 第2波では、一般 tech media を無差別に足すより、`gihyo` のような読み物系 general source を少数追加しつつ、Qiita / Zenn / Reddit の `neovim` / `archlinux` / `llm` のような topic feed を優先して増やす
+- 理由: 物理専攻かつエンジニア志向の reader profile では、source 数だけ増やすと棚の温度感がぼやけやすい一方、topic feed を増やすと「Linux / editor / LLM / 個人開発」に寄った記事量を増やしやすいため
+- 影響: `it` 棚は Linux / editor / 個人開発寄り、`ai` 棚は LLM / 実装寄りの source 比率が上がる
+- 影響: 将来さらに source を増やす場合も、まず topic/tag feed を検討し、それでも不足する場合に broad media を追加する

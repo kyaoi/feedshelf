@@ -572,3 +572,33 @@ test('repository feed registry keeps every shelf populated by enabled sources', 
     'science shelf should not rely only on hard-science sources.',
   );
 });
+
+test('repository feed registry keeps profile-aligned topic feeds for it and ai shelves', async () => {
+  const feeds = (await loadFeeds(
+    path.resolve(__dirname, '..', 'data/feeds.json'),
+  )) as FeedDefinition[];
+
+  const enabledItIds = feeds
+    .filter(
+      (feed: FeedDefinition) => feed.enabled && feed.shelfIds.includes('it'),
+    )
+    .map((feed: FeedDefinition) => feed.id);
+  const enabledAiIds = feeds
+    .filter(
+      (feed: FeedDefinition) => feed.enabled && feed.shelfIds.includes('ai'),
+    )
+    .map((feed: FeedDefinition) => feed.id);
+
+  assert.ok(
+    enabledItIds.some(
+      (id: string) => id.includes('neovim') || id.includes('archlinux'),
+    ),
+    'it shelf should keep at least one Linux/editor profile source such as neovim or archlinux.',
+  );
+  assert.ok(
+    enabledAiIds.some(
+      (id: string) => id.includes('llm') || id.includes('machinelearning'),
+    ),
+    'ai shelf should keep at least one LLM/community profile source such as llm or machinelearning.',
+  );
+});
