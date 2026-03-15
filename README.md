@@ -100,9 +100,11 @@ python -m http.server 4173 --directory public
 - 通常 CI workflow: `.github/workflows/ci.yml`
   - `push` / `pull_request` ごとに `pnpm run ci` を実行する
 - 更新 / 公開 workflow: `.github/workflows/update-public-data.yml`
+  - `workflow_dispatch` / `schedule` / `push(main)` で起動する
   - `build-public-data` job で依存解決、品質ゲート、`pnpm run pipeline:update`、Pages artifact upload を行う
   - `deploy-github-pages` job で Pages へ deploy する
-- enabled feed が全件取得失敗した場合は、deploy を進めず前回成功サイトを保護する
+- enabled feed が 0 件、または enabled feed がすべて fetch / source-level validation で失敗した場合は、deploy を進めず前回成功サイトを保護する
+- fetch は成功しても RSS / Atom として解釈できない feed は source-level failure として skip し、残りに 1 件以上 publishable feed があれば更新を継続する
 - source policy は cautious default を採り、既定では site 自身または first-party help / docs で feed 提供が確認しやすい source を優先する
 - community source や undocumented topic feed は、法務判断や取得条件の追加確認が済むまで `enabled=false` のまま保持してよい
 - update cadence は過剰取得を避けるため既定で 12 時間ごと (`17 */12 * * *`) とする

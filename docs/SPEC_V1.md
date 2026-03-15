@@ -1106,10 +1106,10 @@ v1 の取得・生成パイプラインは GitHub Actions からの定期実行�
 
 Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure handling の責務を docs に固定してから進める。
 
-- `FS-OPS-01` は update workflow の責務を持ち、schedule / manual trigger / concurrency / quality gate / enabled feed の取得 / pipeline 呼び出し / Pages artifact 準備までを扱う
+- `FS-OPS-01` は update workflow の責務を持ち、schedule / manual trigger / push(main) trigger / concurrency / quality gate / enabled feed の取得 / pipeline 呼び出し / Pages artifact 準備までを扱う
 - `FS-OPS-02` は Pages deploy の責務を持ち、`FS-OPS-01` が成功時に生成した artifact だけを公開対象にする。deploy は update job と分離した job で行い、`needs` / `environment: github-pages` / `page_url` output を明示する
-- `FS-OPS-03` は partial failure policy の責務を持ち、単一フィード失敗の収集・publish 条件・deploy skip 条件を実装へ落とし込む
-- v1 の publish 条件は「enabled feed のうち 1 件以上の取得と生成が成功していること」とし、全件失敗または enabled feed 0 件の更新では deploy を行わない
+- `FS-OPS-03` は partial failure policy の責務を持ち、単一フィードの fetch failure と source-level validation failure の収集・publish 条件・deploy skip 条件を実装へ落とし込む
+- v1 の publish 条件は「enabled feed のうち 1 件以上の取得と生成が成功していること」とし、全件 failure または enabled feed 0 件の更新では deploy を行わない
 - 現在の `scripts/pipeline/run.ts` は pre-fetched な `feedDocuments` を受け取る形を維持してよく、feed の実取得は薄い orchestration layer として workflow 側または隣接 script に分離してよい
 
 ### 12.6 v1 の更新・公開フロー
@@ -1117,14 +1117,16 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 1. フィード定義を読み込む
 2. 永続 state を読み込む
 3. 各 RSS / Atom を取得する
-   - 単一フィード失敗は収集して継続する
-   - enabled feed の全件失敗時は publish 不可として build を失敗させる
-4. 記事を canonical article object へ正規化する
-5. URL 正規化と dedupe を行う
-6. 公開 JSON (`articles/shelves/sources/tags/search-index/meta` と、必要なら `categories` compatibility export) を生成する
-7. GitHub Pages 用 artifact を生成する
-8. GitHub Pages へ公開する
-9. 更新後の内部 state を保存先へ書き戻す
+   - 単一フィードの fetch failure は収集して継続する
+4. 取得した document を source-level validation し、記事を canonical article object へ正規化できる形か確認する
+   - RSS / Atom として解釈できない feed や source-level validation failure は収集して skip する
+   - enabled feed の全件 failure 時は publish 不可として build を失敗させる
+5. 記事を canonical article object へ正規化する
+6. URL 正規化と dedupe を行う
+7. 公開 JSON (`articles/shelves/sources/tags/search-index/meta` と、必要なら `categories` compatibility export) を生成する
+8. GitHub Pages 用 artifact を生成する
+9. GitHub Pages へ公開する
+10. 更新後の内部 state を保存先へ書き戻す
 
 ### 12.7 v2 で再検討する項目
 

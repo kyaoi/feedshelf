@@ -162,6 +162,7 @@ export interface PipelineSummary {
 export interface FeedFetchFailure {
   feedId: string;
   feedUrl: string;
+  stage: 'fetch' | 'validate';
   message: string;
 }
 

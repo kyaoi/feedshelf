@@ -298,9 +298,9 @@ Phase 6 の進め方:
 - FS-TS-03 では `tsconfig.web.json` と `build:web-ui` を追加し、HTML の `<script src>` を変えずに UI asset を再生成できるようにした
 - FS-TS-04 では tests / lint を `.ts` entrypoint に寄せ、`verify:web-ui` で `src/web/app.ts` と `public/assets/app.js` の同期を検証する
 - FS-TS-05 では `strict: true` を有効化し、`DOM.Iterable` と最小限の型注釈追加で既存 TS 実装を strict mode に適合させた
-- FS-OPS-01 では `.github/workflows/update-public-data.yml` を追加し、schedule / manual trigger / concurrency / quality gate / `pipeline:update` / Pages artifact upload を先に固定した
+- FS-OPS-01 では `.github/workflows/update-public-data.yml` を追加し、schedule / manual trigger / push(main) trigger / concurrency / quality gate / `pipeline:update` / Pages artifact upload を先に固定した
 - FS-OPS-02 では同 workflow に `deploy-github-pages` job を追加し、`needs: build-public-data` / `environment: github-pages` / `actions/deploy-pages@v4` による公開境界を固定した
-- FS-OPS-03 では `scripts/pipeline/update.ts` に partial failure policy を追加し、enabled feed のうち 1 件以上取得成功なら公開を継続し、全件失敗なら build を失敗させて deploy を skip する
+- FS-OPS-03 では `scripts/pipeline/update.ts` に partial failure policy を追加し、enabled feed のうち 1 件以上の publishable source が残れば公開を継続し、fetch failure / source-level validation failure を個別に skip しつつ、全件 failure なら build を失敗させて deploy を skip する
 - FS-QA-00 では Phase 5 を docs-first で開始し、spec 実装差分監査 / README・docs 導線整理 / MVP 受け入れ確認の 3 タスクへ責務分割する
 - FS-QA-01 では MVP 中核機能の実装と主要 quality gate は揃っていると整理し、残課題を README / docs 導線整理と受け入れ証跡の明文化へ絞った
 - FS-QA-02 では `README.md` を repo 直下の入口として追加し、セットアップ / ローカル確認 / Actions・Pages 前提 / docs の読み順を 1 箇所へ集約した

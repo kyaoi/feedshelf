@@ -10,6 +10,7 @@ const {
   selectEnabledFeeds,
   fetchFeedDocument,
   shouldPublishFromFetchedDocuments,
+  validateFetchedFeedDocuments,
   runUpdatePipeline,
 } = require('../scripts/pipeline/update.js');
 
@@ -149,9 +150,33 @@ test('shouldPublishFromFetchedDocuments blocks empty publish attempts', () => {
     }),
     {
       ok: false,
-      reason: 'No feed documents were fetched successfully.',
+      reason: 'No feed documents were publishable after fetch and validation.',
     },
   );
+});
+
+test('validateFetchedFeedDocuments skips source-level parse failures', () => {
+  const result = validateFetchedFeedDocuments({
+    feeds: [ENABLED_FEED],
+    feedDocuments: [
+      {
+        feedId: 'enabled-feed',
+        xml: RSS_XML,
+        fetchedAt: '2026-03-09T09:10:11.000Z',
+      },
+      {
+        feedId: 'enabled-feed',
+        xml: '<html>not a feed</html>',
+        fetchedAt: '2026-03-09T09:10:11.000Z',
+      },
+    ],
+    logger: { log() {} },
+  });
+
+  assert.equal(result.publishableFeedDocuments.length, 1);
+  assert.equal(result.failedFetches.length, 1);
+  assert.equal(result.failedFetches[0].feedId, 'enabled-feed');
+  assert.equal(result.failedFetches[0].stage, 'validate');
 });
 
 test('runUpdatePipeline keeps partial failures and passes shelvesPath through', async () => {
@@ -200,12 +225,85 @@ test('runUpdatePipeline keeps partial failures and passes shelvesPath through', 
   assert.equal(summary.fetchedDocuments, 1);
   assert.equal(summary.failedFeeds, 1);
   assert.equal(summary.failedFetches[0].feedId, 'failing-feed');
+  assert.equal(summary.failedFetches[0].stage, 'fetch');
   assert.equal(summary.publicShelves, 1);
   assert.equal(fs.existsSync(path.join(outputDir, 'shelves.json')), true);
 });
 
-test('workflow file keeps public data update automation wired with cautious polling cadence', () => {
+test('runUpdatePipeline skips source-level validation failures but still publishes valid feeds', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+
+  await fsp.writeFile(feedsPath, JSON.stringify([ENABLED_FEED, FAILING_FEED]));
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+
+  const summary = await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-09T09:10:11Z',
+    logger: { log() {} },
+    fetchImpl: async (url: string) => ({
+      ok: true,
+      status: 200,
+      async text() {
+        if (String(url).includes('failing')) {
+          return '<html>not a feed</html>';
+        }
+
+        return RSS_XML;
+      },
+    }),
+  });
+
+  assert.equal(summary.attemptedFeeds, 2);
+  assert.equal(summary.fetchedDocuments, 1);
+  assert.equal(summary.failedFeeds, 1);
+  assert.equal(summary.failedFetches[0].feedId, 'failing-feed');
+  assert.equal(summary.failedFetches[0].stage, 'validate');
+  assert.equal(fs.existsSync(path.join(outputDir, 'articles.json')), true);
+});
+
+test('runUpdatePipeline fails when every enabled feed fails before publish', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+
+  await fsp.writeFile(feedsPath, JSON.stringify([ENABLED_FEED]));
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+
+  await assert.rejects(
+    runUpdatePipeline({
+      feedsPath,
+      shelvesPath,
+      outputDir,
+      dryRun: false,
+      generatedAt: '2026-03-09T09:10:11Z',
+      logger: { log() {} },
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async text() {
+          return '<html>not a feed</html>';
+        },
+      }),
+    }),
+    /No feed documents were publishable after fetch and validation\./,
+  );
+});
+
+test('workflow file keeps public data update automation wired with cautious polling cadence and main push trigger', () => {
   const workflow = readWorkflow();
+  assert.match(workflow, /push:/);
+  assert.match(workflow, /branches:\n\s+- main/);
   assert.match(workflow, /cron:/);
   assert.match(workflow, /17 \*\/12 \* \* \*/);
   assert.match(workflow, /pnpm run pipeline:update/);

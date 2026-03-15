@@ -396,6 +396,8 @@ test('README and docs stay aligned with workflow boundaries and diffship failure
   assert.doesNotMatch(ciWorkflow, /pnpm run pipeline:update/);
 
   assert.match(updateWorkflow, /^name: Update public data/m);
+  assert.match(updateWorkflow, /push:/);
+  assert.match(updateWorkflow, /branches:\n\s+- main/);
   assert.match(updateWorkflow, /actions\/configure-pages@v5/);
   assert.match(updateWorkflow, /pnpm run ci/);
   assert.match(updateWorkflow, /pnpm run pipeline:update/);

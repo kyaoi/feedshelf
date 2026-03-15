@@ -8,6 +8,7 @@ import type {
   UpdatePipelineSummary,
 } from '../../src/shared/contracts.ts';
 import { loadFeeds } from './loadFeeds.ts';
+import { normalizeFeedDocument } from './normalizeFeed.ts';
 import { runPipeline } from './run.ts';
 
 export interface UpdatePipelineArgs {
@@ -134,14 +135,14 @@ export function shouldPublishFromFetchedDocuments({
   if (feedDocuments.length === 0) {
     return {
       ok: false,
-      reason: 'No feed documents were fetched successfully.',
+      reason: 'No feed documents were publishable after fetch and validation.',
     };
   }
 
   return { ok: true };
 }
 
-function formatFeedFetchFailure(error: unknown): string {
+function formatFeedFailure(error: unknown): string {
   if (
     error &&
     typeof error === 'object' &&
@@ -151,7 +152,67 @@ function formatFeedFetchFailure(error: unknown): string {
     return (error as { message: string }).message;
   }
 
-  return 'Unknown fetch error';
+  return 'Unknown feed processing error';
+}
+
+interface ValidateFetchedFeedDocumentsResult {
+  publishableFeedDocuments: FeedDocumentInput[];
+  failedFetches: FeedFetchFailure[];
+}
+
+export function validateFetchedFeedDocuments({
+  feeds,
+  feedDocuments,
+  logger = console,
+}: {
+  feeds: FeedDefinition[];
+  feedDocuments: FeedDocumentInput[];
+  logger?: PipelineLogger;
+}): ValidateFetchedFeedDocumentsResult {
+  const feedMap = new Map<string, FeedDefinition>(
+    feeds.map((feed) => [feed.id, feed]),
+  );
+  const publishableFeedDocuments: FeedDocumentInput[] = [];
+  const failedFetches: FeedFetchFailure[] = [];
+
+  for (const document of feedDocuments) {
+    const feed = feedMap.get(document.feedId);
+
+    if (!feed) {
+      const message = `Unknown feedId in feedDocuments: ${document.feedId}`;
+      failedFetches.push({
+        feedId: document.feedId,
+        feedUrl: '(unknown)',
+        stage: 'validate',
+        message,
+      });
+      logger.log(`[update] source-failed ${document.feedId} ${message}`);
+      continue;
+    }
+
+    try {
+      normalizeFeedDocument({
+        feed,
+        xml: document.xml,
+        fetchedAt: document.fetchedAt,
+      });
+      publishableFeedDocuments.push(document);
+    } catch (error) {
+      const message = formatFeedFailure(error);
+      failedFetches.push({
+        feedId: feed.id,
+        feedUrl: feed.feedUrl,
+        stage: 'validate',
+        message,
+      });
+      logger.log(`[update] source-failed ${feed.id} ${message}`);
+    }
+  }
+
+  return {
+    publishableFeedDocuments,
+    failedFetches,
+  };
 }
 
 interface FetchEnabledFeedDocumentsResult {
@@ -189,10 +250,11 @@ export async function fetchEnabledFeedDocuments({
       });
       feedDocuments.push(document);
     } catch (error) {
-      const message = formatFeedFetchFailure(error);
+      const message = formatFeedFailure(error);
       failedFetches.push({
         feedId: feed.id,
         feedUrl: feed.feedUrl,
+        stage: 'fetch',
         message,
       });
       logger.log(`[update] fetch-failed ${feed.id} ${message}`);
@@ -212,17 +274,29 @@ export async function runUpdatePipeline(
 ): Promise<UpdatePipelineSummary> {
   const logger: PipelineLogger = options.logger || console;
   const generatedAt = new Date(options.generatedAt || Date.now()).toISOString();
-  const { enabledFeeds, feedDocuments, failedFetches } =
-    await fetchEnabledFeedDocuments({
-      feedsPath: options.feedsPath,
+  const {
+    feeds,
+    enabledFeeds,
+    feedDocuments,
+    failedFetches: fetchFailures,
+  } = await fetchEnabledFeedDocuments({
+    feedsPath: options.feedsPath,
+    logger,
+    fetchImpl: options.fetchImpl,
+    generatedAt,
+  });
+
+  const { publishableFeedDocuments, failedFetches: validationFailures } =
+    validateFetchedFeedDocuments({
+      feeds,
+      feedDocuments,
       logger,
-      fetchImpl: options.fetchImpl,
-      generatedAt,
     });
+  const failedFetches = [...fetchFailures, ...validationFailures];
 
   const publishDecision = shouldPublishFromFetchedDocuments({
     enabledFeeds,
-    feedDocuments,
+    feedDocuments: publishableFeedDocuments,
   });
 
   if (!publishDecision.ok) {
@@ -235,7 +309,7 @@ export async function runUpdatePipeline(
     shelvesPath: options.shelvesPath,
     outputDir: options.outputDir,
     dryRun: options.dryRun,
-    feedDocuments,
+    feedDocuments: publishableFeedDocuments,
     generatedAt,
     logger,
   });
@@ -243,7 +317,7 @@ export async function runUpdatePipeline(
   const summary: UpdatePipelineSummary = {
     ...pipelineSummary,
     attemptedFeeds: enabledFeeds.length,
-    fetchedDocuments: feedDocuments.length,
+    fetchedDocuments: publishableFeedDocuments.length,
     failedFeeds: failedFetches.length,
     failedFetches,
   };

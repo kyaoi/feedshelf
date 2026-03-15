@@ -363,7 +363,7 @@
 
 ## D-057: `FS-OPS-01` は `public/` を Pages artifact 境界として固定する
 
-- 決定: `FS-OPS-01` では `.github/workflows/update-public-data.yml` と `scripts/pipeline/update.ts` を追加し、quality gate 通過後に `public/data/` を更新したうえで `public/` 全体を `actions/upload-pages-artifact@v4` に渡す
+- 決定: `FS-OPS-01` では `.github/workflows/update-public-data.yml` と `scripts/pipeline/update.ts` を追加し、`workflow_dispatch` / `schedule` / `push(main)` で quality gate 通過後に `public/data/` を更新したうえで `public/` 全体を `actions/upload-pages-artifact@v4` に渡す
 - 理由: deploy job をまだ導入しない段階でも、Pages へ渡す artifact boundary を先に固定しておくと `FS-OPS-02` で deploy を足しやすく、checked-in static assets と生成 JSON の責務も明確になるため
 - 影響: `FS-OPS-02` はこの artifact を deploy する job の追加に集中でき、`FS-OPS-03` は update job の失敗条件と deploy skip 条件の実装に集中できる
 
@@ -375,11 +375,11 @@
 - 理由: GitHub Pages の custom workflow では deploy job に `pages: write` と `id-token: write` permissions、`needs`、`environment`、`page_url` 出力が必要であり、artifact upload と deploy を分離した方が更新と公開の境界も追跡しやすいため
 - 影響: `FS-OPS-02` 完了時点で、成功した update artifact からの公開は workflow 上で自動化される。一方で単一フィード失敗時の継続判定や deploy skip 条件の詳細実装は `FS-OPS-03` に残る
 
-## D-059: `FS-OPS-03` の publish 条件は「enabled feed 1 件以上成功」に固定する
+## D-059: `FS-OPS-03` の publish 条件は「enabled feed 1 件以上の publishable source 成功」に固定する
 
-- 決定: `scripts/pipeline/update.ts` では feed ごとの fetch 失敗を収集しつつ継続し、enabled feed のうち 1 件以上の取得に成功した場合のみ pipeline を進める。enabled feed 0 件または全件失敗時は build を失敗させ、deploy を走らせない
-- 理由: 単一フィード失敗で全体を止めないという v1 要件を満たしつつ、取得結果 0 件の更新で空の公開物や不完全な公開物へ切り替えて前回成功済みサイトを壊すことを避けるため
-- 影響: `FS-OPS-03` では workflow YAML を大きく増やさず、`update.ts` の orchestration layer に partial failure policy を集約する。テストでは「一部失敗なら継続」「全件失敗なら build 失敗」の両方を確認する
+- 決定: `scripts/pipeline/update.ts` では feed ごとの fetch failure と source-level validation failure を収集しつつ継続し、enabled feed のうち 1 件以上の publishable source が残った場合のみ pipeline を進める。enabled feed 0 件または全件 failure 時は build を失敗させ、deploy を走らせない
+- 理由: 単一フィード失敗で全体を止めないという v1 要件を満たしつつ、fetch 自体は成功しても RSS / Atom として解釈できない document で update 全体が止まる穴を埋め、取得結果 0 件の更新で空の公開物や不完全な公開物へ切り替えて前回成功済みサイトを壊すことを避けるため
+- 影響: `FS-OPS-03` では workflow YAML を大きく増やさず、`update.ts` の orchestration layer に partial failure policy を集約する。テストでは「fetch failure でも継続」「source-level failure でも継続」「全件失敗なら build 失敗」を確認する
 
 ## D-060: Phase 5 は `FS-QA-00` の docs-first planning から始める
 
