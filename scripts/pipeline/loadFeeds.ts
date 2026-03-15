@@ -75,6 +75,10 @@ export function validateFeedDefinition(
     return shelfId;
   });
 
+  if (feed.tags !== undefined && !Array.isArray(feed.tags)) {
+    throw new Error(`Feed at index ${index} must have array field: tags`);
+  }
+
   const seenTagCompareKeys = new Set<string>();
   const tags = Array.isArray(feed.tags)
     ? feed.tags.map((tag, tagIndex) => {

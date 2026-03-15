@@ -821,6 +821,13 @@
 - 影響: contributor は `AI` と ` ai ` のような compare-key 上同一な manual tag を同一 source に併記しない
 - 影響: README / SPEC / TRACEABILITY / tests では、registry fail-fast guard の一部として duplicate manual tag guard も Phase 6 維持の evidence として追跡する
 
+## D-119G: manual `tags` field は省略または配列のみを受け入れる
+
+- 決定: `loadFeeds` は `data/feeds.json` を読む時点で、manual `tags` field が存在するのに配列でない source を reject し、shape mismatch を pipeline へ流さない
+- 理由: `tags` は curator-managed metadata の入力面であり、string/object を silent に `[]` 扱いすると source editor の typo を見逃して tag directory・search・visible tag 導線の意図が失われるため
+- 影響: contributor は manual tag を使わないなら `tags` を省略し、使う場合だけ string array で与える
+- 影響: README / SPEC / TRACEABILITY / tests では、duplicate manual tag guard に加えて `tags` field shape guard も Phase 6 維持の evidence として追跡する
+
 ## D-120: `/categories/` は Phase 6 の間 compatibility route として残し、hard 404 にしない
 
 - 決定: Phase 6 で shelf-first IA を主役へ移しても、`/categories/` は v1 extension 完了までは compatibility route として扱い、legacy query parameter deep link を含めて hard 404 にしない
