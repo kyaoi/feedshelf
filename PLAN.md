@@ -243,6 +243,18 @@ Phase 6 の進め方:
 - `articles / shelves / sources / tags / search-index / meta` などの public JSON 契約を変えずに、root / fixed route / generated shelf route を同一トーンで刷新できる
 - CSS と軽量 markup 更新のみで、棚-first 導線・compatibility route・generated shelf route の責務を崩さない
 
+### Post-v1 architecture / performance
+
+- [x] `FS-ARCH-10` incremental update / static pagination / build-time prerender / responsive grid の仕様を docs に固定する
+- [ ] `FS-PIPE-05` managed incremental update state と build-time page shard / prerender export を実装する
+- [ ] `FS-UX-21` responsive grid と typography stabilization を実装する
+- [ ] `FS-QA-11` incremental build / pagination / prerender / responsive grid の acceptance / tests / checked-in asset sync を実装へ反映する
+
+完了条件:
+- 「毎回全件を再取得して同形 export を更新する」運用ではなく、managed checkpoint + safety window を前提にした post-v1 更新戦略が docs で固定されている
+- GitHub Pages 前提で root / shelf / tags の主要導線を build-time prerender し、server-side paging を使わずにページ分割できる方針が docs で固定されている
+- 記事一覧の dense layout が narrow viewport でも 4 / 3 / 2 / 1 列へ安全に縮退し、font-size / line-clamp / tag wrap の扱いが docs で固定されている
+
 ## 直近の次タスク
 
 - post-v1 の source 精査では、記事量より cautious default を優先し、site 自身または first-party help / docs で feed 提供が確認しやすい source を既定で有効化する
@@ -252,6 +264,10 @@ Phase 6 の進め方:
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
+- `FS-PIPE-05` では `lastBuildAt` 単独ではなく source ごとの checkpoint + safety window を採り、増分取得と dedupe の責務を混ぜない
+- `FS-PIPE-05` では fixed route を維持したまま build-time page shard / prerender を追加し、root / shelf / tags の初回表示を重い全件 fetch に依存させない
+- `FS-UX-21` では card grid を 4 / 3 / 2 / 1 列へ縮退させつつ、文字サイズを card 幅に過度追従させず breakpoint ごとに安定させる
+- `FS-QA-11` では post-v1 performance 変更を docs / tests / checked-in asset まで一括同期し、速度改善だけで traceability を壊さない
 - `FS-DATA-05` 〜 `FS-DATA-07` の deferred backlog は v2 以降候補として必要時に再優先付けし、`search index` は Phase 6 で v1 scope に繰り上げて完了済みとして扱う
 
 ## メモ

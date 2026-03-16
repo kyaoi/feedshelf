@@ -1151,6 +1151,8 @@ Phase 4 は、実装に入る前に `FS-OPS-00` で workflow / deploy / failure 
 ### 13.3 パフォーマンス
 - 初回表示が重くなりすぎないこと
 - 必要に応じて記事JSONを分割できる設計にすること
+- post-v1 では root / shelf / tags の first-view を build-time prerender と page shard で軽くできる余地を残すこと
+- 一覧 card は narrow viewport で 4 / 3 / 2 / 1 列へ安全に縮退し、dense layout でも文字と tag が破綻しないこと
 
 ### 13.4 保守性
 - フィード追加・削除が設定ファイル中心で行えること
@@ -1336,6 +1338,35 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 - fuzzy dedupe
 - richer provenance 記録
 - public JSON の sharding / pagination
+
+## 15.1 Post-v1 architecture / performance planning
+
+Phase 6 までで shelf-first IA と public JSON 契約は成立しているが、post-v1 では更新量と初回表示速度を改善するため、実装前に次の 4 点を docs で固定する。
+
+### 15.1.1 managed incremental update
+
+- post-v1 の更新は `lastBuildAt` のみで切るのではなく、source ごとの managed checkpoint を正本にする
+- 各 build は checkpoint より新しい記事だけでなく、遅配信や publish 時刻の揺れを吸収する safety window を再評価してよい
+- dedupe の責務は従来どおり canonical article object 側に残し、incremental 判定と混同しない
+- 内部 state は引き続き公開 JSON と責務を分け、cache / artifact を永続正本にしない
+
+### 15.1.2 static pagination on GitHub Pages
+
+- GitHub Pages 上の pagination は server-side paging ではなく、build-time に生成した page shard と deterministic な page state で実現する
+- canonical route は既存の `/`, `/<shelfId>/`, `/tags/` を維持してよく、page 切り替えは query parameter または補助 route のいずれでも deterministic であればよい
+- pagination 導入後も `articles.json` の canonical article object を source of truth とし、page 用 payload は route bootstrap / summary に必要な最小情報へ寄せる
+
+### 15.1.3 build-time prerender
+
+- root `/`、主要 shelf route `/<shelfId>/`、tag 導線 `/tags/` は build-time prerender の対象にしてよい
+- prerender では fixed route shell と first-view payload をあらかじめ生成し、初回表示で全件 JSON を待たない導線を優先する
+- compatibility route や search など、helper state 依存の強い page は full static split を急がず、主要導線から順に prerender してよい
+
+### 15.1.4 responsive grid / typography stabilization
+
+- post-v1 の一覧 card grid は desktop wide で 4 列、laptop で 3 列、tablet で 2 列、phone で 1 列へ縮退する
+- font-size は card 幅に対して過度に fluid にせず、breakpoint ごとに安定した scale を優先する
+- title は line-clamp、tag は wrap、source / meta 行は compact surface を維持し、dense layout でも reading order を崩さない
 
 ## 16. Phase 6 の docs-first planning
 

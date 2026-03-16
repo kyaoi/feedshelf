@@ -924,3 +924,28 @@
 - 決定: `FS-DX-05` の baseline config では、旧 `files.ignore` に依存せず `formatter.includes` / `linter.includes` で `biome.json` / `package.json` / `tsconfig*.json` / `data/**` / `src/**` / `scripts/**` / `tests/**` を明示し、`!scripts/**/*.js` / `!public/**` / `!.diffship/**` を除外する。加えて `javascript.assist.enabled=false` を使って unrelated import organize を避ける
 - 理由: Biome v2 では `files.ignore` が使えず、旧 top-level `organizeImports` も互換でないため、baseline gate の対象範囲と rewrite 抑制を v2-compatible な方法で表現し直す必要があるため
 - 影響: runtime 実装の無関係な整理を混ぜずに verify baseline だけを立て直せるようになり、後続の docs / pipeline / UI task を再び loop しやすくなる
+
+## D-132: post-v1 incremental update は `lastBuildAt` 単独ではなく managed checkpoint + safety window で扱う
+
+- 決定: `FS-PIPE-05` では更新判定を単一の build timestamp へ押し込まず、source ごとの checkpoint を正本にしつつ safety window を再評価する
+- 理由: RSS / Atom では遅配信や publish 時刻揺れがあり、`lastBuildAt` だけに依存すると取りこぼしや重複回収の責務が曖昧になるため
+- 影響: incremental 判定と canonical article dedupe の責務を分離したまま、内部 state 保存と update workflow test を拡張する必要がある
+
+## D-133: GitHub Pages の pagination は build-time page shard ベースで実装する
+
+- 決定: post-v1 の pagination は server-side paging を導入せず、build-time に生成した page shard と deterministic な page state で扱う
+- 理由: FeedShelf は GitHub Pages 単一サイト構成を維持するため、runtime server 依存を増やさずに一覧の分割だけを追加したいから
+- 影響: `articles.json` を canonical source of truth に残したまま、route bootstrap 向けの lighter payload や page state を build 時に生成する必要がある
+
+## D-134: root / shelf / tags の主要導線は build-time prerender を優先する
+
+- 決定: 初回表示の重さが目立つ root `/`、主要 shelf route `/<shelfId>/`、tag 導線 `/tags/` は post-v1 で build-time prerender の優先対象にする
+- 理由: 全件 JSON fetch 待ちを減らし、GitHub Pages 上でも最初の発見体験を速くしたいから
+- 影響: fixed route shell、first-view payload、checked-in HTML / asset verify の責務を `FS-PIPE-05` / `FS-QA-11` で同期する必要がある
+
+## D-135: dense article grid は 4 / 3 / 2 / 1 列 + stable typography を正本にする
+
+- 決定: post-v1 の一覧 card grid は wide 4 列、laptop 3 列、tablet 2 列、phone 1 列へ縮退させ、font-size は breakpoint ごとに安定した scale を使う
+- 理由: 画面幅に応じて card 数を増やしても、タイトル・tag・source 行の読み順と可読性を崩したくないため
+- 影響: `FS-UX-21` では CSS grid だけでなく line-clamp / wrap / compact meta row をまとめて調整し、web tests でも narrow viewport 崩れを確認する
+
