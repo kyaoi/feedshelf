@@ -444,7 +444,7 @@
 
 ## D-070: FS-DX-01 では Biome を hand-authored な TS / JSON 向け baseline として固定する
 
-- 決定: `FS-DX-01` では `@biomejs/biome` 1.9.4 と `biome.json` を追加し、`.diffship/**` / `public/**` / `scripts/**/*.js` を除外した baseline formatter / linter を導入する
+- 決定: `FS-DX-01` では `@biomejs/biome` を baseline formatter / linter として導入し、hand-authored な TS / JSON / config を明示対象にした `biome.json` を採用する
 - 理由: checked-in browser asset や JS wrapper、diffship ローカル運用ファイルまで一度に formatter 対象へ含めると差分が荒れやすく、導入初手としては破壊範囲が大きいため
 - 影響: `package.json` には `format` / `format:check` / `lint:biome` を追加するが、既存の `lint` は repo 固有 check のまま維持し、full gate や hook との統合は `FS-DX-02` で扱う
 
@@ -912,3 +912,15 @@
 - 決定: GitHub Actions の update workflow は既定で 12 時間ごとに起動する
 - 理由: v1 の curated source 数と静的サイト運用では 3 時間ごとの polling は過剰であり、source への負荷を抑えたいから
 - 影響: `.github/workflows/update-public-data.yml` と workflow test は `17 */12 * * *` を前提にする
+
+## D-130: sandbox verify と揃えるため Biome pin / lock / config は v2.4.7 へ更新する
+
+- 決定: `FS-DX-05` では `@biomejs/biome` の pin と lockfile を v2.4.7 へ揃え、`biome.json` も v2 schema へ移行する
+- 理由: diffship の sandbox verify が Biome v2.4.7 を用いる環境では、v1.9.4 schema / `files.ignore` / top-level `organizeImports` を残すと `just ci` が config deserialize error で先に落ちるため
+- 影響: `package.json` / `pnpm-lock.yaml` / `biome.json` / `tests/typescript-tooling.test.ts` / DX docs は同時更新し、package pin と verify 前提のズレを残さない
+
+## D-131: Biome v2 では hand-authored scope を `formatter.includes` / `linter.includes` と `javascript.assist.enabled=false` で維持する
+
+- 決定: `FS-DX-05` の baseline config では、旧 `files.ignore` に依存せず `formatter.includes` / `linter.includes` で `biome.json` / `package.json` / `tsconfig*.json` / `data/**` / `src/**` / `scripts/**` / `tests/**` を明示し、`!scripts/**/*.js` / `!public/**` / `!.diffship/**` を除外する。加えて `javascript.assist.enabled=false` を使って unrelated import organize を避ける
+- 理由: Biome v2 では `files.ignore` が使えず、旧 top-level `organizeImports` も互換でないため、baseline gate の対象範囲と rewrite 抑制を v2-compatible な方法で表現し直す必要があるため
+- 影響: runtime 実装の無関係な整理を混ぜずに verify baseline だけを立て直せるようになり、後続の docs / pipeline / UI task を再び loop しやすくなる

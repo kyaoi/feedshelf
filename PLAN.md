@@ -116,6 +116,7 @@ FeedShelf の v1 を、仕様先行・最小差分・GitHub Pages 前提で安�
 - [x] `FS-DX-02` quality gate の単一入口と hook 役割を整合させる
 - [x] `FS-DX-03` 通常 CI workflow を追加する
 - [x] `FS-DX-04` tests / docs / workflow 追跡を同期する
+- [x] `FS-DX-05` Biome を v2.4.7 互換へ更新し、sandbox verify baseline を整合させる
 
 完了条件:
 - Biome / repo 固有 check / hook / GitHub Actions の責務分割が docs で固定されている
@@ -314,6 +315,7 @@ Phase 6 の進め方:
 - FS-DX-02 では Biome format 導入に伴う既存 TS / JSON / config の整形差分と `public/assets/app.js` の再生成を含め、initial lint gate では `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` にして unrelated refactor を避けた
 - FS-DX-03 では `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとの routine quality gate を `pnpm run ci` で実行する通常 CI workflow を update / deploy workflow から分離した
 - FS-DX-04 では README に failure handling の入口を追加し、`tests/typescript-tooling.test.ts` で quality gate / workflow 分離 / diffship 修正ループ運用の docs 追跡を実行可能な形で固定した
+- FS-DX-05 では Biome を sandbox verify の CLI と揃う v2.4.7 へ引き上げ、`biome.json` を v2 schema / `formatter.includes` / `linter.includes` / `javascript.assist.enabled=false` ベースへ移行し、`just ci` 自体は従来どおり薄いラッパーに保ったまま、lockfile / docs / tests / checked-in asset を一括同期して Biome v2 が拾う lint 取りこぼしも同時に解消した
 - FS-UX-10 では `/` の shelf catalog 化に加えて、`/<shelfId>/` の route shell と `/sources/` から棚 route へ戻る bridge までを checked-in asset / pipeline 生成へ反映した
 - Phase 6 実装後の維持では、pipeline export が managed な `/<shelfId>/` route shell を再生成し、棚削除・rename 後に stale route を残さないことも evidence に含める
 - Phase 6 実装後の維持では、generated な shelf route shell に埋め込む `title` / `description` を plain text として扱い、HTML special chars を escape して Pages 上の route shell を壊さないことも evidence に含める

@@ -24,7 +24,7 @@
     "ci": "pnpm run check:fast && pnpm run typecheck && pnpm run test && pnpm run verify:web-ui"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.4.7",
     "@types/node": "^25.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

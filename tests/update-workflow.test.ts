@@ -88,9 +88,9 @@ test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, and --dry-run', 
   ]);
 
   assert.equal(parsed.dryRun, true);
-  assert.match(parsed.feedsPath, /fixtures[\/]feeds\.json$/);
-  assert.match(parsed.shelvesPath, /fixtures[\/]shelves\.yaml$/);
-  assert.match(parsed.outputDir, /tmp[\/]public-data$/);
+  assert.match(parsed.feedsPath, /fixtures[/]feeds\.json$/);
+  assert.match(parsed.shelvesPath, /fixtures[/]shelves\.yaml$/);
+  assert.match(parsed.outputDir, /tmp[/]public-data$/);
 });
 
 test('selectEnabledFeeds filters disabled feeds before network fetch', () => {

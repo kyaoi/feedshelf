@@ -1299,7 +1299,7 @@ docs / traceability / tests 同期:
 Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / failure handling の責務を docs に固定してから進める。
 
 - `FS-DX-01` は Biome の baseline 導入を責務とし、formatting / linting の対象範囲と除外対象を最小差分で固定する
-  - `@biomejs/biome` を devDependency として追加し、`biome.json` で `.diffship/**` / `public/**` / `scripts/**/*.js` を対象外にした上で、`biome.json` / `package.json` / `tsconfig*.json` / `data/feeds.json` / `src` / `scripts` / `tests` を明示対象として hand-authored な TS / JSON / config を中心に扱う
+  - `@biomejs/biome` を devDependency として追加し、`biome.json` では hand-authored な TS / JSON / config だけを `formatter.includes` / `linter.includes` で明示対象にしつつ、`.diffship/**` / `public/**` / `scripts/**/*.js` を対象外に保つ
   - `format` / `format:check` / `lint:biome` を導入するが、既存の `lint` と `pnpm run ci` への統合は `FS-DX-02` まで遅らせる
 - `FS-DX-02` は full gate の単一入口、hook の責務分割、repo 固有 check の位置づけ整理を責務とする
   - `check:fast` を hand-authored な TS / JSON / config に絞った `format:check` / `lint:biome` と repo 固有 `lint` の束として追加し、`pnpm run ci` は `check:fast` に `typecheck` / `test` / `verify:web-ui` を加えた単一入口とする
@@ -1310,7 +1310,10 @@ Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / 
   - `update-public-data` workflow には `pipeline:update` / Pages artifact / deploy を残し、Pages 固有処理を通常 CI へ混ぜない
 - `FS-DX-04` は tests / docs / workflow の追跡を同期し、tooling 変更を traceability と確認手順へ反映する
   - `README.md` に pre-commit / pre-push / CI failure 時の運用入口を追加し、working tree を保持したまま `git rev-parse HEAD` と failure log を diffship 修正ループへ渡す手順を repo 直下から読めるようにする
-  - `tests/typescript-tooling.test.ts` に docs sync assertion を追加し、README / SPEC / DECISIONS / TRACEABILITY / PLAN の DX 契約が workflow ファイルと同じ境界を指していることを継続確認できるようにする
+- `FS-DX-05` は Biome v2 と sandbox verify baseline を整合させる
+  - `@biomejs/biome` の pin / lock / config を v2.4.7 に揃え、`biome.json` は v2 schema / `formatter.includes` / `linter.includes` / `javascript.assist.enabled=false` へ移行する
+  - local / CI / verify の入口は引き続き `pnpm install --frozen-lockfile` 後に `pnpm run ci` を明示実行する想定とし、`just ci` 自体は重くしない
+  - Biome v2 が新たに拾う既存 warning は同タスク内で解消し、tooling migration と unrelated failure を混ぜない
 - Phase DX では新しい runtime 機能追加よりも、既存 workflow / docs / package scripts の契約ズレを先に解消することを優先する
 
 既知の契約差として、workflow / README / tests は `pnpm run ci` を前提にしている。`FS-DX-00` では verify failure を避けるため `package.json` に最小の `ci` script を補完し、hook / workflow / repo 固有 check の統合は `FS-DX-02` で行う。

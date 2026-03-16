@@ -205,7 +205,7 @@
         }
         return 0;
     }
-    function buildHomePageViewModel({ articles, shelves, categories, sources, tags, meta, }) {
+    function buildHomePageViewModel({ articles, shelves, sources, tags, meta, }) {
         return {
             generatedAtText: meta && meta.generatedAt
                 ? `${formatDateTime(meta.generatedAt)} 更新`

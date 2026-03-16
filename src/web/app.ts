@@ -548,7 +548,6 @@ type FeedShelfGlobalScope = typeof globalThis & {
   function buildHomePageViewModel({
     articles,
     shelves,
-    categories,
     sources,
     tags,
     meta,

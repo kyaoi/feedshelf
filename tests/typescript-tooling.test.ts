@@ -22,16 +22,19 @@ type TsconfigLike = {
 };
 
 type BiomeConfigLike = {
+  $schema?: string;
   files?: {
     ignoreUnknown?: boolean;
-    ignore?: string[];
+    includes?: string[];
   };
   formatter?: {
     enabled?: boolean;
     indentStyle?: string;
+    includes?: string[];
   };
   linter?: {
     enabled?: boolean;
+    includes?: string[];
     rules?: {
       recommended?: boolean;
       complexity?: {
@@ -44,10 +47,10 @@ type BiomeConfigLike = {
       };
     };
   };
-  organizeImports?: {
-    enabled?: boolean;
-  };
   javascript?: {
+    assist?: {
+      enabled?: boolean;
+    };
     formatter?: {
       quoteStyle?: string;
       semicolons?: string;
@@ -107,7 +110,7 @@ test('package scripts expose the quality-gate contract', () => {
   );
 
   const devDependencies = packageJson['devDependencies'] || {};
-  assert.equal(devDependencies['@biomejs/biome'], '1.9.4');
+  assert.equal(devDependencies['@biomejs/biome'], '2.4.7');
 });
 
 test('pipeline TypeScript entrypoints execute main() when launched via tsx', () => {
@@ -406,12 +409,26 @@ test('README and docs stay aligned with workflow boundaries and diffship failure
 
 test('biome baseline config scopes generated files out of formatting and linting', () => {
   const biomeConfig = readJson<BiomeConfigLike>('biome.json');
-  const ignore = biomeConfig.files?.ignore || [];
+  const formatterIncludes = biomeConfig.formatter?.includes || [];
+  const linterIncludes = biomeConfig.linter?.includes || [];
 
+  assert.equal(
+    biomeConfig.$schema,
+    'https://biomejs.dev/schemas/2.4.7/schema.json',
+  );
   assert.equal(biomeConfig.files?.ignoreUnknown, true);
-  assert.ok(ignore.includes('.diffship/**'));
-  assert.ok(ignore.includes('public/**'));
-  assert.ok(ignore.includes('scripts/**/*.js'));
+  assert.ok(formatterIncludes.includes('biome.json'));
+  assert.ok(formatterIncludes.includes('package.json'));
+  assert.ok(formatterIncludes.includes('data/**'));
+  assert.ok(formatterIncludes.includes('src/**'));
+  assert.ok(formatterIncludes.includes('scripts/**'));
+  assert.ok(formatterIncludes.includes('tests/**'));
+  assert.ok(formatterIncludes.includes('!scripts/**/*.js'));
+  assert.ok(formatterIncludes.includes('!public/**'));
+  assert.ok(formatterIncludes.includes('!.diffship/**'));
+  assert.ok(linterIncludes.includes('!scripts/**/*.js'));
+  assert.ok(linterIncludes.includes('!public/**'));
+  assert.ok(linterIncludes.includes('!.diffship/**'));
 
   assert.equal(biomeConfig.formatter?.enabled, true);
   assert.equal(biomeConfig.formatter?.indentStyle, 'space');
@@ -421,7 +438,7 @@ test('biome baseline config scopes generated files out of formatting and linting
   assert.equal(biomeConfig.linter?.rules?.complexity?.useLiteralKeys, 'off');
   assert.equal(biomeConfig.linter?.rules?.complexity?.useOptionalChain, 'off');
   assert.equal(biomeConfig.linter?.rules?.security?.noGlobalEval, 'off');
-  assert.equal(biomeConfig.organizeImports?.enabled, false);
+  assert.equal(biomeConfig.javascript?.assist?.enabled, false);
   assert.equal(biomeConfig.javascript?.formatter?.quoteStyle, 'single');
   assert.equal(biomeConfig.javascript?.formatter?.semicolons, 'always');
   assert.equal(biomeConfig.javascript?.formatter?.trailingCommas, 'all');
