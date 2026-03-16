@@ -913,6 +913,13 @@
 - 理由: v1 の curated source 数と静的サイト運用では 3 時間ごとの polling は過剰であり、source への負荷を抑えたいから
 - 影響: `.github/workflows/update-public-data.yml` と workflow test は `17 */12 * * *` を前提にする
 
+## D-136: post-v1 source audit は docs-only → registry-only → QA sync の 3 段階で進める
+
+- 決定: `FS-FEED-20` では documented source の evidence source と監査境界だけを docs に固定し、`FS-FEED-21` で初めて `data/feeds.json` の `enabled` / `shelfIds[]` / manual `tags[]` を見直す
+- 理由: source policy の議論と runtime / route / public JSON 契約変更を同じ差分に混ぜると、何を根拠に default を変えたかが追跡しにくくなるため
+- 影響: default `enabled=true` の根拠は source 自身の feed link、first-party help / docs、公式 announcement / news page を優先し、third-party feed directory や個人の紹介記事だけで cautious default を解除しない
+- 影響: evidence が不足する source は削除ではなく `enabled=false` に留め、`FS-QA-12` で shelf coverage / cadence / public excerpt の regression をまとめて確認する
+
 ## D-130: sandbox verify と揃えるため Biome pin / lock / config は v2.4.7 へ更新する
 
 - 決定: `FS-DX-05` では `@biomejs/biome` の pin と lockfile を v2.4.7 へ揃え、`biome.json` も v2 schema へ移行する

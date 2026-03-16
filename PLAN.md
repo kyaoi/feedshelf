@@ -257,7 +257,7 @@ Phase 6 の進め方:
 
 ### Post-v1 curated source audit
 
-- [ ] `FS-FEED-20` documented source 優先の監査手順と evidence 境界を docs に固定する
+- [x] `FS-FEED-20` documented source 優先の監査手順と evidence 境界を docs に固定する
 - [ ] `FS-FEED-21` `data/feeds.json` の cautious default 監査を registry-only 差分で反映する
 - [ ] `FS-QA-12` source 精査後の shelf coverage / cautious default / update cadence の回帰確認を docs・tests・README に同期する
 
@@ -268,9 +268,9 @@ Phase 6 の進め方:
 
 ## 直近の次タスク
 
-- まず `FS-FEED-20` で、source 精査を「documented source の evidence を揃える docs task」として閉じ、runtime / route 変更と混ぜない
 - 次に `FS-FEED-21` で、`data/feeds.json` の enable / disable / `shelfIds[]` / manual `tags[]` のみを触る registry-only 差分として cautious default を見直す
 - `FS-QA-12` では、Qiita / ITmedia / GIGAZINE / gihyo / CodeZine / はてな hotentry / OpenAI / Publickey のような documented source を主力に保てているか、community source や undocumented topic feed が evidence なしに default 有効化されていないかを確認する
+- `FS-FEED-20` で固定した evidence source（site 自身の feed link、first-party help / docs、公式 announcement / news page）以外を根拠に default 有効化したい場合は、まず docs を更新して監査境界を広げてから registry を触る
 - update cadence は過剰取得を避けるため 12 時間ごとを既定とし、再配信面では raw HTML 全文ではなく短い public excerpt だけを保持する
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない

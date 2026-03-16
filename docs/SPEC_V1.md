@@ -1412,6 +1412,14 @@ Phase 6 では UI 実装だけでなく、情報設計・データ契約・検�
 - FeedShelf v1 の公開面では raw article HTML や長文再配信を避け、`summary` は短い public excerpt に丸めた表示用文字列として扱う
 - update workflow の既定 cadence は 12 時間ごととし、過剰取得を避ける
 
+### Source audit handoff boundary (FS-FEED-20)
+
+- post-v1 の source audit は、まず docs task で「何を evidence とみなすか」と「どこまでが registry-only change か」を固定してから進める
+- documented source の evidence は、原則として source 自身の site / product page に置かれた feed link、first-party help / docs、または公式 announcement / news page のいずれかで揃える
+- third-party の feed directory や個人ブログ記事だけでは default `enabled=true` の根拠にせず、必要なら cautious default (`enabled=false`) のまま registry に保持する
+- `FS-FEED-20` では `data/feeds.json` を更新せず、`PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` だけを更新対象にする
+- `FS-FEED-21` で触ってよい差分は `data/feeds.json` の `enabled` / `shelfIds[]` / manual `tags[]` を主軸とする registry-only 変更に限り、route / public JSON / search / tag / runtime 実装を混ぜない
+- evidence が揃わない source を今すぐ削除する必要はなく、将来の再評価余地を残すため `enabled=false` で registry に保持してよい
 
 ### FS-PIPE-05: managed incremental update / build-time page shard
 
