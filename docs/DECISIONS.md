@@ -899,7 +899,7 @@
 
 - 決定: site 自身または first-party help / docs で feed 提供が確認しやすい source を既定で有効化し、community source や undocumented topic feed は evidence が揃うまで `enabled=false` にしてよい
 - 理由: FeedShelf v1 は source 数の最大化よりも、継続的に安全運用しやすい registry を優先するため
-- 影響: Reddit や Zenn topic/global のような慎重枠は registry に残しても default では無効化してよい
+- 影響: Reddit や broad な Zenn global / productivityweekly のような慎重枠は registry に残しても default では無効化してよい一方、first-party docs で feed path が案内されている profile-aligned な Zenn topic feed は default `enabled=true` に寄せてよい
 
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 

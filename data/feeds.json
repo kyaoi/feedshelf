@@ -175,7 +175,7 @@
     "feedUrl": "https://zenn.dev/topics/python/feed",
     "siteUrl": "https://zenn.dev/topics/python",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it", "science"],
     "tags": ["Python", "数値計算", "理系開発"]
   },
@@ -185,7 +185,7 @@
     "feedUrl": "https://zenn.dev/topics/rust/feed",
     "siteUrl": "https://zenn.dev/topics/rust",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Rust", "CLI", "実装"]
   },
@@ -195,7 +195,7 @@
     "feedUrl": "https://zenn.dev/topics/ai/feed",
     "siteUrl": "https://zenn.dev/topics/ai",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["AI", "実装", "活用"]
   },
@@ -215,7 +215,7 @@
     "feedUrl": "https://zenn.dev/topics/neovim/feed",
     "siteUrl": "https://zenn.dev/topics/neovim",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Neovim", "エディタ", "個人開発"]
   },
@@ -225,7 +225,7 @@
     "feedUrl": "https://zenn.dev/topics/linux/feed",
     "siteUrl": "https://zenn.dev/topics/linux",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Linux", "開発環境", "個人開発"]
   },
@@ -235,7 +235,7 @@
     "feedUrl": "https://zenn.dev/topics/archlinux/feed",
     "siteUrl": "https://zenn.dev/topics/archlinux",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["ArchLinux", "Linux", "開発環境"]
   },
@@ -245,7 +245,7 @@
     "feedUrl": "https://zenn.dev/topics/llm/feed",
     "siteUrl": "https://zenn.dev/topics/llm",
     "language": "ja",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["LLM", "生成AI", "活用"]
   },

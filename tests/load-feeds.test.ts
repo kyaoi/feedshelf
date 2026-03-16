@@ -601,7 +601,7 @@ test('repository feed registry keeps every shelf populated by enabled sources', 
   );
 });
 
-test('repository feed registry keeps documented first-party feeds enabled by default', async () => {
+test('repository feed registry keeps documented first-party feeds and officially documented topic feeds enabled by default', async () => {
   const feeds = (await loadFeeds(
     path.resolve(__dirname, '..', 'data/feeds.json'),
   )) as FeedDefinition[];
@@ -619,9 +619,16 @@ test('repository feed registry keeps documented first-party feeds enabled by def
   assert.equal(byId.get('hatena-hotentry-it')?.enabled, true);
   assert.equal(byId.get('openai-news')?.enabled, true);
   assert.equal(byId.get('publickey')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-python')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-rust')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-ai')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-neovim')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-linux')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-archlinux')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-llm')?.enabled, true);
 });
 
-test('repository feed registry disables cautious sources whose official feed guarantees are weaker', async () => {
+test('repository feed registry keeps broad community feeds and hard-science sources disabled by default', async () => {
   const feeds = (await loadFeeds(
     path.resolve(__dirname, '..', 'data/feeds.json'),
   )) as FeedDefinition[];
@@ -638,15 +645,10 @@ test('repository feed registry disables cautious sources whose official feed gua
         `${feed.id} should stay disabled by default.`,
       );
     }
-    if (feed.id.startsWith('zenn-')) {
-      assert.equal(
-        feed.enabled,
-        false,
-        `${feed.id} should stay disabled by default.`,
-      );
-    }
   }
 
+  assert.equal(byId.get('zenn-feed')?.enabled, false);
+  assert.equal(byId.get('zenn-topic-productivityweekly')?.enabled, false);
   assert.equal(byId.get('hacker-news')?.enabled, false);
   assert.equal(byId.get('sciencedaily-technology')?.enabled, false);
   assert.equal(byId.get('nasa-news')?.enabled, false);
