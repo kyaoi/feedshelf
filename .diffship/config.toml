@@ -45,11 +45,10 @@ policy = "auto"            # auto|manual
 
 # Customize this section: local-only commands to run automatically after a successful apply.
 # These are local-only config values; patch bundles cannot define them.
-# [ops.post_apply]
-# cmd1 = "just fmt-fix"
-# cmd2 = "just docs-check"
-# cmd3 = "just trace-check"
-# cmd4 = "just ci"
+[ops.post_apply]
+cmd1 = "test -d node_modules/.pnpm || pnpm install --frozen-lockfile"
+cmd2 = "pnpm run build:web-ui"
+cmd3 = "pnpm run ci"
 
 # Customize this section: forbid AI patch bundles from touching fragile files in this repository.
 # Values are repo-relative path or glob patterns matched during apply/loop validation.
