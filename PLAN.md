@@ -255,19 +255,26 @@ Phase 6 の進め方:
 - GitHub Pages 前提で root / shelf / tags の主要導線を build-time prerender し、server-side paging を使わずにページ分割できる方針が docs で固定されている
 - 記事一覧の dense layout が narrow viewport でも 4 / 3 / 2 / 1 列へ安全に縮退し、font-size / line-clamp / tag wrap の扱いが docs で固定されている
 
+### Post-v1 curated source audit
+
+- [ ] `FS-FEED-20` documented source 優先の監査手順と evidence 境界を docs に固定する
+- [ ] `FS-FEED-21` `data/feeds.json` の cautious default 監査を registry-only 差分で反映する
+- [ ] `FS-QA-12` source 精査後の shelf coverage / cautious default / update cadence の回帰確認を docs・tests・README に同期する
+
+完了条件:
+- post-v1 の source 精査が `data/feeds.json` の enable / disable / `shelfIds[]` / manual `tags[]` 調整を主軸とする task であることが `PLAN` 上で追跡できる
+- route / public JSON / search / tag の契約変更と source registry 精査が別タスクとして分離されている
+- documented source 優先、12時間 cadence、短い public excerpt という cautious default を次の監査 task でも崩さないことが確認できる
+
 ## 直近の次タスク
 
-- post-v1 の source 精査では、記事量より cautious default を優先し、site 自身または first-party help / docs で feed 提供が確認しやすい source を既定で有効化する
-- Qiita / ITmedia / GIGAZINE / gihyo / CodeZine / はてな hotentry / OpenAI / Publickey のような documented source を主力にし、community source や undocumented topic feed は evidence が揃うまで `enabled=false` に保つ
+- まず `FS-FEED-20` で、source 精査を「documented source の evidence を揃える docs task」として閉じ、runtime / route 変更と混ぜない
+- 次に `FS-FEED-21` で、`data/feeds.json` の enable / disable / `shelfIds[]` / manual `tags[]` のみを触る registry-only 差分として cautious default を見直す
+- `FS-QA-12` では、Qiita / ITmedia / GIGAZINE / gihyo / CodeZine / はてな hotentry / OpenAI / Publickey のような documented source を主力に保てているか、community source や undocumented topic feed が evidence なしに default 有効化されていないかを確認する
 - update cadence は過剰取得を避けるため 12 時間ごとを既定とし、再配信面では raw HTML 全文ではなく短い public excerpt だけを保持する
-- `data/feeds.json` の source 追加・無効化・棚紐付けで対応できる範囲を保ち、route / public JSON 契約の変更と混ぜない
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
-- `FS-PIPE-05` では `lastBuildAt` 単独ではなく source ごとの checkpoint + safety window を採り、増分取得と dedupe の責務を混ぜない
-- `FS-PIPE-05` では fixed route を維持したまま build-time page shard / prerender を追加し、root / shelf / tags の初回表示を重い全件 fetch に依存させない
-- `FS-UX-21` では card grid を 4 / 3 / 2 / 1 列へ縮退させつつ、文字サイズを card 幅に過度追従させず breakpoint ごとに安定させる
-- `FS-QA-11` では post-v1 performance 変更を docs / tests / checked-in asset まで一括同期し、速度改善だけで traceability を壊さない
 - `FS-DATA-05` 〜 `FS-DATA-07` の deferred backlog は v2 以降候補として必要時に再優先付けし、`search index` は Phase 6 で v1 scope に繰り上げて完了済みとして扱う
 
 ## メモ
