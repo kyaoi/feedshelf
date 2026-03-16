@@ -246,9 +246,9 @@ Phase 6 の進め方:
 ### Post-v1 architecture / performance
 
 - [x] `FS-ARCH-10` incremental update / static pagination / build-time prerender / responsive grid の仕様を docs に固定する
-- [ ] `FS-PIPE-05` managed incremental update state と build-time page shard / prerender export を実装する
+- [x] `FS-PIPE-05` managed incremental update state と build-time page shard / prerender export を実装する
 - [ ] `FS-UX-21` responsive grid と typography stabilization を実装する
-- [ ] `FS-QA-11` incremental build / pagination / prerender / responsive grid の acceptance / tests / checked-in asset sync を実装へ反映する
+- [ ] `FS-QA-11` incremental build / pagination / prerender / responsive grid の acceptance / tests / checked-in asset sync の残り実装へ反映する
 
 完了条件:
 - 「毎回全件を再取得して同形 export を更新する」運用ではなく、managed checkpoint + safety window を前提にした post-v1 更新戦略が docs で固定されている
@@ -327,7 +327,8 @@ Phase 6 の進め方:
 - FS-DX-00 では pre-commit / CI failure 時に原則 stash せず、working tree を保持したまま exact HEAD と failure log を diffship 修正ループへ渡す運用を採る
 - FS-DX-01 では `@biomejs/biome` と `biome.json` を追加し、`format` / `format:check` / `lint:biome` の baseline コマンドを導入した。既存の `lint` は repo 固有 check のまま維持し、`pnpm run ci` / `just ci` / hook への本格統合は `FS-DX-02` で扱う
 - FS-DX-02 では `check:fast` を `format:check` / `lint:biome` / repo 固有 `lint` の束として追加し、`pnpm run ci` を `check:fast + typecheck + test + verify:web-ui` の単一入口へ揃えた
-- FS-DX-02 では `just ci` を `pnpm run ci` の薄いラッパーに変更し、lefthook は pre-commit=`just check-fast`、pre-push=`just ci` の責務分割へ更新した
+- FS-DX-02 では `just ci` を `pnpm run ci` の薄いラッパーに変更した
+- `FS-DX-03` では lefthook の pre-commit を廃止し、pre-push の full gate と diffship `ops.post_apply` を揃えて loop と通常開発の verify 入口を一致させる
 - FS-DX-02 では Biome format 導入に伴う既存 TS / JSON / config の整形差分と `public/assets/app.js` の再生成を含め、initial lint gate では `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` にして unrelated refactor を避けた
 - FS-DX-03 では `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとの routine quality gate を `pnpm run ci` で実行する通常 CI workflow を update / deploy workflow から分離した
 - FS-DX-04 では README に failure handling の入口を追加し、`tests/typescript-tooling.test.ts` で quality gate / workflow 分離 / diffship 修正ループ運用の docs 追跡を実行可能な形で固定した

@@ -67,6 +67,48 @@ interface PublicSearchIndexEntryLike {
   searchText?: string;
 }
 
+interface PublicArticlePageShardLike {
+  routeKind: 'home' | 'shelf' | 'tag';
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  generatedAt: string;
+  articles: PublicArticleSummaryLike[];
+  shelfId?: string;
+  tagId?: string;
+  tagLabel?: string;
+}
+
+interface HomeBootstrapPayloadLike {
+  kind: 'home';
+  generatedAt: string;
+  meta: PublicMetaLike;
+  shelves: PublicShelfSummaryLike[];
+  tags: PublicTagSummaryLike[];
+  sources: PublicSourceSummaryLike[];
+  articlePage: PublicArticlePageShardLike;
+}
+
+interface ShelfBootstrapPayloadLike {
+  kind: 'shelf';
+  generatedAt: string;
+  meta: PublicMetaLike;
+  shelfId: string;
+  shelf: PublicShelfSummaryLike | null;
+  shelves: PublicShelfSummaryLike[];
+  relatedSources: PublicSourceSummaryLike[];
+  featuredArticles: PublicArticleSummaryLike[];
+  articlePage: PublicArticlePageShardLike;
+}
+
+interface TagIndexBootstrapPayloadLike {
+  kind: 'tag-index';
+  generatedAt: string;
+  meta: PublicMetaLike;
+  tags: PublicTagSummaryLike[];
+}
+
 interface PublicMetaLike {
   generatedAt?: string;
   articleCount?: number;
@@ -238,19 +280,21 @@ interface HomePageInitOptions {
   basePath?: string;
   fetchImpl?: typeof fetch;
   documentRef?: Document | null;
+  locationRef?: LocationLike | null;
+  historyRef?: {
+    replaceState?: (
+      data: unknown,
+      unused: string,
+      url?: string | URL | null,
+    ) => void;
+  } | null;
 }
 
-interface CategoryPageInitOptions extends HomePageInitOptions {
-  locationRef?: LocationLike | null;
-}
+interface CategoryPageInitOptions extends HomePageInitOptions {}
 
-interface SourcePageInitOptions extends HomePageInitOptions {
-  locationRef?: LocationLike | null;
-}
+interface SourcePageInitOptions extends HomePageInitOptions {}
 
-interface SearchPageInitOptions extends HomePageInitOptions {
-  locationRef?: LocationLike | null;
-}
+interface SearchPageInitOptions extends HomePageInitOptions {}
 
 type FeedShelfGlobalScope = typeof globalThis & {
   document?: Document;

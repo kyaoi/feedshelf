@@ -128,6 +128,67 @@ export interface PublicExports {
   meta: PublicMeta;
 }
 
+export interface UpdateSourceState {
+  feedId: string;
+  checkpointArticleId: string | null;
+  checkpointSortAt: string | null;
+  lastSuccessfulFetchAt: string;
+}
+
+export interface UpdateState {
+  version: 1;
+  updatedAt: string;
+  safetyWindowHours: number;
+  sources: Record<string, UpdateSourceState>;
+}
+
+export interface PublicArticlePageShard {
+  routeKind: 'home' | 'shelf' | 'tag';
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  generatedAt: string;
+  articles: PublicArticleSummary[];
+  shelfId?: string;
+  tagId?: string;
+  tagLabel?: string;
+}
+
+export interface HomePageBootstrapPayload {
+  kind: 'home';
+  generatedAt: string;
+  meta: PublicMeta;
+  shelves: PublicShelfSummary[];
+  tags: PublicTagSummary[];
+  sources: PublicSourceSummary[];
+  articlePage: PublicArticlePageShard;
+}
+
+export interface ShelfPageBootstrapPayload {
+  kind: 'shelf';
+  generatedAt: string;
+  meta: PublicMeta;
+  shelfId: string;
+  shelf: PublicShelfSummary | null;
+  shelves: PublicShelfSummary[];
+  relatedSources: PublicSourceSummary[];
+  featuredArticles: PublicArticleSummary[];
+  articlePage: PublicArticlePageShard;
+}
+
+export interface TagIndexBootstrapPayload {
+  kind: 'tag-index';
+  generatedAt: string;
+  meta: PublicMeta;
+  tags: PublicTagSummary[];
+}
+
+export type PublicBootstrapPayload =
+  | HomePageBootstrapPayload
+  | ShelfPageBootstrapPayload
+  | TagIndexBootstrapPayload;
+
 export interface FeedDocumentInput {
   feedId: string;
   xml: string;
@@ -184,5 +245,7 @@ export interface RunPipelineOptions {
   generatedAt?: string;
   dryRun?: boolean;
   feedDocuments?: FeedDocumentInput[];
+  normalizedArticles?: CanonicalArticle[];
+  retainedArticles?: PublicArticleSummary[];
   logger?: PipelineLogger;
 }

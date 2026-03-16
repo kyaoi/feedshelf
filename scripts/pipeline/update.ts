@@ -1,15 +1,23 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
+  CanonicalArticle,
   FeedDefinition,
   FeedDocumentInput,
   FeedFetchFailure,
   PipelineLogger,
+  PublicArticleSummary,
   UpdatePipelineSummary,
+  UpdateSourceState,
+  UpdateState,
 } from '../../src/shared/contracts.ts';
+import { dedupeArticles } from './dedupeArticles.ts';
 import { loadFeeds } from './loadFeeds.ts';
 import { normalizeFeedDocument } from './normalizeFeed.ts';
 import { runPipeline } from './run.ts';
+
+const DEFAULT_SAFETY_WINDOW_HOURS = 72;
 
 export interface UpdatePipelineArgs {
   feedsPath: string;
@@ -22,6 +30,8 @@ export interface RunUpdatePipelineOptions extends UpdatePipelineArgs {
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
+  statePath?: string;
+  safetyWindowHours?: number;
 }
 
 export interface FeedFetchOptions {
@@ -79,6 +89,18 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
   }
 
   return args;
+}
+
+export function resolveUpdateStatePath({
+  outputDir,
+  statePath,
+}: {
+  outputDir: string;
+  statePath?: string;
+}): string {
+  return statePath
+    ? path.resolve(process.cwd(), statePath)
+    : path.join(outputDir, 'update-state.json');
 }
 
 export function selectEnabledFeeds(feeds: FeedDefinition[]): FeedDefinition[] {
@@ -241,14 +263,13 @@ export async function fetchEnabledFeedDocuments({
   logger.log(`[update] feeds=${feeds.length} enabled=${enabledFeeds.length}`);
 
   for (const feed of enabledFeeds) {
-    logger.log(`[update] fetching ${feed.id} ${feed.feedUrl}`);
-
     try {
       const document = await fetchFeedDocument(feed, {
         fetchImpl,
         fetchedAt: generatedAt,
       });
       feedDocuments.push(document);
+      logger.log(`[update] source-ok ${feed.id}`);
     } catch (error) {
       const message = formatFeedFailure(error);
       failedFetches.push({
@@ -257,7 +278,7 @@ export async function fetchEnabledFeedDocuments({
         stage: 'fetch',
         message,
       });
-      logger.log(`[update] fetch-failed ${feed.id} ${message}`);
+      logger.log(`[update] source-failed ${feed.id} ${message}`);
     }
   }
 
@@ -269,73 +290,234 @@ export async function fetchEnabledFeedDocuments({
   };
 }
 
+export async function loadUpdateState(
+  statePath: string,
+): Promise<UpdateState | null> {
+  try {
+    const raw = await fs.readFile(statePath, 'utf8');
+    const parsed = JSON.parse(raw) as Partial<UpdateState>;
+    if (
+      parsed.version !== 1 ||
+      typeof parsed.sources !== 'object' ||
+      !parsed.sources
+    ) {
+      return null;
+    }
+    return {
+      version: 1,
+      updatedAt:
+        typeof parsed.updatedAt === 'string'
+          ? parsed.updatedAt
+          : new Date(0).toISOString(),
+      safetyWindowHours:
+        typeof parsed.safetyWindowHours === 'number' &&
+        parsed.safetyWindowHours > 0
+          ? parsed.safetyWindowHours
+          : DEFAULT_SAFETY_WINDOW_HOURS,
+      sources: parsed.sources as Record<string, UpdateSourceState>,
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function loadRetainedPublicArticles(
+  outputDir: string,
+): Promise<PublicArticleSummary[]> {
+  try {
+    const raw = await fs.readFile(
+      path.join(outputDir, 'articles.json'),
+      'utf8',
+    );
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as PublicArticleSummary[]) : [];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
+function subtractHours(isoTimestamp: string, hours: number): number {
+  return new Date(isoTimestamp).getTime() - hours * 60 * 60 * 1000;
+}
+
+function articleSortTimestamp(article: CanonicalArticle): number {
+  return new Date(article.publishedAt || article.fetchedAt).getTime();
+}
+
+export function filterFreshArticlesByCheckpoint({
+  articles,
+  checkpoint,
+  safetyWindowHours,
+}: {
+  articles: CanonicalArticle[];
+  checkpoint: UpdateSourceState | null;
+  safetyWindowHours: number;
+}): CanonicalArticle[] {
+  if (!checkpoint || !checkpoint.checkpointSortAt) {
+    return articles;
+  }
+
+  const threshold = subtractHours(
+    checkpoint.checkpointSortAt,
+    safetyWindowHours,
+  );
+  return articles.filter(
+    (article) => articleSortTimestamp(article) >= threshold,
+  );
+}
+
+export function buildNextUpdateState({
+  previousState,
+  freshArticles,
+  generatedAt,
+  safetyWindowHours,
+}: {
+  previousState: UpdateState | null;
+  freshArticles: CanonicalArticle[];
+  generatedAt: string;
+  safetyWindowHours: number;
+}): UpdateState {
+  const nextSources: Record<string, UpdateSourceState> = {
+    ...(previousState?.sources || {}),
+  };
+  const freshByFeed = new Map<string, CanonicalArticle[]>();
+
+  for (const article of freshArticles) {
+    const existing = freshByFeed.get(article.feedId) || [];
+    existing.push(article);
+    freshByFeed.set(article.feedId, existing);
+  }
+
+  for (const [feedId, feedArticles] of freshByFeed.entries()) {
+    const latest = [...feedArticles].sort((left, right) => {
+      const timeOrder =
+        articleSortTimestamp(right) - articleSortTimestamp(left);
+      if (timeOrder !== 0) {
+        return timeOrder;
+      }
+      return right.id.localeCompare(left.id, 'en');
+    })[0];
+
+    nextSources[feedId] = {
+      feedId,
+      checkpointArticleId: latest?.id || null,
+      checkpointSortAt: latest
+        ? new Date(latest.publishedAt || latest.fetchedAt).toISOString()
+        : null,
+      lastSuccessfulFetchAt: generatedAt,
+    };
+  }
+
+  return {
+    version: 1,
+    updatedAt: generatedAt,
+    safetyWindowHours,
+    sources: nextSources,
+  };
+}
+
+export async function writeUpdateState({
+  statePath,
+  state,
+}: {
+  statePath: string;
+  state: UpdateState;
+}): Promise<void> {
+  await fs.mkdir(path.dirname(statePath), { recursive: true });
+  await fs.writeFile(statePath, JSON.stringify(state, null, 2));
+}
+
 export async function runUpdatePipeline(
   options: RunUpdatePipelineOptions,
 ): Promise<UpdatePipelineSummary> {
-  const logger: PipelineLogger = options.logger || console;
+  const logger = options.logger || console;
   const generatedAt = new Date(options.generatedAt || Date.now()).toISOString();
-  const {
-    feeds,
-    enabledFeeds,
-    feedDocuments,
-    failedFetches: fetchFailures,
-  } = await fetchEnabledFeedDocuments({
+  const statePath = resolveUpdateStatePath({
+    outputDir: options.outputDir,
+    statePath: options.statePath,
+  });
+  const safetyWindowHours =
+    options.safetyWindowHours || DEFAULT_SAFETY_WINDOW_HOURS;
+  const previousState = await loadUpdateState(statePath);
+  const retainedArticles = await loadRetainedPublicArticles(options.outputDir);
+  const fetched = await fetchEnabledFeedDocuments({
     feedsPath: options.feedsPath,
     logger,
     fetchImpl: options.fetchImpl,
     generatedAt,
   });
-
-  const { publishableFeedDocuments, failedFetches: validationFailures } =
-    validateFetchedFeedDocuments({
-      feeds,
-      feedDocuments,
-      logger,
-    });
-  const failedFetches = [...fetchFailures, ...validationFailures];
-
+  const validated = validateFetchedFeedDocuments({
+    feeds: fetched.feeds,
+    feedDocuments: fetched.feedDocuments,
+    logger,
+  });
   const publishDecision = shouldPublishFromFetchedDocuments({
-    enabledFeeds,
-    feedDocuments: publishableFeedDocuments,
+    enabledFeeds: fetched.enabledFeeds,
+    feedDocuments: validated.publishableFeedDocuments,
   });
 
   if (!publishDecision.ok) {
-    logger.log(`[update] publish-skipped ${publishDecision.reason}`);
     throw new Error(publishDecision.reason);
   }
 
-  const pipelineSummary = await runPipeline({
+  const feedMap = new Map(fetched.feeds.map((feed) => [feed.id, feed]));
+  const filteredFreshArticles: CanonicalArticle[] = [];
+
+  for (const document of validated.publishableFeedDocuments) {
+    const feed = feedMap.get(document.feedId);
+    if (!feed) {
+      continue;
+    }
+    const normalizedArticles = normalizeFeedDocument({
+      feed,
+      xml: document.xml,
+      fetchedAt: document.fetchedAt,
+    });
+    const freshArticles = filterFreshArticlesByCheckpoint({
+      articles: normalizedArticles,
+      checkpoint: previousState?.sources[feed.id] || null,
+      safetyWindowHours,
+    });
+    filteredFreshArticles.push(...freshArticles);
+  }
+
+  const dedupedFreshArticles = dedupeArticles(filteredFreshArticles);
+  const summary = await runPipeline({
     feedsPath: options.feedsPath,
     shelvesPath: options.shelvesPath,
     outputDir: options.outputDir,
     dryRun: options.dryRun,
-    feedDocuments: publishableFeedDocuments,
     generatedAt,
+    normalizedArticles: dedupedFreshArticles,
+    retainedArticles,
     logger,
   });
 
-  const summary: UpdatePipelineSummary = {
-    ...pipelineSummary,
-    attemptedFeeds: enabledFeeds.length,
-    fetchedDocuments: publishableFeedDocuments.length,
-    failedFeeds: failedFetches.length,
-    failedFetches,
-  };
-
-  logger.log(
-    `[update] fetchedDocuments=${summary.fetchedDocuments} failedFeeds=${summary.failedFeeds}`,
-  );
-  if (summary.failedFeeds > 0) {
-    const failedFeedIds = summary.failedFetches
-      .map((failure) => failure.feedId)
-      .join(', ');
-    logger.log(
-      `[update] partial-failure: continuing with fetched feeds only (${failedFeedIds})`,
-    );
+  if (!options.dryRun) {
+    await writeUpdateState({
+      statePath,
+      state: buildNextUpdateState({
+        previousState,
+        freshArticles: dedupedFreshArticles,
+        generatedAt: summary.generatedAt,
+        safetyWindowHours,
+      }),
+    });
   }
-  logger.log('[update] FS-OPS-03 partial failure policy applied');
 
-  return summary;
+  return {
+    ...summary,
+    attemptedFeeds: fetched.enabledFeeds.length,
+    fetchedDocuments: validated.publishableFeedDocuments.length,
+    failedFeeds: fetched.failedFetches.length + validated.failedFetches.length,
+    failedFetches: [...fetched.failedFetches, ...validated.failedFetches],
+  };
 }
 
 export async function main(

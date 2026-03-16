@@ -1305,13 +1305,13 @@ Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / 
   - `format` / `format:check` / `lint:biome` を導入するが、既存の `lint` と `pnpm run ci` への統合は `FS-DX-02` まで遅らせる
 - `FS-DX-02` は full gate の単一入口、hook の責務分割、repo 固有 check の位置づけ整理を責務とする
   - `check:fast` を hand-authored な TS / JSON / config に絞った `format:check` / `lint:biome` と repo 固有 `lint` の束として追加し、`pnpm run ci` は `check:fast` に `typecheck` / `test` / `verify:web-ui` を加えた単一入口とする
-  - `just ci` は `pnpm run ci` の薄いラッパーとし、lefthook は pre-commit=`just check-fast`、pre-push=`just ci` に分担する
+  - `just ci` は `pnpm run ci` の薄いラッパーとし、lefthook は pre-push=`just ci` のみを担う。手元で局所確認したい場合だけ `just check-fast` を明示実行する
   - 初期 lint gate では既存 runtime の unrelated refactor を避けるため、`biome.json` で `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` に固定する
 - `FS-DX-03` は通常の品質確認 CI workflow を追加し、既存の update / deploy workflow と責務を分ける
   - `.github/workflows/ci.yml` を追加し、`push` / `pull_request` ごとに `pnpm run ci` を実行する routine quality gate を担わせる
   - `update-public-data` workflow には `pipeline:update` / Pages artifact / deploy を残し、Pages 固有処理を通常 CI へ混ぜない
 - `FS-DX-04` は tests / docs / workflow の追跡を同期し、tooling 変更を traceability と確認手順へ反映する
-  - `README.md` に pre-commit / pre-push / CI failure 時の運用入口を追加し、working tree を保持したまま `git rev-parse HEAD` と failure log を diffship 修正ループへ渡す手順を repo 直下から読めるようにする
+  - `README.md` に pre-push / CI / diffship post-apply failure 時の運用入口を追加し、working tree を保持したまま `git rev-parse HEAD` と failure log を diffship 修正ループへ渡す手順を repo 直下から読めるようにする
 - `FS-DX-05` は Biome v2 と sandbox verify baseline を整合させる
   - `@biomejs/biome` の pin / lock / config を v2.4.7 に揃え、`biome.json` は v2 schema / `formatter.includes` / `linter.includes` / `javascript.assist.enabled=false` へ移行する
   - local / CI / verify の入口は引き続き `pnpm install --frozen-lockfile` 後に `pnpm run ci` を明示実行する想定とし、`just ci` 自体は重くしない
@@ -1320,7 +1320,7 @@ Phase DX は、実装に入る前に `FS-DX-00` で Biome / quality gate / CI / 
 
 既知の契約差として、workflow / README / tests は `pnpm run ci` を前提にしている。`FS-DX-00` では verify failure を避けるため `package.json` に最小の `ci` script を補完し、hook / workflow / repo 固有 check の統合は `FS-DX-02` で行う。
 
-運用上は、pre-commit や CI が失敗した場合でも原則 stash を前提にせず、失敗した変更を working tree に保持したまま exact HEAD と failure log を diffship 修正ループへ渡せるようにする。この運用は `README.md` の失敗時ガイドと `tests/typescript-tooling.test.ts` の docs 追跡でも確認できる状態に保つ。
+運用上は、pre-push / CI / diffship post-apply が失敗した場合でも原則 stash を前提にせず、失敗した変更を working tree に保持したまま exact HEAD と failure log を diffship 修正ループへ渡せるようにする。この運用は `README.md` の失敗時ガイドと `tests/typescript-tooling.test.ts` の docs 追跡でも確認できる状態に保つ。
 
 
 
@@ -1411,3 +1411,11 @@ Phase 6 では UI 実装だけでなく、情報設計・データ契約・検�
 - undocumented な topic feed、community aggregator、利用条件の解釈が揺れやすい source は registry に保持しても `enabled=false` を既定としてよい
 - FeedShelf v1 の公開面では raw article HTML や長文再配信を避け、`summary` は短い public excerpt に丸めた表示用文字列として扱う
 - update workflow の既定 cadence は 12 時間ごととし、過剰取得を避ける
+
+
+### FS-PIPE-05: managed incremental update / build-time page shard
+
+- `scripts/pipeline/update.ts` は `outputDir/update-state.json` を正本にし、source ごとの checkpoint と safety window を保持する
+- 増分更新では retained な公開記事を読み戻しつつ、今回 fetch で得た fresh canonical article だけを dedupe 対象にし、最終 export では retained + fresh を public article summary レベルで再統合する
+- `scripts/pipeline/buildPublicExports.ts` は `public/data/pages/home/page-<n>.json` / `public/data/pages/shelves/<shelfId>/page-<n>.json` / `public/data/pages/tags/<tagId>/page-<n>.json` を生成し、root / `/<shelfId>/` / `/tags/` の first-view を bootstrap payload 付き HTML shell として出力する
+- `src/web/app.ts` は first-view では埋め込み bootstrap payload を使い、2 ページ目以降だけ page shard を fetch することで GitHub Pages 上でも server-side paging なしでページネーションできる

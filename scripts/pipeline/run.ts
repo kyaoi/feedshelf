@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import type {
+  CanonicalArticle,
   FeedDefinition,
   PipelineArgs,
   PipelineLogger,
@@ -10,6 +11,8 @@ import type {
 } from '../../src/shared/contracts.ts';
 import {
   buildPublicExports,
+  buildPublicExportsFromPublicArticles,
+  mergePublicArticleSummaries,
   writePublicExports,
 } from './buildPublicExports.ts';
 import { dedupeArticles } from './dedupeArticles.ts';
@@ -86,6 +89,37 @@ export function parseArgs(argv: string[]): PipelineArgs {
   return args;
 }
 
+function normalizeFeedDocumentsToArticles({
+  feedDocuments,
+  feeds,
+}: {
+  feedDocuments: RunPipelineOptions['feedDocuments'];
+  feeds: FeedDefinition[];
+}): CanonicalArticle[] {
+  const documents = Array.isArray(feedDocuments) ? feedDocuments : [];
+  const feedMap = new Map<string, FeedDefinition>(
+    feeds.map((feed) => [feed.id, feed]),
+  );
+  const articles: CanonicalArticle[] = [];
+
+  for (const document of documents) {
+    const feed = feedMap.get(document.feedId);
+    if (!feed) {
+      throw new Error(`Unknown feedId in feedDocuments: ${document.feedId}`);
+    }
+
+    articles.push(
+      ...normalizeFeedDocument({
+        feed,
+        xml: document.xml,
+        fetchedAt: document.fetchedAt,
+      }),
+    );
+  }
+
+  return articles;
+}
+
 export async function runPipeline(
   options: RunPipelineOptions = {},
 ): Promise<PipelineSummary> {
@@ -101,35 +135,31 @@ export async function runPipeline(
   validateFeedShelfReferences(feeds, shelves);
 
   const enabledFeeds = feeds.filter((feed) => feed.enabled);
-  const feedDocuments = Array.isArray(options.feedDocuments)
-    ? options.feedDocuments
-    : [];
-  const feedMap = new Map<string, FeedDefinition>(
-    feeds.map((feed) => [feed.id, feed]),
-  );
-  const articles = [];
-
-  for (const document of feedDocuments) {
-    const feed = feedMap.get(document.feedId);
-    if (!feed) {
-      throw new Error(`Unknown feedId in feedDocuments: ${document.feedId}`);
-    }
-
-    articles.push(
-      ...normalizeFeedDocument({
-        feed,
-        xml: document.xml,
-        fetchedAt: document.fetchedAt,
-      }),
-    );
-  }
-
-  const dedupedArticles = dedupeArticles(articles);
-  const publicExports = buildPublicExports({
+  const normalizedArticles = Array.isArray(options.normalizedArticles)
+    ? options.normalizedArticles
+    : normalizeFeedDocumentsToArticles({
+        feedDocuments: options.feedDocuments,
+        feeds,
+      });
+  const dedupedArticles = dedupeArticles(normalizedArticles);
+  const freshPublicExports = buildPublicExports({
     articles: dedupedArticles,
     feeds,
     shelves,
     generatedAt: options.generatedAt || new Date().toISOString(),
+  });
+  const retainedArticles = Array.isArray(options.retainedArticles)
+    ? options.retainedArticles
+    : [];
+  const mergedArticles = mergePublicArticleSummaries({
+    retainedArticles,
+    freshArticles: freshPublicExports.articles,
+  });
+  const publicExports = buildPublicExportsFromPublicArticles({
+    articles: mergedArticles,
+    feeds,
+    shelves,
+    generatedAt: freshPublicExports.meta.generatedAt,
   });
 
   if (!options.dryRun) {
@@ -147,9 +177,9 @@ export async function runPipeline(
     generatedAt: publicExports.meta.generatedAt,
     totalFeeds: feeds.length,
     enabledFeeds: enabledFeeds.length,
-    normalizedArticles: articles.length,
+    normalizedArticles: normalizedArticles.length,
     dedupedArticles: dedupedArticles.length,
-    duplicatesCollapsed: articles.length - dedupedArticles.length,
+    duplicatesCollapsed: normalizedArticles.length - dedupedArticles.length,
     publicArticles: publicExports.meta.articleCount,
     publicShelves: publicExports.meta.shelfCount,
     publicCategories: publicExports.meta.categoryCount,
@@ -162,8 +192,8 @@ export async function runPipeline(
     `[pipeline] feeds=${summary.totalFeeds} enabled=${summary.enabledFeeds} feedsPath=${path.relative(process.cwd(), feedsPath) || 'data/feeds.json'} shelvesPath=${path.relative(process.cwd(), shelvesPath) || 'data/shelves.yaml'}`,
   );
 
-  if (articles.length > 0) {
-    logger.log(`[pipeline] normalizedArticles=${articles.length}`);
+  if (normalizedArticles.length > 0) {
+    logger.log(`[pipeline] normalizedArticles=${normalizedArticles.length}`);
     logger.log(
       `[pipeline] dedupedArticles=${dedupedArticles.length} duplicatesCollapsed=${summary.duplicatesCollapsed}`,
     );
@@ -179,7 +209,7 @@ export async function runPipeline(
     );
   }
 
-  logger.log('[pipeline] FS-PIPE-04 public JSON ready');
+  logger.log('[pipeline] FS-PIPE-05 public JSON and page shards ready');
 
   return summary;
 }

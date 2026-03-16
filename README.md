@@ -50,7 +50,7 @@ pnpm run build:web-ui    # src/web/app.ts から public/assets/app.js を再生�
 pnpm run verify:web-ui   # checked-in asset と再生成結果の一致確認
 ```
 
-`just ci` は `pnpm run ci` の薄いラッパーです。`just check-fast` も用意し、pre-commit では hand-authored な TS / JSON / config に絞った `format:check` / `lint:biome` と repo 固有 lint のみを実行します。pre-push は full gate として `just ci` を実行します。
+`just ci` は `pnpm run ci` の薄いラッパーです。`just check-fast` も用意しますが、hook は pre-push の full gate に寄せ、lefthook では `just ci` のみを実行します。diffship 修正ループでは `.diffship/config.toml` の `ops.post_apply` から依存解決・`pnpm run build:web-ui`・`pnpm run ci` を流し、通常開発と loop の verify 入口を揃えます。
 
 Biome の初期 gate では、既存 runtime の無関係な書き換えを避けるため、`useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` は `off` に固定しています。
 
@@ -112,7 +112,7 @@ python -m http.server 4173 --directory public
 
 ## 品質ゲートが失敗したときの運用
 
-- pre-commit / pre-push / CI が失敗しても、原則として失敗したタスクの変更は stash しない
+- pre-push / CI / diffship post-apply が失敗しても、原則として失敗したタスクの変更は stash しない
 - 修正対象の差分は working tree に残したまま、`git rev-parse HEAD` で exact HEAD を取得する
 - hook や CI の failure log を保存し、その exact HEAD と一緒に diffship の修正ループへ渡す
 - unrelated な変更だけを一時退避したい場合に限り、必要最小限で stash を使う

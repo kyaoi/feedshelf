@@ -150,7 +150,7 @@ test('justfile and lefthook delegate to the intended gate entrypoints', () => {
   assert.match(justfile, /check-fast:\n\s+pnpm run check:fast/);
   assert.match(justfile, /ci:\n\s+pnpm run ci/);
 
-  assert.ok(lefthookConfig.includes('run: mise exec -- just check-fast'));
+  assert.doesNotMatch(lefthookConfig, /pre-commit:/);
   assert.ok(lefthookConfig.includes('run: mise exec -- just ci'));
 });
 

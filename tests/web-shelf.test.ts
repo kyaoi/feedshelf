@@ -352,7 +352,7 @@ test('writePublicExports creates shelf route shells alongside public JSON', asyn
   assert.match(shelfHtml, /関連する媒体/);
 });
 
-test('writePublicExports prunes stale generated shelf routes without deleting fixed routes', async () => {
+test('writePublicExports prunes stale generated shelf routes and refreshes fixed tag route shells', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-shelf-prune-'),
   );
@@ -405,8 +405,56 @@ test('writePublicExports prunes stale generated shelf routes without deleting fi
     'utf8',
   );
   assert.match(remainingShelfHtml, /data-shelf-id="it"/);
-  assert.equal(
-    await fs.readFile(path.join(fixedRouteDir, 'index.html'), 'utf8'),
-    '<!doctype html><title>fixed route</title>',
+  const fixedRouteHtml = await fs.readFile(
+    path.join(fixedRouteDir, 'index.html'),
+    'utf8',
   );
+  assert.match(fixedRouteHtml, /FeedShelf \/ Tags/);
+  assert.match(fixedRouteHtml, /feedshelf-bootstrap/);
+});
+
+test('writePublicExports writes shelf page shards for pagination bootstrap', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-shelf-pages-'),
+  );
+  const outputDir = path.join(tempDir, 'public-data');
+  const articleCopies = Array.from({ length: 26 }, (_, index) => ({
+    ...CANONICAL_ARTICLES[0],
+    id: `copy-${index + 1}`,
+    url: `https://example.com/articles/copy-${index + 1}`,
+    publishedAt: `2026-03-${String((index % 9) + 1).padStart(2, '0')}T00:00:00Z`,
+    sortAt: `2026-03-${String((index % 9) + 1).padStart(2, '0')}T00:00:00Z`,
+  }));
+  const publicExports = buildPublicExports({
+    articles: articleCopies,
+    feeds: FEEDS,
+    shelves: SHELVES_DOCUMENT,
+    generatedAt: '2026-03-10T00:10:00Z',
+  });
+
+  await writePublicExports({
+    outputDir,
+    publicExports,
+    shelvesDocument: SHELVES_DOCUMENT,
+  });
+
+  const pageOne = JSON.parse(
+    await fs.readFile(
+      path.join(outputDir, 'pages', 'shelves', 'it', 'page-1.json'),
+      'utf8',
+    ),
+  );
+  const pageTwo = JSON.parse(
+    await fs.readFile(
+      path.join(outputDir, 'pages', 'shelves', 'it', 'page-2.json'),
+      'utf8',
+    ),
+  );
+
+  assert.equal(pageOne.routeKind, 'shelf');
+  assert.equal(pageOne.page, 1);
+  assert.equal(pageOne.totalPages, 2);
+  assert.equal(pageOne.articles.length, 24);
+  assert.equal(pageTwo.page, 2);
+  assert.equal(pageTwo.articles.length, 2);
 });

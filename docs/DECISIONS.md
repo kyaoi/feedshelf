@@ -426,8 +426,8 @@
 
 ## D-067: full gate の単一入口は `pnpm run ci` とし、hook は軽量化して分担する
 
-- 決定: full quality gate は `pnpm run ci` を単一入口として扱い、pre-commit は高速で局所的な検査、pre-push と GitHub Actions は full gate を担う方針で進める
-- 理由: formatter / lint / typecheck / test / verify を毎回 pre-commit に寄せると開発体験が重くなり、commit 失敗時の修正ループも不安定になりやすいため
+- 決定: full quality gate は `pnpm run ci` を単一入口として扱い、lefthook は pre-push の full gate のみを担い、diffship 修正ループは `.diffship/config.toml` の `ops.post_apply` から同じ verify 入口を呼ぶ方針で進める
+- 理由: formatter / lint / typecheck / test / verify を毎回 pre-commit に寄せると開発体験が重くなり、clean sandbox を前提にする diffship loop と通常開発で verify 入口が分岐しやすくなるため
 - 影響: `FS-DX-00` では verify failure を避けるため `package.json` に最小の `ci` script を補完し、`FS-DX-02` では `justfile` / `lefthook.yml` / repo 固有 check を含む full gate 契約全体を揃える
 
 ## D-068: 通常 CI workflow と定期更新 / deploy workflow は分離する
@@ -452,7 +452,7 @@
 
 - 決定: `FS-DX-02` では `check:fast` を `format:check` / `lint:biome` / repo 固有 `lint` の束として追加し、full gate は `pnpm run ci = check:fast + typecheck + test + verify:web-ui` とする
 - 理由: Biome 導入後も repo 固有 check を分離したまま、pre-commit に載せる高速チェックと pre-push / workflow で使う full gate を同じ script 契約から組み立てた方が、運用と修正ループの両方で見通しがよいため
-- 影響: `package.json` / `justfile` / `lefthook.yml` / `tests/typescript-tooling.test.ts` を更新し、`just ci` は `pnpm run ci` の薄いラッパー、pre-commit は `just check-fast`、pre-push は `just ci` へ揃える
+- 影響: `package.json` / `justfile` / `lefthook.yml` / `README.md` / `tests/typescript-tooling.test.ts` を更新し、`just ci` は `pnpm run ci` の薄いラッパー、lefthook は pre-push=`just ci` のみ、diffship local config は `ops.post_apply` から install / `build:web-ui` / `ci` を呼ぶ前提へ揃える
 - 補足: 既存 runtime の unrelated refactor を `FS-DX-02` へ混ぜないため、initial gate の `biome.json` では `useOptionalChain` / `useArrowFunction` / `useLiteralKeys` / `noGlobalEval` を `off` にして baseline lint を安定化する
 
 ## D-072: FS-DX-03 では routine quality gate を `.github/workflows/ci.yml` へ切り出す

@@ -1,8 +1,3 @@
-pre-commit:
-  commands:
-    check-fast:
-      run: mise exec -- just check-fast
-
 pre-push:
   commands:
     ci:

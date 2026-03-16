@@ -11,6 +11,8 @@ const {
   fetchFeedDocument,
   shouldPublishFromFetchedDocuments,
   validateFetchedFeedDocuments,
+  resolveUpdateStatePath,
+  loadUpdateState,
   runUpdatePipeline,
 } = require('../scripts/pipeline/update.js');
 
@@ -75,6 +77,17 @@ const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
     </item>
   </channel>
 </rss>`;
+
+test('resolveUpdateStatePath defaults to outputDir/update-state.json', () => {
+  const statePath = resolveUpdateStatePath({
+    outputDir: path.join('/tmp', 'feedshelf-public-data'),
+  });
+
+  assert.equal(
+    statePath,
+    path.join('/tmp', 'feedshelf-public-data', 'update-state.json'),
+  );
+});
 
 test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, and --dry-run', () => {
   const parsed = parseUpdateArgs([
@@ -308,4 +321,76 @@ test('workflow file keeps public data update automation wired with cautious poll
   assert.match(workflow, /17 \*\/12 \* \* \*/);
   assert.match(workflow, /pnpm run pipeline:update/);
   assert.match(workflow, /path:\s*\.\/public/);
+});
+
+test('runUpdatePipeline writes update-state.json and retains previously published articles', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-state-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+
+  await fsp.writeFile(feedsPath, JSON.stringify([ENABLED_FEED]));
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+  await fsp.mkdir(outputDir, { recursive: true });
+  await fsp.writeFile(
+    path.join(outputDir, 'articles.json'),
+    JSON.stringify([
+      {
+        id: 'retained-article',
+        title: 'Retained Article',
+        url: 'https://example.com/retained-article',
+        sourceId: 'enabled-feed',
+        sourceName: 'Enabled Feed',
+        shelfIds: ['examples'],
+        sourceTags: ['primary'],
+        entryTags: [],
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        sortAt: '2026-03-08T00:00:00.000Z',
+        summary: 'Retained summary',
+        excerpt: 'Retained summary',
+        language: 'en',
+      },
+    ]),
+  );
+
+  const summary = await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-09T09:10:11Z',
+    logger: { log() {} },
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return RSS_XML;
+      },
+    }),
+  });
+
+  assert.equal(summary.publicArticles, 2);
+  const statePath = resolveUpdateStatePath({ outputDir });
+  const state = await loadUpdateState(statePath);
+  assert.ok(state);
+  assert.equal(state?.version, 1);
+  assert.equal(
+    state?.sources['enabled-feed']?.lastSuccessfulFetchAt,
+    '2026-03-09T09:10:11.000Z',
+  );
+  assert.equal(
+    state?.sources['enabled-feed']?.checkpointSortAt,
+    '2026-03-09T09:00:00.000Z',
+  );
+
+  const publishedArticles = JSON.parse(
+    await fsp.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
+  );
+  assert.deepEqual(
+    publishedArticles.map((article: { title: string }) => article.title),
+    ['Workflow article', 'Retained Article'],
+  );
+  assert.equal(publishedArticles[1].id, 'retained-article');
 });
