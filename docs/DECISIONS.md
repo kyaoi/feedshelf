@@ -908,6 +908,12 @@
 - 理由: Zenn topic と同様に first-party docs で feed path が確認できる topic feed まで常に cautious disabled に留めると、Linux / editor / AI まわりの community signal を source audit の恩恵として取り込みにくく、user profile ともずれやすいため
 - 影響: `r/programming` のような broad feed は引き続き `enabled=false` に留め、science 棚を重くしすぎる `r/Physics` は必要になるまで慎重枠として残してよい
 
+## D-138: deferred data backlog の再開順は canonicalization-first とする
+
+- 決定: `FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` を再開するときは、まず `FS-DATA-06` の host 固有 canonicalization / redirect resolution を docs split から始め、その後に richer provenance、最後に fuzzy dedupe を扱う
+- 理由: canonicalization は既存 `normalizedUrl` の内部精度改善として始めやすく、public JSON 契約や UI route を直ちに崩さずに dedupe 基盤を前進させやすい一方、richer provenance は schema 増分を伴いやすく、fuzzy dedupe は誤爆コストが最も高いため
+- 影響: 次に deferred backlog を起こす場合、最初の docs task は host 固有 rule / redirect 追跡 / failure fallback の境界整理になり、`seenInFeeds[]` の richer 化や fuzzy dedupe threshold 設計を先に混ぜない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

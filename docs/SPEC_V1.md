@@ -1339,6 +1339,22 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 - richer provenance 記録
 - current page shard を超える finer-grained public JSON split
 
+## 15.1.0 Deferred data backlog reprioritization
+
+`FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` は deferred backlog として残っているが、再開順は次のように固定する。
+
+1. `FS-DATA-06` host 固有 canonicalization / redirect resolution
+   - 既存 `normalizedUrl` の精度を上げる内部改善として始めやすく、public JSON 契約や UI route を直ちに増やさずに進めやすい
+   - まず docs task で host 固有 rule と redirect 追跡の境界、network cost、failure fallback を固定してから implementation task に入る
+2. `FS-DATA-05` richer provenance
+   - canonicalization の前提が固まった後で、`seenInFeeds[]` を richer object へ置き換えるか併存させるかを決める
+   - public JSON や internal canonical article object の schema 変更を伴いやすいため、`FS-DATA-06` より後ろに置く
+3. `FS-DATA-07` fuzzy dedupe
+   - 誤爆の影響が最も大きく、title/date 類似だけで別記事を潰す危険があるため最後段に置く
+   - canonicalization と provenance の整理後に、必要なら scorer / threshold / rollback 方針を docs で閉じてから着手する
+
+この順番により、次の deferred backlog 再開時は「まず canonicalization の docs split を切る」という 1 本の入口に揃える。
+
 ## 15.1 Post-v1 architecture / performance planning
 
 Phase 6 までで shelf-first IA と public JSON 契約は成立しているが、post-v1 では更新量と初回表示速度を改善するため、次の 4 点を docs で固定し、その後 `FS-PIPE-05` / `FS-QA-11` までで static pagination と build-time page shard を実装済みとする。

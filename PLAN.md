@@ -285,6 +285,14 @@ Phase 6 の進め方:
 - `FS-DATA-08` が deferred backlog 上では未完了に見える一方、post-v1 architecture では page shard / static pagination が実装済み、という二重状態を `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で解消できる
 - 今後の deferred backlog は richer provenance / canonicalization / fuzzy dedupe に絞られ、pagination を再実装する前提で誤って扱わない
 
+### Post-v1 deferred data backlog prioritization
+
+- [x] `FS-DOCS-21` deferred data backlog (`FS-DATA-05` 〜 `FS-DATA-07`) の再開順を docs で固定し、次の候補を canonicalization-first に揃える
+
+完了条件:
+- `FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` のうち、public JSON 契約を崩さずに再開しやすい次タスクが docs で一意に読める
+- `FS-DATA-06` を先行候補、`FS-DATA-05` をその後の schema 拡張候補、`FS-DATA-07` を最後の高リスク候補として扱う順番が `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で同期している
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -293,7 +301,9 @@ Phase 6 の進め方:
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
-- `FS-DATA-05` 〜 `FS-DATA-07` の deferred backlog は v2 以降候補として必要時に再優先付けする
+- deferred data backlog を再開するなら、まず `FS-DATA-06` の docs / implementation split を切り、safe normalization の外側にある host 固有 canonicalization / redirect resolution を public JSON 非互換なしでどこまで入れるかを固定する
+- `FS-DATA-05` の richer provenance は `FS-DATA-06` 後に schema 変更タスクとして扱い、`seenInFeeds[]` を置き換えるか併存させるかを先に docs で決める
+- `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後に最後段で再優先付けする
 
 ## メモ
 
