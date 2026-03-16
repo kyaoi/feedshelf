@@ -47,8 +47,9 @@ policy = "auto"            # auto|manual
 # These are local-only config values; patch bundles cannot define them.
 [ops.post_apply]
 cmd1 = "test -d node_modules/.pnpm || pnpm install --frozen-lockfile"
-cmd2 = "pnpm run build:web-ui"
-cmd3 = "pnpm run ci"
+cmd2 = "pnpm exec biome format --write biome.json package.json tsconfig.json tsconfig.web.json data/feeds.json data/shelves.yaml src scripts tests"
+cmd3 = "pnpm run build:web-ui"
+cmd4 = "pnpm run ci"
 
 # Customize this section: forbid AI patch bundles from touching fragile files in this repository.
 # Values are repo-relative path or glob patterns matched during apply/loop validation.
