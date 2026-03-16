@@ -137,7 +137,8 @@
 - 決定: v1 の公開 JSON は `articles.json` / `categories.json` / `sources.json` / `meta.json` を基本単位とし、sharding や pagination は導入しない
 - 理由: UI 導線に必要な情報を過不足なく持たせつつ、初期実装を複雑化しないため
 - 影響: `articles.json` は listing-ready summary object 配列、`categories.json` / `sources.json` は導線用 summary object 配列、`meta.json` は生成時刻と件数を持つ
-- V2 メモ: route 単位 JSON、検索 index、pagination、日付 shard を再検討する
+- Post-v1 注記: この初期決定のうち pagination / page shard の留保は `D-133` で更新済みとし、現在は GitHub Pages 向け static pagination を build-time page shard で実装済みと扱う
+- V2 メモ: route 単位 JSON、検索 index、current page shard を超える finer-grained split、日付 shard を再検討する
 
 ## D-023: `categoryId` は公開 JSON 用の安定 slug とする
 

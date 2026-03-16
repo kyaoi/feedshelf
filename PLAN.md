@@ -43,10 +43,11 @@ FeedShelf の v1 を、仕様先行・最小差分・GitHub Pages 前提で安�
 - [ ] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する
 - [ ] `FS-DATA-06` host 固有の canonical URL 解決と redirect 解決を追加する
 - [ ] `FS-DATA-07` fuzzy dedupe を安全な閾値つきで導入する
-- [ ] `FS-DATA-08` JSON sharding / pagination を検討する
+- `FS-DATA-08` の JSON sharding / pagination は post-v1 の `FS-ARCH-10` / `FS-PIPE-05` / `FS-QA-11` で static pagination + build-time page shard として実施済みとみなし、deferred backlog から外す
 
 完了条件:
-- v1 で見送った dedupe / canonicalization / provenance の拡張点が、後続タスクとして見失われない
+- v1 で見送った provenance / canonicalization / dedupe の拡張点が、後続タスクとして見失われない
+- 既に post-v1 で実装済みの pagination / page shard を deferred backlog に二重計上しない
 
 ### Phase 2: 取得・生成パイプライン
 
@@ -276,6 +277,14 @@ Phase 6 の進め方:
 - broad feed (`r/programming`) や science 棚を重くしすぎる source は引き続き `enabled=false` に保ち、source audit の温度感を崩さない
 - source registry の変更が README / `PLAN` / `DECISIONS` / `TRACEABILITY` / registry test に反映され、evidence の追跡が 1 箇所だけ古い状態にならない
 
+### Post-v1 backlog consistency cleanup
+
+- [x] `FS-DOCS-20` deferred data backlog と post-v1 architecture / pagination 実績の整合を取り、`FS-DATA-08` の状態を docs で同期する
+
+完了条件:
+- `FS-DATA-08` が deferred backlog 上では未完了に見える一方、post-v1 architecture では page shard / static pagination が実装済み、という二重状態を `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で解消できる
+- 今後の deferred backlog は richer provenance / canonicalization / fuzzy dedupe に絞られ、pagination を再実装する前提で誤って扱わない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -284,7 +293,7 @@ Phase 6 の進め方:
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
-- `FS-DATA-05` 〜 `FS-DATA-08` の deferred backlog は v2 以降候補として必要時に再優先付けする
+- `FS-DATA-05` 〜 `FS-DATA-07` の deferred backlog は v2 以降候補として必要時に再優先付けする
 
 ## メモ
 

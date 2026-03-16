@@ -1013,7 +1013,7 @@ Phase 6 では次の公開 JSON を基本候補とする。
 ### 11.9 v2 で再検討する項目
 
 - `shelves/<id>.json` や `tags/<id>.json` の個別生成
-- `articles` の sharding / pagination
+- current page shard を超える finer-grained public JSON split
 - 検索スコアの高度化や同義語正規化
 - public JSON での richer provenance
 - contributor 向け registry file の更なる分割 (`data/sources/*.yaml`, `data/shelves/*.yaml`)
@@ -1337,11 +1337,11 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 - host 固有 canonicalization
 - fuzzy dedupe
 - richer provenance 記録
-- public JSON の sharding / pagination
+- current page shard を超える finer-grained public JSON split
 
 ## 15.1 Post-v1 architecture / performance planning
 
-Phase 6 までで shelf-first IA と public JSON 契約は成立しているが、post-v1 では更新量と初回表示速度を改善するため、実装前に次の 4 点を docs で固定する。
+Phase 6 までで shelf-first IA と public JSON 契約は成立しているが、post-v1 では更新量と初回表示速度を改善するため、次の 4 点を docs で固定し、その後 `FS-PIPE-05` / `FS-QA-11` までで static pagination と build-time page shard を実装済みとする。
 
 ### 15.1.1 managed incremental update
 
