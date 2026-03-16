@@ -343,6 +343,9 @@ type FeedShelfGlobalScope = typeof globalThis & {
   const SOURCE_QUERY_PARAM = 'id';
   const TAG_QUERY_PARAM = 'id';
   const SEARCH_QUERY_PARAM = 'q';
+  const PAGE_QUERY_PARAM = 'page';
+  const BOOTSTRAP_SCRIPT_ID = 'feedshelf-bootstrap';
+  const DEFAULT_ARTICLE_PAGE_SIZE = 24;
   const MISSING_SOURCE_SELECTION_MESSAGE =
     '媒体が選択されていません。トップページまたは媒体一覧から選んでください。';
   const UNKNOWN_SOURCE_MESSAGE =
@@ -375,6 +378,168 @@ type FeedShelfGlobalScope = typeof globalThis & {
       searchIndex: `${prefix}/search-index.json`,
       meta: `${prefix}/meta.json`,
     };
+  }
+
+  function readBootstrapPayload(
+    documentRef: Document | null | undefined,
+  ):
+    | HomeBootstrapPayloadLike
+    | ShelfBootstrapPayloadLike
+    | TagIndexBootstrapPayloadLike
+    | null {
+    if (!documentRef) {
+      return null;
+    }
+
+    const element = documentRef.getElementById(BOOTSTRAP_SCRIPT_ID);
+    if (!element || !element.textContent) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(element.textContent) as
+        | HomeBootstrapPayloadLike
+        | ShelfBootstrapPayloadLike
+        | TagIndexBootstrapPayloadLike;
+    } catch {
+      return null;
+    }
+  }
+
+  function getPageFromLocation(
+    locationRef: LocationLike | null | undefined,
+  ): number {
+    const search =
+      locationRef && typeof locationRef.search === 'string'
+        ? locationRef.search
+        : '';
+    const value = new URLSearchParams(search).get(PAGE_QUERY_PARAM) || '';
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 1 ? parsed : 1;
+  }
+
+  function buildPaginationHref({
+    page,
+    selectedTagId = '',
+  }: {
+    page: number;
+    selectedTagId?: string;
+  }): string {
+    const params = new URLSearchParams();
+    if (selectedTagId) {
+      params.set(TAG_QUERY_PARAM, selectedTagId);
+    }
+    if (page > 1) {
+      params.set(PAGE_QUERY_PARAM, String(page));
+    }
+    const query = params.toString();
+    return query === '' ? './' : `./?${query}`;
+  }
+
+  function renderPaginationItems({
+    currentPage,
+    totalPages,
+    selectedTagId = '',
+  }: {
+    currentPage: number;
+    totalPages: number;
+    selectedTagId?: string;
+  }): string {
+    if (totalPages <= 1) {
+      return '';
+    }
+
+    return Array.from({ length: totalPages }, (_, index) => {
+      const page = index + 1;
+      const className =
+        page === currentPage ? 'chip chip--selected' : 'chip chip--muted';
+      return `<a class="${className}" href="${buildPaginationHref({ page, selectedTagId })}">Page ${page}</a>`;
+    }).join('');
+  }
+
+  function renderPaginationNav(
+    documentRef: Document,
+    {
+      currentPage,
+      totalPages,
+      selectedTagId = '',
+    }: {
+      currentPage: number;
+      totalPages: number;
+      selectedTagId?: string;
+    },
+  ): void {
+    const navElement = documentRef.getElementById('articles-pagination');
+    if (!navElement) {
+      return;
+    }
+
+    if (totalPages <= 1) {
+      navElement.hidden = true;
+      navElement.innerHTML = '';
+      return;
+    }
+
+    navElement.hidden = false;
+    navElement.innerHTML = renderPaginationItems({
+      currentPage,
+      totalPages,
+      selectedTagId,
+    });
+  }
+
+  function buildPageShardPath({
+    basePath,
+    routeKind,
+    page,
+    shelfId = '',
+    tagId = '',
+  }: {
+    basePath: string;
+    routeKind: 'home' | 'shelf' | 'tag';
+    page: number;
+    shelfId?: string;
+    tagId?: string;
+  }): string {
+    const trimmed = String(basePath).replace(/\/+$/u, '') || '.';
+    const prefix = trimmed === '.' ? './data/pages' : `${trimmed}/data/pages`;
+
+    if (routeKind === 'home') {
+      return `${prefix}/home/page-${page}.json`;
+    }
+
+    if (routeKind === 'shelf') {
+      return `${prefix}/shelves/${encodeURIComponent(shelfId)}/page-${page}.json`;
+    }
+
+    return `${prefix}/tags/${encodeURIComponent(tagId)}/page-${page}.json`;
+  }
+
+  async function loadArticlePageShard({
+    basePath,
+    routeKind,
+    page,
+    fetchImpl,
+    shelfId = '',
+    tagId = '',
+  }: {
+    basePath: string;
+    routeKind: 'home' | 'shelf' | 'tag';
+    page: number;
+    fetchImpl: typeof fetch | undefined;
+    shelfId?: string;
+    tagId?: string;
+  }): Promise<PublicArticlePageShardLike> {
+    return fetchJson<PublicArticlePageShardLike>(
+      fetchImpl,
+      buildPageShardPath({
+        basePath,
+        routeKind,
+        page,
+        shelfId,
+        tagId,
+      }),
+    );
   }
 
   async function fetchJson<T = unknown>(
@@ -1681,8 +1846,21 @@ type FeedShelfGlobalScope = typeof globalThis & {
     listElement.innerHTML = '';
   }
 
-  function renderHomePage(documentRef: Document, payload: ReadyPayload): void {
-    const viewModel = buildHomePageViewModel(payload);
+  function renderHomePage(
+    documentRef: Document,
+    payload: ReadyPayload,
+    {
+      articlePage = null,
+      currentPage = 1,
+    }: {
+      articlePage?: PublicArticlePageShardLike | null;
+      currentPage?: number;
+    } = {},
+  ): void {
+    const viewModel = buildHomePageViewModel({
+      ...payload,
+      articles: articlePage ? articlePage.articles : payload.articles,
+    });
     const generatedAtElement = documentRef.getElementById('generated-at');
     const metaStatsElement = documentRef.getElementById('meta-stats');
     const shelvesElement = documentRef.getElementById('shelves-list');
@@ -1713,8 +1891,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     }
 
     if (articlesCountElement) {
-      articlesCountElement.textContent = `${viewModel.articles.length} 件`;
+      articlesCountElement.textContent = `${articlePage ? articlePage.totalItems : viewModel.articles.length} 件`;
     }
+
+    renderPaginationNav(documentRef, {
+      currentPage,
+      totalPages: articlePage ? articlePage.totalPages : 1,
+    });
 
     if (!statusElement || !listElement) {
       return;
@@ -1737,13 +1920,25 @@ type FeedShelfGlobalScope = typeof globalThis & {
   function renderShelfPage(
     documentRef: Document,
     payload: ReadyPayload,
-    { shelfId }: { shelfId?: string } = {},
+    {
+      shelfId,
+      articlePage = null,
+      featuredArticles = null,
+      relatedSources = null,
+      currentPage = 1,
+    }: {
+      shelfId?: string;
+      articlePage?: PublicArticlePageShardLike | null;
+      featuredArticles?: PublicArticleSummaryLike[] | null;
+      relatedSources?: PublicSourceSummaryLike[] | null;
+      currentPage?: number;
+    } = {},
   ): ShelfPageViewModel {
     const viewModel = buildShelfPageViewModel({
       shelfId: shelfId || '',
-      articles: payload.articles,
+      articles: articlePage ? articlePage.articles : payload.articles,
       shelves: payload.shelves,
-      sources: payload.sources,
+      sources: relatedSources || payload.sources,
       meta: payload.meta,
     });
     const generatedAtElement = documentRef.getElementById('generated-at');
@@ -1769,7 +1964,11 @@ type FeedShelfGlobalScope = typeof globalThis & {
 
     if (relatedSourcesElement) {
       relatedSourcesElement.innerHTML = renderSourceItems(
-        viewModel.relatedSources,
+        relatedSources
+          ? buildSourceNavigationItems(relatedSources, {
+              hrefBuilder: buildSourceHrefFromShelfPage,
+            })
+          : viewModel.relatedSources,
       );
     }
 
@@ -1781,20 +1980,29 @@ type FeedShelfGlobalScope = typeof globalThis & {
       descriptionElement.textContent = viewModel.description;
     }
 
+    const renderedFeaturedArticles = featuredArticles
+      ? buildArticleViewModels(featuredArticles)
+      : viewModel.featuredArticles;
+
     if (featuredCountElement) {
-      featuredCountElement.textContent = viewModel.featuredCountText;
+      featuredCountElement.textContent = `${renderedFeaturedArticles.length} 件`;
     }
 
     if (featuredListElement) {
       featuredListElement.innerHTML =
-        viewModel.featuredArticles.length > 0
-          ? renderArticleItems(viewModel.featuredArticles)
+        renderedFeaturedArticles.length > 0
+          ? renderArticleItems(renderedFeaturedArticles)
           : '<li class="placeholder-text">注目記事はまだありません。</li>';
     }
 
     if (articlesCountElement) {
-      articlesCountElement.textContent = viewModel.articlesCountText;
+      articlesCountElement.textContent = `${articlePage ? articlePage.totalItems : viewModel.articles.length} 件`;
     }
+
+    renderPaginationNav(documentRef, {
+      currentPage,
+      totalPages: articlePage ? articlePage.totalPages : 1,
+    });
 
     if (!statusElement || !listElement) {
       return viewModel;
@@ -1943,11 +2151,19 @@ type FeedShelfGlobalScope = typeof globalThis & {
   function renderTagPage(
     documentRef: Document,
     payload: ReadyPayload,
-    { tagId }: { tagId?: string } = {},
+    {
+      tagId,
+      articlePage = null,
+      currentPage = 1,
+    }: {
+      tagId?: string;
+      articlePage?: PublicArticlePageShardLike | null;
+      currentPage?: number;
+    } = {},
   ): TagPageViewModel {
     const viewModel = buildTagPageViewModel({
       tagId: tagId || '',
-      articles: payload.articles,
+      articles: articlePage ? articlePage.articles : payload.articles,
       tags: payload.tags,
       meta: payload.meta,
     });
@@ -1978,8 +2194,14 @@ type FeedShelfGlobalScope = typeof globalThis & {
     }
 
     if (articlesCountElement) {
-      articlesCountElement.textContent = viewModel.articlesCountText;
+      articlesCountElement.textContent = `${articlePage ? articlePage.totalItems : viewModel.articles.length} 件`;
     }
+
+    renderPaginationNav(documentRef, {
+      currentPage,
+      totalPages: articlePage ? articlePage.totalPages : 1,
+      selectedTagId: tagId || '',
+    });
 
     if (!statusElement || !listElement) {
       return viewModel;
@@ -2064,6 +2286,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     basePath = DEFAULT_BASE_PATH,
     fetchImpl = browserScope.fetch,
     documentRef = browserScope.document,
+    locationRef = browserScope.location,
   }: HomePageInitOptions = {}): Promise<
     HomePageDataResult | { kind: 'skipped' }
   > {
@@ -2076,10 +2299,40 @@ type FeedShelfGlobalScope = typeof globalThis & {
       message: '公開 JSON を読み込んでいます…',
     });
 
+    const bootstrapPayload = readBootstrapPayload(documentRef);
+    const requestedPage = getPageFromLocation(locationRef);
+
+    if (bootstrapPayload && bootstrapPayload.kind === 'home') {
+      const currentPage = Math.min(
+        requestedPage,
+        Math.max(1, bootstrapPayload.articlePage.totalPages || 1),
+      );
+      const articlePage =
+        currentPage === 1
+          ? bootstrapPayload.articlePage
+          : await loadArticlePageShard({
+              basePath,
+              routeKind: 'home',
+              page: currentPage,
+              fetchImpl,
+            });
+      const payload = {
+        kind: 'ready' as const,
+        articles: articlePage.articles,
+        shelves: bootstrapPayload.shelves,
+        categories: [],
+        sources: bootstrapPayload.sources,
+        tags: bootstrapPayload.tags,
+        meta: bootstrapPayload.meta,
+      };
+      renderHomePage(documentRef, payload, { articlePage, currentPage });
+      return payload;
+    }
+
     const payload = await loadHomePageData({ basePath, fetchImpl });
 
     if (payload.kind === 'ready') {
-      renderHomePage(documentRef, payload);
+      renderHomePage(documentRef, payload, { currentPage: requestedPage });
       return payload;
     }
 
@@ -2094,6 +2347,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     basePath = '..',
     fetchImpl = browserScope.fetch,
     documentRef = browserScope.document,
+    locationRef = browserScope.location,
   }: HomePageInitOptions = {}): Promise<
     ShelfPageViewModel | MissingDataPayload | ErrorPayload | { kind: 'skipped' }
   > {
@@ -2106,11 +2360,56 @@ type FeedShelfGlobalScope = typeof globalThis & {
       message: '公開 JSON を読み込んでいます…',
     });
 
+    const shelfId = getShelfIdFromDocument(documentRef);
+    const requestedPage = getPageFromLocation(locationRef);
+    const bootstrapPayload = readBootstrapPayload(documentRef);
+
+    if (
+      bootstrapPayload &&
+      bootstrapPayload.kind === 'shelf' &&
+      bootstrapPayload.shelfId === shelfId
+    ) {
+      const currentPage = Math.min(
+        requestedPage,
+        Math.max(1, bootstrapPayload.articlePage.totalPages || 1),
+      );
+      const articlePage =
+        currentPage === 1
+          ? bootstrapPayload.articlePage
+          : await loadArticlePageShard({
+              basePath,
+              routeKind: 'shelf',
+              page: currentPage,
+              fetchImpl,
+              shelfId,
+            });
+      return renderShelfPage(
+        documentRef,
+        {
+          kind: 'ready',
+          articles: articlePage.articles,
+          shelves: bootstrapPayload.shelves,
+          categories: [],
+          sources: bootstrapPayload.relatedSources,
+          tags: [],
+          meta: bootstrapPayload.meta,
+        },
+        {
+          shelfId,
+          articlePage,
+          featuredArticles: bootstrapPayload.featuredArticles,
+          relatedSources: bootstrapPayload.relatedSources,
+          currentPage,
+        },
+      );
+    }
+
     const payload = await loadHomePageData({ basePath, fetchImpl });
 
     if (payload.kind === 'ready') {
       return renderShelfPage(documentRef, payload, {
-        shelfId: getShelfIdFromDocument(documentRef),
+        shelfId,
+        currentPage: requestedPage,
       });
     }
 
@@ -2208,11 +2507,58 @@ type FeedShelfGlobalScope = typeof globalThis & {
       message: '公開 JSON を読み込んでいます…',
     });
 
+    const tagId = getTagIdFromLocation(locationRef);
+    const requestedPage = getPageFromLocation(locationRef);
+    const bootstrapPayload = readBootstrapPayload(documentRef);
+
+    if (bootstrapPayload && bootstrapPayload.kind === 'tag-index') {
+      const readyPayload = {
+        kind: 'ready' as const,
+        articles: [],
+        shelves: [],
+        categories: [],
+        sources: [],
+        tags: bootstrapPayload.tags,
+        meta: bootstrapPayload.meta,
+      };
+
+      const selectedTag =
+        bootstrapPayload.tags.find((tag) => tag.id === tagId) || null;
+      if (!tagId || !selectedTag) {
+        return renderTagPage(documentRef, readyPayload, {
+          tagId,
+          currentPage: requestedPage,
+        });
+      }
+
+      const currentPage = Math.min(
+        requestedPage,
+        Math.max(
+          1,
+          Math.ceil(selectedTag.articleCount / DEFAULT_ARTICLE_PAGE_SIZE),
+        ),
+      );
+      const articlePage = await loadArticlePageShard({
+        basePath,
+        routeKind: 'tag',
+        page: currentPage,
+        fetchImpl,
+        tagId,
+      });
+
+      return renderTagPage(documentRef, readyPayload, {
+        tagId,
+        articlePage,
+        currentPage,
+      });
+    }
+
     const payload = await loadHomePageData({ basePath, fetchImpl });
 
     if (payload.kind === 'ready') {
       return renderTagPage(documentRef, payload, {
-        tagId: getTagIdFromLocation(locationRef),
+        tagId,
+        currentPage: requestedPage,
       });
     }
 
@@ -2329,15 +2675,19 @@ type FeedShelfGlobalScope = typeof globalThis & {
     MISSING_SEARCH_QUERY_MESSAGE,
     EMPTY_SEARCH_RESULTS_MESSAGE,
     SEARCH_QUERY_PARAM,
+    PAGE_QUERY_PARAM,
     SEARCH_RANKING_HINT,
     articleHasTag,
+    buildPaginationHref,
     buildTagHrefFromHome,
     buildTagHrefFromTagPage,
     buildTagNavigationItems,
     buildTagPageViewModel,
     getTagIdFromLocation,
+    getPageFromLocation,
     initTagPage,
     normalizeSearchCompareText,
+    readBootstrapPayload,
     renderSearchPage,
     renderTagPage,
     scoreSearchEntry,

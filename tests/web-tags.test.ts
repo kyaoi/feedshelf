@@ -1,15 +1,20 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   EMPTY_TAG_ARTICLES_MESSAGE,
   MISSING_TAG_SELECTION_MESSAGE,
+  PAGE_QUERY_PARAM,
   TAG_QUERY_PARAM,
   UNKNOWN_TAG_MESSAGE,
   articleHasTag,
+  buildPaginationHref,
   buildTagHrefFromHome,
   buildTagHrefFromTagPage,
   buildTagPageViewModel,
+  getPageFromLocation,
   getTagIdFromLocation,
 } = require('../public/assets/app.js');
 
@@ -23,6 +28,19 @@ test('getTagIdFromLocation reads id query parameter', () => {
   assert.equal(getTagIdFromLocation({ search: '' }), '');
   assert.equal(getTagIdFromLocation(null), '');
   assert.equal(TAG_QUERY_PARAM, 'id');
+});
+
+test('tag pagination helpers preserve tag selection while switching pages', () => {
+  assert.equal(getPageFromLocation({ search: '?id=tag-cloud&page=3' }), 3);
+  assert.equal(PAGE_QUERY_PARAM, 'page');
+  assert.equal(
+    buildPaginationHref({ page: 1, selectedTagId: 'tag-cloud' }),
+    './?id=tag-cloud',
+  );
+  assert.equal(
+    buildPaginationHref({ page: 2, selectedTagId: 'tag-cloud' }),
+    './?id=tag-cloud&page=2',
+  );
 });
 
 test('articleHasTag matches sourceTags and entryTags with normalized compare key', () => {
@@ -164,4 +182,12 @@ test('buildTagPageViewModel filters articles by sourceTags and entryTags union',
   );
   assert.equal(viewModel.navigationItems[0].isSelected, true);
   assert.equal(viewModel.articles[0].visibleTags[0], 'Cloud');
+});
+
+test('checked-in tag shell keeps pagination placeholder for prerendered page shards', () => {
+  const tagHtml = fs.readFileSync(
+    path.resolve(__dirname, '..', 'public/tags/index.html'),
+    'utf8',
+  );
+  assert.match(tagHtml, /id="articles-pagination"/);
 });

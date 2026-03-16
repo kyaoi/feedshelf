@@ -248,7 +248,7 @@ Phase 6 の進め方:
 - [x] `FS-ARCH-10` incremental update / static pagination / build-time prerender / responsive grid の仕様を docs に固定する
 - [x] `FS-PIPE-05` managed incremental update state と build-time page shard / prerender export を実装する
 - [x] `FS-UX-21` responsive grid と typography stabilization を実装する
-- [ ] `FS-QA-11` incremental build / pagination / prerender / responsive grid の acceptance / tests / checked-in asset sync の残り実装へ反映する
+- [x] `FS-QA-11` incremental build / pagination / prerender / responsive grid の acceptance / tests / checked-in asset sync の残り実装へ反映する
 
 完了条件:
 - 「毎回全件を再取得して同形 export を更新する」運用ではなく、managed checkpoint + safety window を前提にした post-v1 更新戦略が docs で固定されている

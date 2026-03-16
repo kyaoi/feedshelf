@@ -682,10 +682,18 @@ function injectBootstrapPayload(
   html: string,
   payload: PublicBootstrapPayload,
 ): string {
-  const json = JSON.stringify(payload).replace(/</g, '\\u003c');
-  return html.replace(
+  const json = JSON.stringify(payload).replace(/</g, '\u003c');
+  const sanitizedHtml = html.replace(
+    new RegExp(
+      `\\s*<script id="${BOOTSTRAP_SCRIPT_ID}" type="application/json">[\\s\\S]*?</script>`,
+      'u',
+    ),
+    '',
+  );
+  return sanitizedHtml.replace(
     '</body>',
-    `  <script id="${BOOTSTRAP_SCRIPT_ID}" type="application/json">${json}</script>\n  </body>`,
+    `  <script id="${BOOTSTRAP_SCRIPT_ID}" type="application/json">${json}</script>
+  </body>`,
   );
 }
 

@@ -49,5 +49,5 @@ test('responsive article grid and stable typography stay aligned with docs and P
   assert.match(traceability, /public\/assets\/styles\.css/);
   assert.match(traceability, /tests\/web-layout\.test\.ts/);
   assert.match(plan, /\[x\] `FS-UX-21`/);
-  assert.match(plan, /\[ \] `FS-QA-11`/);
+  assert.match(plan, /\[x\] `FS-QA-11`/);
 });

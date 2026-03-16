@@ -206,6 +206,16 @@ const META = {
   generatedAt: '2026-03-09T00:10:00Z',
 };
 
+test('checked-in generated shelf shells keep pagination placeholders in sync', async () => {
+  for (const shelfId of ['ai', 'it', 'science']) {
+    const shelfHtml = await fs.readFile(
+      path.resolve(__dirname, '..', 'public', shelfId, 'index.html'),
+      'utf8',
+    );
+    assert.match(shelfHtml, /id="articles-pagination"/);
+  }
+});
+
 test('buildShelfPageViewModel returns missing-shelf when shelfId is empty', () => {
   const viewModel = buildShelfPageViewModel({
     shelfId: '',
@@ -316,8 +326,13 @@ test('writePublicExports escapes shelf metadata in generated shelf route shells'
     /<h1 id="shelf-page-title">R&amp;D &lt;Daily&gt; 棚<\/h1>/,
   );
   assert.match(shelfHtml, /AI &amp; ML &quot;notes&quot; &lt;beta&gt;/);
-  assert.doesNotMatch(shelfHtml, /R&D <Daily>/);
-  assert.doesNotMatch(shelfHtml, /AI & ML "notes" <beta>/);
+
+  const renderedShelfHtml = shelfHtml.split(
+    '<script id="feedshelf-bootstrap" type="application/json">',
+  )[0];
+
+  assert.doesNotMatch(renderedShelfHtml, /R&D <Daily>/);
+  assert.doesNotMatch(renderedShelfHtml, /AI & ML "notes" <beta>/);
 });
 
 test('writePublicExports creates shelf route shells alongside public JSON', async () => {
@@ -457,4 +472,44 @@ test('writePublicExports writes shelf page shards for pagination bootstrap', asy
   assert.equal(pageOne.articles.length, 24);
   assert.equal(pageTwo.page, 2);
   assert.equal(pageTwo.articles.length, 2);
+});
+
+test('writePublicExports replaces prior bootstrap payload instead of duplicating it', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-bootstrap-refresh-'),
+  );
+  const outputDir = path.join(tempDir, 'data');
+  const firstExports = buildPublicExports({
+    articles: CANONICAL_ARTICLES,
+    feeds: FEEDS,
+    shelves: SHELVES_DOCUMENT,
+    generatedAt: '2026-03-09T00:10:00Z',
+  });
+  const secondExports = buildPublicExports({
+    articles: CANONICAL_ARTICLES,
+    feeds: FEEDS,
+    shelves: SHELVES_DOCUMENT,
+    generatedAt: '2026-03-10T00:10:00Z',
+  });
+
+  await writePublicExports({
+    outputDir,
+    publicExports: firstExports,
+    shelvesDocument: SHELVES_DOCUMENT,
+  });
+  await writePublicExports({
+    outputDir,
+    publicExports: secondExports,
+    shelvesDocument: SHELVES_DOCUMENT,
+  });
+
+  for (const relativePath of [
+    'index.html',
+    'tags/index.html',
+    'it/index.html',
+  ]) {
+    const html = await fs.readFile(path.join(tempDir, relativePath), 'utf8');
+    const matches = html.match(/feedshelf-bootstrap/g) || [];
+    assert.equal(matches.length, 1);
+  }
 });

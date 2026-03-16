@@ -4,11 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const {
+  PAGE_QUERY_PARAM,
   buildDataPaths,
+  buildPaginationHref,
   loadHomePageData,
   buildHomePageViewModel,
   buildShelfHrefFromHome,
   buildSourceNavigationItems,
+  getPageFromLocation,
   MISSING_PUBLIC_DATA_ERROR,
 } = require('../public/assets/app.js');
 
@@ -22,6 +25,16 @@ test('buildDataPaths includes shelves.json alongside existing public JSON files'
     searchIndex: './data/search-index.json',
     meta: './data/meta.json',
   });
+});
+
+test('page query helpers keep canonical first page URLs stable', () => {
+  assert.equal(getPageFromLocation({ search: '?page=3' }), 3);
+  assert.equal(getPageFromLocation({ search: '?page=1' }), 1);
+  assert.equal(getPageFromLocation({ search: '?page=0' }), 1);
+  assert.equal(getPageFromLocation({ search: '' }), 1);
+  assert.equal(PAGE_QUERY_PARAM, 'page');
+  assert.equal(buildPaginationHref({ page: 1 }), './');
+  assert.equal(buildPaginationHref({ page: 2 }), './?page=2');
 });
 
 test('loadHomePageData loads shelves.json and preserves fetch order', async () => {
@@ -233,4 +246,20 @@ test('README and shelf-first copy stay aligned with shelf routes and compatibili
   assert.match(appSource, /MISSING_SHELF_SELECTION_MESSAGE/);
   assert.match(appSource, /buildShelfHrefFromHome/);
   assert.match(appSource, /\.\/\$\{encodeURIComponent\(shelfId\)\}\/`/);
+});
+
+test('checked-in home shell and app source stay aligned with prerender pagination hooks', () => {
+  const homeHtml = fs.readFileSync(
+    path.resolve(__dirname, '..', 'public/index.html'),
+    'utf8',
+  );
+  const appSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/web/app.ts'),
+    'utf8',
+  );
+
+  assert.match(homeHtml, /id="articles-pagination"/);
+  assert.match(appSource, /BOOTSTRAP_SCRIPT_ID/);
+  assert.match(appSource, /loadArticlePageShard/);
+  assert.match(appSource, /renderPaginationNav/);
 });
