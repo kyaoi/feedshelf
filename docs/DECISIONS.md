@@ -901,6 +901,12 @@
 - 理由: FeedShelf v1 は source 数の最大化よりも、継続的に安全運用しやすい registry を優先するため
 - 影響: Reddit や broad な Zenn global / productivityweekly のような慎重枠は registry に残しても default では無効化してよい一方、first-party docs で feed path が案内されている profile-aligned な Zenn topic feed は default `enabled=true` に寄せてよい
 
+## D-137: Reddit の official RSS wiki がある topic feed は cautious default の範囲で有効化してよい
+
+- 決定: Reddit の `r/reddit.com/wiki/rss` のような first-party docs で `.rss` の付け方が案内されている場合、`r/Python` / `r/rust` / `r/linux` / `r/archlinux` / `r/neovim` / `r/LocalLLaMA` / `r/MachineLearning` のような profile-aligned subreddit feed は default `enabled=true` に寄せてよい
+- 理由: Zenn topic と同様に first-party docs で feed path が確認できる topic feed まで常に cautious disabled に留めると、Linux / editor / AI まわりの community signal を source audit の恩恵として取り込みにくく、user profile ともずれやすいため
+- 影響: `r/programming` のような broad feed は引き続き `enabled=false` に留め、science 棚を重くしすぎる `r/Physics` は必要になるまで慎重枠として残してよい
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

@@ -626,6 +626,13 @@ test('repository feed registry keeps documented first-party feeds and officially
   assert.equal(byId.get('zenn-topic-linux')?.enabled, true);
   assert.equal(byId.get('zenn-topic-archlinux')?.enabled, true);
   assert.equal(byId.get('zenn-topic-llm')?.enabled, true);
+  assert.equal(byId.get('reddit-python')?.enabled, true);
+  assert.equal(byId.get('reddit-rust')?.enabled, true);
+  assert.equal(byId.get('reddit-linux')?.enabled, true);
+  assert.equal(byId.get('reddit-archlinux')?.enabled, true);
+  assert.equal(byId.get('reddit-neovim')?.enabled, true);
+  assert.equal(byId.get('reddit-localllama')?.enabled, true);
+  assert.equal(byId.get('reddit-machinelearning')?.enabled, true);
 });
 
 test('repository feed registry keeps broad community feeds and hard-science sources disabled by default', async () => {
@@ -637,16 +644,8 @@ test('repository feed registry keeps broad community feeds and hard-science sour
     feeds.map((feed: FeedDefinition) => [feed.id, feed]),
   );
 
-  for (const feed of feeds) {
-    if (feed.id.startsWith('reddit-')) {
-      assert.equal(
-        feed.enabled,
-        false,
-        `${feed.id} should stay disabled by default.`,
-      );
-    }
-  }
-
+  assert.equal(byId.get('reddit-programming')?.enabled, false);
+  assert.equal(byId.get('reddit-physics')?.enabled, false);
   assert.equal(byId.get('zenn-feed')?.enabled, false);
   assert.equal(byId.get('zenn-topic-productivityweekly')?.enabled, false);
   assert.equal(byId.get('hacker-news')?.enabled, false);

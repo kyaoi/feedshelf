@@ -1416,6 +1416,7 @@ Phase 6 では UI 実装だけでなく、情報設計・データ契約・検�
 
 - post-v1 の source audit は、まず docs task で「何を evidence とみなすか」と「どこまでが registry-only change か」を固定してから進める
 - documented source の evidence は、原則として source 自身の site / product page に置かれた feed link、first-party help / docs、または公式 announcement / news page のいずれかで揃える
+- Reddit のような community source でも、公式 wiki / help に RSS path の付け方が明示されている場合は first-party docs として扱ってよい
 - third-party の feed directory や個人ブログ記事だけでは default `enabled=true` の根拠にせず、必要なら cautious default (`enabled=false`) のまま registry に保持する
 - `FS-FEED-20` では `data/feeds.json` を更新せず、`PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` だけを更新対象にする
 - `FS-FEED-21` で触ってよい差分は `data/feeds.json` の `enabled` / `shelfIds[]` / manual `tags[]` を主軸とする registry-only 変更に限り、route / public JSON / search / tag / runtime 実装を混ぜない

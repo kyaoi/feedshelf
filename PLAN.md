@@ -266,9 +266,19 @@ Phase 6 の進め方:
 - route / public JSON / search / tag の契約変更と source registry 精査が別タスクとして分離されている
 - documented source 優先、12時間 cadence、短い public excerpt という cautious default を次の監査 task でも崩さないことが確認できる
 
+### Post-v1 documented community topic audit
+
+- [x] `FS-FEED-22` first-party docs がある Reddit topic feed を registry-only 差分で cautious default に取り込む
+- [x] `FS-QA-13` Reddit topic audit 後の broad feed 境界・棚 coverage・README / tests / traceability を同期する
+
+完了条件:
+- Reddit の official RSS wiki のような first-party docs を根拠に、profile-aligned な subreddit feed を `enabled=true` に切り替えられる
+- broad feed (`r/programming`) や science 棚を重くしすぎる source は引き続き `enabled=false` に保ち、source audit の温度感を崩さない
+- source registry の変更が README / `PLAN` / `DECISIONS` / `TRACEABILITY` / registry test に反映され、evidence の追跡が 1 箇所だけ古い状態にならない
+
 ## 直近の次タスク
 
-- post-v1 curated source audit は、official evidence がある Zenn topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
+- post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
 - `FS-FEED-20` で固定した evidence source（site 自身の feed link、first-party help / docs、公式 announcement / news page）以外を根拠に新しい community source や topic feed を default 有効化したい場合は、まず docs を更新して監査境界を広げてから registry を触る
 - update cadence は過剰取得を避けるため 12 時間ごとを既定とし、再配信面では raw HTML 全文ではなく短い public excerpt だけを保持する
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る

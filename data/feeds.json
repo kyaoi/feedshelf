@@ -305,7 +305,7 @@
     "feedUrl": "https://www.reddit.com/r/Python/.rss",
     "siteUrl": "https://www.reddit.com/r/Python/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it", "science"],
     "tags": ["Python", "コミュニティ", "海外開発"]
   },
@@ -315,7 +315,7 @@
     "feedUrl": "https://www.reddit.com/r/rust/.rss",
     "siteUrl": "https://www.reddit.com/r/rust/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Rust", "コミュニティ", "海外開発"]
   },
@@ -325,7 +325,7 @@
     "feedUrl": "https://www.reddit.com/r/linux/.rss",
     "siteUrl": "https://www.reddit.com/r/linux/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Linux", "コミュニティ", "海外開発"]
   },
@@ -335,7 +335,7 @@
     "feedUrl": "https://www.reddit.com/r/archlinux/.rss",
     "siteUrl": "https://www.reddit.com/r/archlinux/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["ArchLinux", "コミュニティ", "海外開発"]
   },
@@ -345,7 +345,7 @@
     "feedUrl": "https://www.reddit.com/r/neovim/.rss",
     "siteUrl": "https://www.reddit.com/r/neovim/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Neovim", "コミュニティ", "海外開発"]
   },
@@ -355,7 +355,7 @@
     "feedUrl": "https://www.reddit.com/r/LocalLLaMA/.rss",
     "siteUrl": "https://www.reddit.com/r/LocalLLaMA/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["AI", "ローカルLLM", "コミュニティ"]
   },
@@ -365,7 +365,7 @@
     "feedUrl": "https://www.reddit.com/r/MachineLearning/.rss",
     "siteUrl": "https://www.reddit.com/r/MachineLearning/",
     "language": "en",
-    "enabled": false,
+    "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["AI", "機械学習", "コミュニティ"]
   },
