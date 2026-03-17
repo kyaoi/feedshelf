@@ -10,8 +10,10 @@ type ShelvesDocument = import('../src/shared/contracts.ts').ShelvesDocument;
 const { loadFeeds } = require('../scripts/pipeline/loadFeeds');
 const { loadShelves } = require('../scripts/pipeline/loadShelves');
 const {
+  applyCanonicalUrlPrecisionLayer,
   normalizeFeedDocument,
   normalizeUrl,
+  normalizeUrlWithPrecision,
 } = require('../scripts/pipeline/normalizeFeed');
 const { dedupeArticles } = require('../scripts/pipeline/dedupeArticles');
 const {
@@ -356,6 +358,92 @@ test('normalizeUrl keeps safe canonicalization only', () => {
   );
 });
 
+test('normalizeUrlWithPrecision rewrites Hatena entry URLs and follows bounded redirects', async () => {
+  const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+  const url = await normalizeUrlWithPrecision(
+    'https://b.hatena.ne.jp/entry/s/example.com/articles/1?b=2&a=1&utm_source=rss',
+    {
+      fetchImpl: async (requestUrl: string, init?: RequestInit) => {
+        calls.push({ url: requestUrl, init });
+        if (requestUrl === 'https://example.com/articles/1?a=1&b=2') {
+          return {
+            ok: false,
+            status: 302,
+            url: requestUrl,
+            headers: new Headers({
+              location: 'https://example.com/articles/final?b=2&a=1',
+            }),
+          };
+        }
+
+        return {
+          ok: true,
+          status: 200,
+          url: requestUrl,
+          headers: new Headers(),
+        };
+      },
+    },
+  );
+
+  assert.equal(url, 'https://example.com/articles/final?a=1&b=2');
+  assert.deepEqual(
+    calls.map((call) => call.url),
+    [
+      'https://example.com/articles/1?a=1&b=2',
+      'https://example.com/articles/final?a=1&b=2',
+    ],
+  );
+  assert.equal(calls[0]?.init?.method, 'HEAD');
+  assert.equal(calls[0]?.init?.redirect, 'manual');
+});
+
+test('normalizeUrlWithPrecision falls back to allowlisted host rewrite when redirect resolution loops', async () => {
+  const url = await normalizeUrlWithPrecision(
+    'https://b.hatena.ne.jp/entry/s/example.com/articles/loop?b=2&a=1&utm_source=rss',
+    {
+      fetchImpl: async (requestUrl: string) => ({
+        ok: false,
+        status: 302,
+        url: requestUrl,
+        headers: new Headers({
+          location: 'https://example.com/articles/loop?b=2&a=1',
+        }),
+      }),
+    },
+  );
+
+  assert.equal(url, 'https://example.com/articles/loop?a=1&b=2');
+});
+
+test('applyCanonicalUrlPrecisionLayer updates article url and identity after allowlisted rewrite', async () => {
+  const article = {
+    id: 'before',
+    feedId: 'rss-feed',
+    sourceName: 'Example RSS',
+    language: 'en',
+    shelfIds: ['examples'],
+    title: 'Hatena entry article',
+    url: 'https://b.hatena.ne.jp/entry/s/example.com/articles/hatena?b=2&a=1&utm_source=rss',
+    summary: null,
+    publishedAt: null,
+    fetchedAt: '2026-03-08T06:00:00.000Z',
+    author: null,
+    imageUrl: null,
+    sourceTags: ['RSS Source'],
+    entryTags: ['Hatena'],
+    sourceItemId: 'hatena-item',
+    seenInFeeds: ['rss-feed'],
+  };
+
+  const [nextArticle] = await applyCanonicalUrlPrecisionLayer({
+    articles: [article],
+  });
+
+  assert.equal(nextArticle.url, 'https://example.com/articles/hatena?a=1&b=2');
+  assert.notEqual(nextArticle.id, article.id);
+});
+
 test('normalizeFeedDocument keeps shelfIds, sourceTags, and entryTags', () => {
   const articles = normalizeFeedDocument({
     feed: RSS_FEED,
@@ -560,6 +648,73 @@ test('runPipeline writes shelves.json, shelf route shells, and reports shelf/cat
   assert.match(shelfRouteHtml, /data-feedshelf-page="shelf"/);
   assert.match(shelfRouteHtml, /data-shelf-id="examples"/);
   assert.match(shelfRouteHtml, /related-sources-title/);
+});
+
+test('runPipeline applies canonicalization precision layer before writing public articles', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-canonicalization-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const hatenaXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Hatena RSS</title>
+    <item>
+      <title>Hatena precision article</title>
+      <link>https://b.hatena.ne.jp/entry/s/example.com/articles/precision?b=2&amp;a=1&amp;utm_source=rss</link>
+      <description><![CDATA[<p>Precision layer integration.</p>]]></description>
+      <pubDate>Fri, 07 Mar 2026 09:00:00 +0900</pubDate>
+      <guid>hatena-precision-1</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  await fs.writeFile(feedsPath, JSON.stringify([RSS_FEED]));
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    generatedAt: '2026-03-08T06:00:00Z',
+    logger: { log() {} },
+    fetchImpl: async (requestUrl: string) => {
+      if (requestUrl === 'https://example.com/articles/precision?a=1&b=2') {
+        return {
+          ok: false,
+          status: 302,
+          url: requestUrl,
+          headers: new Headers({
+            location: 'https://example.com/articles/precision-final?b=2&a=1',
+          }),
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        url: requestUrl,
+        headers: new Headers(),
+      };
+    },
+    feedDocuments: [
+      {
+        feedId: 'rss-feed',
+        xml: hatenaXml,
+        fetchedAt: '2026-03-08T06:00:00Z',
+      },
+    ],
+  });
+
+  const articlesJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
+  );
+  assert.equal(
+    articlesJson[0].url,
+    'https://example.com/articles/precision-final?a=1&b=2',
+  );
 });
 
 test('repository feed registry keeps every shelf populated by enabled sources', async () => {

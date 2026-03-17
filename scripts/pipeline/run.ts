@@ -18,7 +18,10 @@ import {
 import { dedupeArticles } from './dedupeArticles.ts';
 import { loadFeeds } from './loadFeeds.ts';
 import { loadShelves } from './loadShelves.ts';
-import { normalizeFeedDocument } from './normalizeFeed.ts';
+import {
+  applyCanonicalUrlPrecisionLayer,
+  normalizeFeedDocument,
+} from './normalizeFeed.ts';
 
 function validateFeedShelfReferences(
   feeds: FeedDefinition[],
@@ -89,13 +92,15 @@ export function parseArgs(argv: string[]): PipelineArgs {
   return args;
 }
 
-function normalizeFeedDocumentsToArticles({
+async function normalizeFeedDocumentsToArticles({
   feedDocuments,
   feeds,
+  fetchImpl,
 }: {
   feedDocuments: RunPipelineOptions['feedDocuments'];
   feeds: FeedDefinition[];
-}): CanonicalArticle[] {
+  fetchImpl?: typeof fetch;
+}): Promise<CanonicalArticle[]> {
   const documents = Array.isArray(feedDocuments) ? feedDocuments : [];
   const feedMap = new Map<string, FeedDefinition>(
     feeds.map((feed) => [feed.id, feed]),
@@ -117,7 +122,10 @@ function normalizeFeedDocumentsToArticles({
     );
   }
 
-  return articles;
+  return applyCanonicalUrlPrecisionLayer({
+    articles,
+    fetchImpl,
+  });
 }
 
 export async function runPipeline(
@@ -137,9 +145,10 @@ export async function runPipeline(
   const enabledFeeds = feeds.filter((feed) => feed.enabled);
   const normalizedArticles = Array.isArray(options.normalizedArticles)
     ? options.normalizedArticles
-    : normalizeFeedDocumentsToArticles({
+    : await normalizeFeedDocumentsToArticles({
         feedDocuments: options.feedDocuments,
         feeds,
+        fetchImpl: options.fetchImpl,
       });
   const dedupedArticles = dedupeArticles(normalizedArticles);
   const freshPublicExports = buildPublicExports({

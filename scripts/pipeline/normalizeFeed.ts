@@ -10,6 +10,10 @@ const TRACKING_QUERY_KEYS = new Set(['fbclid', 'gclid', 'mc_cid', 'mc_eid']);
 const RSS_ITEM_PATTERN = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
 const ATOM_ENTRY_PATTERN = /<entry\b[^>]*>([\s\S]*?)<\/entry>/gi;
 const MAX_PUBLIC_SUMMARY_LENGTH = 280;
+const USER_AGENT = 'FeedShelf/0.1 (+https://github.com/kyaoi/feedshelf)';
+const DEFAULT_REDIRECT_LIMIT = 2;
+const DEFAULT_REDIRECT_TIMEOUT_MS = 3000;
+const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
 
 interface CreateArticleOptions {
   feed: FeedDefinition;
@@ -30,6 +34,12 @@ interface ArticleIdentityInput {
   sourceItemId: string | null;
   title: string;
   publishedAt: string | null;
+}
+
+export interface UrlPrecisionOptions {
+  fetchImpl?: typeof fetch;
+  redirectLimit?: number;
+  redirectTimeoutMs?: number;
 }
 
 export function collectMatches(pattern: RegExp, value: string): string[] {
@@ -385,6 +395,258 @@ export function normalizeUrl(
   }
 
   return parsed.toString();
+}
+
+function isHttpProtocol(protocol: string): boolean {
+  return protocol === 'http:' || protocol === 'https:';
+}
+
+function applyHatenaEntryRule(parsed: URL): string | null {
+  if (parsed.hostname !== 'b.hatena.ne.jp') {
+    return null;
+  }
+
+  const securePrefix = '/entry/s/';
+  const plainPrefix = '/entry/';
+  let targetProtocol: 'https' | 'http' | null = null;
+  let targetPath = '';
+
+  if (parsed.pathname.startsWith(securePrefix)) {
+    targetProtocol = 'https';
+    targetPath = parsed.pathname.slice(securePrefix.length);
+  } else if (parsed.pathname.startsWith(plainPrefix)) {
+    targetProtocol = 'http';
+    targetPath = parsed.pathname.slice(plainPrefix.length);
+  }
+
+  if (targetProtocol === null || targetPath === '') {
+    return null;
+  }
+
+  const nextUrl = `${targetProtocol}://${targetPath}${parsed.search}`;
+  return normalizeUrl(nextUrl);
+}
+
+function applyAllowlistedHostRule(urlValue: string): string {
+  const baseline = normalizeUrl(urlValue);
+  if (baseline === null) {
+    return urlValue;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(baseline);
+  } catch {
+    return baseline;
+  }
+
+  const hatenaCandidate = applyHatenaEntryRule(parsed);
+  return hatenaCandidate || baseline;
+}
+
+function createTimeoutSignal(timeoutMs: number): {
+  signal: AbortSignal;
+  cancel(): void;
+} {
+  if (
+    typeof AbortSignal !== 'undefined' &&
+    typeof AbortSignal.timeout === 'function'
+  ) {
+    return {
+      signal: AbortSignal.timeout(timeoutMs),
+      cancel() {},
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    cancel() {
+      clearTimeout(timeout);
+    },
+  };
+}
+
+async function requestRedirectCandidate({
+  fetchImpl,
+  url,
+  method,
+  timeoutMs,
+}: {
+  fetchImpl: typeof fetch;
+  url: string;
+  method: 'HEAD' | 'GET';
+  timeoutMs: number;
+}): Promise<string | null> {
+  const timeout = createTimeoutSignal(timeoutMs);
+
+  try {
+    const response = await fetchImpl(url, {
+      method,
+      redirect: 'manual',
+      signal: timeout.signal,
+      headers: {
+        accept:
+          'text/html, application/xhtml+xml, application/xml;q=0.9, */*;q=0.1',
+        'user-agent': USER_AGENT,
+      },
+    });
+
+    if (typeof response.url === 'string' && response.url !== '') {
+      const redirectedUrl = normalizeUrl(response.url);
+      if (redirectedUrl !== null && redirectedUrl !== url) {
+        return redirectedUrl;
+      }
+    }
+
+    if (!REDIRECT_STATUS_CODES.has(response.status)) {
+      if (
+        method === 'HEAD' &&
+        (response.status === 405 || response.status === 501)
+      ) {
+        return requestRedirectCandidate({
+          fetchImpl,
+          url,
+          method: 'GET',
+          timeoutMs,
+        });
+      }
+      return null;
+    }
+
+    const location = response.headers.get('location');
+    if (typeof location !== 'string' || location.trim() === '') {
+      return null;
+    }
+
+    return normalizeUrl(new URL(location, url).toString());
+  } finally {
+    timeout.cancel();
+  }
+}
+
+async function followRedirectsFromCanonicalCandidate(
+  urlValue: string,
+  options: UrlPrecisionOptions,
+): Promise<string> {
+  const fetchImpl = options.fetchImpl;
+  if (typeof fetchImpl !== 'function') {
+    return urlValue;
+  }
+
+  const redirectLimit = Math.max(
+    0,
+    options.redirectLimit ?? DEFAULT_REDIRECT_LIMIT,
+  );
+  const timeoutMs = Math.max(
+    1,
+    options.redirectTimeoutMs ?? DEFAULT_REDIRECT_TIMEOUT_MS,
+  );
+  const baseline = normalizeUrl(urlValue) || urlValue;
+  let current = baseline;
+  const seen = new Set<string>([baseline]);
+
+  try {
+    for (let step = 0; step < redirectLimit; step += 1) {
+      const next = await requestRedirectCandidate({
+        fetchImpl,
+        url: current,
+        method: 'HEAD',
+        timeoutMs,
+      });
+
+      if (next === null || next === current) {
+        return current;
+      }
+
+      if (seen.has(next)) {
+        return baseline;
+      }
+
+      seen.add(next);
+      current = next;
+    }
+  } catch {
+    return baseline;
+  }
+
+  return baseline;
+}
+
+export async function normalizeUrlWithPrecision(
+  urlValue: string | null | undefined,
+  options: UrlPrecisionOptions = {},
+): Promise<string | null> {
+  const baseline = normalizeUrl(urlValue);
+  if (baseline === null) {
+    return null;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(baseline);
+  } catch {
+    return baseline;
+  }
+
+  if (!isHttpProtocol(parsed.protocol)) {
+    return baseline;
+  }
+
+  const rewritten = applyAllowlistedHostRule(baseline);
+  if (rewritten === baseline) {
+    return baseline;
+  }
+
+  return followRedirectsFromCanonicalCandidate(rewritten, options);
+}
+
+function rebuildArticleIdentity(
+  article: CanonicalArticle,
+  nextUrl: string,
+): CanonicalArticle {
+  if (article.url === nextUrl) {
+    return article;
+  }
+
+  return {
+    ...article,
+    url: nextUrl,
+    id: buildArticleId({
+      feedId: article.feedId,
+      url: nextUrl,
+      sourceItemId: article.sourceItemId,
+      title: article.title,
+      publishedAt: article.publishedAt,
+    }),
+  };
+}
+
+export async function applyCanonicalUrlPrecisionLayer({
+  articles,
+  fetchImpl,
+  redirectLimit,
+  redirectTimeoutMs,
+}: {
+  articles: CanonicalArticle[];
+} & UrlPrecisionOptions): Promise<CanonicalArticle[]> {
+  const nextArticles: CanonicalArticle[] = [];
+
+  for (const article of articles) {
+    const preciseUrl = await normalizeUrlWithPrecision(article.url, {
+      fetchImpl,
+      redirectLimit,
+      redirectTimeoutMs,
+    });
+    nextArticles.push(
+      preciseUrl === null
+        ? article
+        : rebuildArticleIdentity(article, preciseUrl),
+    );
+  }
+
+  return nextArticles;
 }
 
 function hashId(value: string): string {

@@ -269,6 +269,54 @@ test('FS-DATA-06 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABI
   assert.match(loadFeedsTest, /normalizeUrl keeps safe canonicalization only/);
 });
 
+test('FS-DATA-06 implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /Post-v1 canonicalization implementation/);
+  assert.match(
+    plan,
+    /FS-DATA-06` allowlisted host rule と bounded redirect resolution/,
+  );
+  assert.match(plan, /`FS-DATA-05` の richer provenance/);
+  assert.match(spec, /10\.2\.2 Post-v1 canonicalization implementation/);
+  assert.match(spec, /b\.hatena\.ne\.jp\/entry/);
+  assert.match(spec, /candidate にだけ適用/);
+  assert.match(decisions, /D-140/);
+  assert.match(decisions, /全 article URL への一律 fetch は行わない/);
+  assert.match(traceability, /FS-151/);
+  assert.match(
+    loadFeedsTest,
+    /normalizeUrlWithPrecision rewrites Hatena entry URLs/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline applies canonicalization precision layer/,
+  );
+});
+
 test('feed and shelf registry validation stays aligned across README, docs, and tests', () => {
   const readme = fs.readFileSync(
     path.resolve(__dirname, '..', 'README.md'),

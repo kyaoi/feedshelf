@@ -773,6 +773,16 @@ shelves:
 - article HTML 本文の取得、`<link rel="canonical">` 解析、本文抽出、UI runtime での追加 fetch は `FS-DATA-06` に含めない
 - public JSON の shape、route 構造、checked-in HTML shell はこの task では変えない。影響は internal normalization と、その結果として変わりうる dedupe / article `id` / winner selection に留める
 
+### 10.2.2 Post-v1 canonicalization implementation (`FS-DATA-06`)
+
+`FS-DATA-06` では docs split の境界を保ったまま、pipeline 側に次の precision layer を追加する。
+
+- allowlisted host rule は `b.hatena.ne.jp/entry/...` を対象にし、`/entry/s/<target>` を `https://<target>`、`/entry/<target>` を `http://<target>` へ deterministic に写す
+- bounded redirect resolution は allowlisted host rewrite 後の candidate にだけ適用し、最大 hop 数と timeout を超えて追跡しない
+- redirect loop / timeout / fetch failure の場合は hard fail せず、allowlisted host rewrite 後の URL、さらにそれも使えない場合は既存 `normalizeUrl()` の safe canonicalization を返す
+- precision layer の適用により変わってよいのは internal normalization と、その rebuild 後に変わりうる article `url` / `id` / dedupe winner に限る
+- public JSON の shape、route 構造、checked-in HTML shell はこの task でも変えない
+
 ### 10.3 記事 ID 生成
 
 `id` は内部安定キーであり、UI 表示用文字列ではない。
@@ -1348,26 +1358,22 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 - OPML import / export
 - PWA 化
 - 外部本文抽出補助
-- host 固有 canonicalization
 - fuzzy dedupe
 - richer provenance 記録
 - current page shard を超える finer-grained public JSON split
 
 ## 15.1.0 Deferred data backlog reprioritization
 
-`FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` は deferred backlog として残っているが、再開順は次のように固定する。
+`FS-DATA-06` は allowlisted host rewrite と bounded redirect resolution の precision layer として実装済みになったため、残る deferred backlog は次の順番で扱う。
 
-1. `FS-DATA-06` host 固有 canonicalization / redirect resolution
-   - 既存 `normalizedUrl` の精度を上げる内部改善として始めやすく、public JSON 契約や UI route を直ちに増やさずに進めやすい
-   - `FS-DOCS-22` で docs split は完了しており、次は allowlisted host rule / bounded redirect resolution / safe fallback を実装へ反映する段階として扱う
-2. `FS-DATA-05` richer provenance
+1. `FS-DATA-05` richer provenance
    - canonicalization の前提が固まった後で、`seenInFeeds[]` を richer object へ置き換えるか併存させるかを決める
-   - public JSON や internal canonical article object の schema 変更を伴いやすいため、`FS-DATA-06` より後ろに置く
-3. `FS-DATA-07` fuzzy dedupe
+   - public JSON や internal canonical article object の schema 変更を伴いやすいため、deferred backlog の次候補として扱う
+2. `FS-DATA-07` fuzzy dedupe
    - 誤爆の影響が最も大きく、title/date 類似だけで別記事を潰す危険があるため最後段に置く
    - canonicalization と provenance の整理後に、必要なら scorer / threshold / rollback 方針を docs で閉じてから着手する
 
-この順番により、次の deferred backlog 再開時は「まず canonicalization の docs split を切る」という 1 本の入口に揃える。
+この順番により、canonicalization 完了後の deferred backlog は provenance → fuzzy dedupe の順で再開できる。
 
 ## 15.1 Post-v1 architecture / performance planning
 

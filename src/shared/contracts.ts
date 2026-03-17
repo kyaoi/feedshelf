@@ -248,4 +248,5 @@ export interface RunPipelineOptions {
   normalizedArticles?: CanonicalArticle[];
   retainedArticles?: PublicArticleSummary[];
   logger?: PipelineLogger;
+  fetchImpl?: typeof fetch;
 }

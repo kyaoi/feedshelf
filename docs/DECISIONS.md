@@ -920,6 +920,13 @@
 - 理由: host 固有 canonicalization と redirect 解決の精度向上だけを切り出せば、generic query 除去の拡大や本文 fetch まで広げずに dedupe 基盤を強化でき、runtime / route への波及も抑えやすいため
 - 影響: この task では public JSON の shape や route 構造を変えず、影響は internal normalization と rebuild 後に変わりうる article `id` / dedupe winner に留める。`<link rel="canonical">` 解析や本文取得は別タスクとして扱う
 
+## D-140: `FS-DATA-06` は Hatena entry rewrite + bounded redirect follow の最小実装で閉じる
+
+- 決定: 現段階の `FS-DATA-06` は `b.hatena.ne.jp/entry/...` の deterministic rewrite と、その rewrite 後 candidate にだけ適用する bounded redirect follow を実装範囲とし、全 article URL への一律 fetch は行わない
+- 理由: 既存 curated source の中で redirector 的な URL を最小コストで改善でき、article ごとの追加 request を無制限に増やさずに precision layer を導入できるため
+- 影響: precision layer は `runPipeline` / `runUpdatePipeline` の両方で使えるが、追加 network I/O は allowlisted rewrite が発火した article に限定される。次の deferred backlog は richer provenance (`FS-DATA-05`) へ進める
+
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

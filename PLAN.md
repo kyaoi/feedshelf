@@ -41,7 +41,7 @@ FeedShelf の v1 を、仕様先行・最小差分・GitHub Pages 前提で安�
 ### Deferred: v2 以降で再検討するデータ契約
 
 - [ ] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する
-- [ ] `FS-DATA-06` host 固有の canonical URL 解決と redirect 解決を追加する
+- [x] `FS-DATA-06` host 固有の canonical URL 解決と redirect 解決を追加する
 - [ ] `FS-DATA-07` fuzzy dedupe を安全な閾値つきで導入する
 - `FS-DATA-08` の JSON sharding / pagination は post-v1 の `FS-ARCH-10` / `FS-PIPE-05` / `FS-QA-11` で static pagination + build-time page shard として実施済みとみなし、deferred backlog から外す
 
@@ -300,7 +300,16 @@ Phase 6 の進め方:
 完了条件:
 - `FS-DATA-06` の implementation が、既存 `normalizeUrl()` の safe canonicalization の上に積む build-time best-effort precision layer であることを docs で追跡できる
 - allowlisted host rule、bounded redirect resolution、timeout / redirect loop / fetch failure 時の fallback、非目標（generic query の一律除去拡大・本文 fetch / HTML canonical parse・route / public JSON shape 変更）を docs で固定してから実装へ進める
-- docs task 完了後も `FS-DATA-06` 自体は未実装の deferred backlog として残り、次の差分が implementation only だと読める
+- docs split により implementation-only の後続差分へ安全に渡せる境界を固定し、その後 `FS-DATA-06` 実装でこの境界を消費できる
+
+### Post-v1 canonicalization implementation
+
+- [x] `FS-DATA-06` allowlisted host rule と bounded redirect resolution を pipeline に追加し、safe canonicalization を fallback として維持する
+
+完了条件:
+- allowlisted host rule により `b.hatena.ne.jp/entry/...` のような redirector 形式を deterministic に記事 URL へ寄せられる
+- bounded redirect resolution は allowlisted host rewrite 後の candidate にだけ適用し、redirect loop / timeout / fetch failure 時は既存 `normalizeUrl()` ベースの safe canonicalization へ戻る
+- `runPipeline` / `runUpdatePipeline` のどちらでも precision layer が public JSON shape を変えずに効き、影響が article `url` / `id` / dedupe winner に留まることを tests で追跡できる
 
 ## 直近の次タスク
 
@@ -310,8 +319,8 @@ Phase 6 の進め方:
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
-- `FS-DOCS-22` で `FS-DATA-06` の docs split は完了したため、次は implementation task として allowlisted host rule と bounded redirect resolution を pipeline 側へ追加し、timeout / redirect loop / fetch failure 時は既存 `normalizeUrl()` の safe canonicalization へ戻す
-- `FS-DATA-05` の richer provenance は `FS-DATA-06` 後に schema 変更タスクとして扱い、`seenInFeeds[]` を置き換えるか併存させるかを先に docs で決める
+- `FS-DATA-06` は `b.hatena.ne.jp/entry/...` の allowlisted host rewrite と、その candidate にだけ適用する bounded redirect resolution として実装済みになったため、deferred backlog の次候補は `FS-DATA-05` へ移る
+- `FS-DATA-05` の richer provenance は schema 変更タスクとして扱い、`seenInFeeds[]` を置き換えるか併存させるか、feed ごとの evidence を public JSON にどこまで出すかを先に docs で決める
 - `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後に最後段で再優先付けする
 
 ## メモ

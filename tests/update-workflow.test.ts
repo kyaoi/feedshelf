@@ -323,6 +323,79 @@ test('workflow file keeps public data update automation wired with cautious poll
   assert.match(workflow, /path:\s*\.\/public/);
 });
 
+test('runUpdatePipeline applies canonicalization precision layer before publishing', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-canonicalization-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const hatenaXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Hatena RSS</title>
+    <item>
+      <title>Workflow Hatena article</title>
+      <link>https://b.hatena.ne.jp/entry/s/example.com/workflow-precision?b=2&amp;a=1&amp;utm_source=rss</link>
+      <description><![CDATA[<p>Workflow precision layer.</p>]]></description>
+      <pubDate>Mon, 09 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>workflow-hatena-1</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  await fsp.writeFile(feedsPath, JSON.stringify([ENABLED_FEED]));
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+
+  await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-09T09:10:11Z',
+    logger: { log() {} },
+    fetchImpl: async (url: string) => {
+      if (String(url).includes('enabled.xml')) {
+        return {
+          ok: true,
+          status: 200,
+          url: String(url),
+          headers: new Headers(),
+          async text() {
+            return hatenaXml;
+          },
+        };
+      }
+
+      if (String(url) === 'https://example.com/workflow-precision?a=1&b=2') {
+        return {
+          ok: false,
+          status: 302,
+          url: String(url),
+          headers: new Headers({
+            location: 'https://example.com/workflow-precision-final?b=2&a=1',
+          }),
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        url: String(url),
+        headers: new Headers(),
+      };
+    },
+  });
+
+  const publishedArticles = JSON.parse(
+    await fsp.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
+  );
+  assert.equal(
+    publishedArticles[0].url,
+    'https://example.com/workflow-precision-final?a=1&b=2',
+  );
+});
+
 test('runUpdatePipeline writes update-state.json and retains previously published articles', async () => {
   const tempDir = await fsp.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-update-state-'),

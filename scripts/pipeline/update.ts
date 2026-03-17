@@ -14,7 +14,10 @@ import type {
 } from '../../src/shared/contracts.ts';
 import { dedupeArticles } from './dedupeArticles.ts';
 import { loadFeeds } from './loadFeeds.ts';
-import { normalizeFeedDocument } from './normalizeFeed.ts';
+import {
+  applyCanonicalUrlPrecisionLayer,
+  normalizeFeedDocument,
+} from './normalizeFeed.ts';
 import { runPipeline } from './run.ts';
 
 const DEFAULT_SAFETY_WINDOW_HOURS = 72;
@@ -487,7 +490,11 @@ export async function runUpdatePipeline(
     filteredFreshArticles.push(...freshArticles);
   }
 
-  const dedupedFreshArticles = dedupeArticles(filteredFreshArticles);
+  const canonicalizedFreshArticles = await applyCanonicalUrlPrecisionLayer({
+    articles: filteredFreshArticles,
+    fetchImpl: options.fetchImpl || globalThis.fetch,
+  });
+  const dedupedFreshArticles = dedupeArticles(canonicalizedFreshArticles);
   const summary = await runPipeline({
     feedsPath: options.feedsPath,
     shelvesPath: options.shelvesPath,
