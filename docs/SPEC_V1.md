@@ -759,6 +759,20 @@ shelves:
 - `amp` から canonical への推測変換
 - `ref`, `source`, `from` など意味を壊す可能性がある汎用 query parameter の一律除去
 
+### 10.2.1 Post-v1 canonicalization docs split (`FS-DOCS-22`)
+
+`FS-DATA-06` を再開するときは、既存 `normalizeUrl()` の safe canonicalization を置き換えるのではなく、その上に build-time の best-effort precision layer を足す task として扱う。
+
+この docs split で固定する境界は次のとおり。
+
+- implementation の主戦場は pipeline 側であり、Web UI / route / checked-in shell の責務には入れない
+- 追加してよい canonicalization は、repo 内で明示した allowlist host に対する deterministic な path / query rule に限る
+- redirect resolution は `http/https` URL に対する bounded follow とし、無限追跡・高コスト再試行・本文 fetch へ拡張しない
+- redirect loop / timeout / fetch failure / 非 `http/https` URL の場合は hard fail せず、既存 `normalizeUrl()` が返す safe canonicalization を fallback として使う
+- `ref` / `source` / `from` などの generic query を host 非依存で一律除去する方向へは広げない
+- article HTML 本文の取得、`<link rel="canonical">` 解析、本文抽出、UI runtime での追加 fetch は `FS-DATA-06` に含めない
+- public JSON の shape、route 構造、checked-in HTML shell はこの task では変えない。影響は internal normalization と、その結果として変わりうる dedupe / article `id` / winner selection に留める
+
 ### 10.3 記事 ID 生成
 
 `id` は内部安定キーであり、UI 表示用文字列ではない。
@@ -1345,7 +1359,7 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 
 1. `FS-DATA-06` host 固有 canonicalization / redirect resolution
    - 既存 `normalizedUrl` の精度を上げる内部改善として始めやすく、public JSON 契約や UI route を直ちに増やさずに進めやすい
-   - まず docs task で host 固有 rule と redirect 追跡の境界、network cost、failure fallback を固定してから implementation task に入る
+   - `FS-DOCS-22` で docs split は完了しており、次は allowlisted host rule / bounded redirect resolution / safe fallback を実装へ反映する段階として扱う
 2. `FS-DATA-05` richer provenance
    - canonicalization の前提が固まった後で、`seenInFeeds[]` を richer object へ置き換えるか併存させるかを決める
    - public JSON や internal canonical article object の schema 変更を伴いやすいため、`FS-DATA-06` より後ろに置く

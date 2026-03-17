@@ -232,6 +232,43 @@ test('Phase 6 shelf-route evidence stays aligned across docs, tests, and PLAN', 
   assert.match(plan, /Phase 6 implementation backlog は完了済み/);
 });
 
+test('FS-DATA-06 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-22/);
+  assert.match(plan, /allowlisted host rule と bounded redirect resolution/);
+  assert.match(spec, /build-time の best-effort precision layer/);
+  assert.match(spec, /article HTML 本文の取得/);
+  assert.match(spec, /<link rel=\"canonical\">/);
+  assert.match(
+    spec,
+    /public JSON の shape、route 構造、checked-in HTML shell はこの task では変えない/,
+  );
+  assert.match(decisions, /safe canonicalization を fallback/);
+  assert.match(decisions, /public JSON の shape や route 構造を変えず/);
+  assert.match(traceability, /FS-150/);
+  assert.match(loadFeedsTest, /normalizeUrl keeps safe canonicalization only/);
+});
+
 test('feed and shelf registry validation stays aligned across README, docs, and tests', () => {
   const readme = fs.readFileSync(
     path.resolve(__dirname, '..', 'README.md'),

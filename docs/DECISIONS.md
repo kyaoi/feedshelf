@@ -914,6 +914,12 @@
 - 理由: canonicalization は既存 `normalizedUrl` の内部精度改善として始めやすく、public JSON 契約や UI route を直ちに崩さずに dedupe 基盤を前進させやすい一方、richer provenance は schema 増分を伴いやすく、fuzzy dedupe は誤爆コストが最も高いため
 - 影響: 次に deferred backlog を起こす場合、最初の docs task は host 固有 rule / redirect 追跡 / failure fallback の境界整理になり、`seenInFeeds[]` の richer 化や fuzzy dedupe threshold 設計を先に混ぜない
 
+## D-139: `FS-DATA-06` は safe canonicalization の上に積む best-effort precision layer とする
+
+- 決定: `FS-DATA-06` の implementation は pipeline 側の allowlisted host rule と bounded redirect resolution に限定し、失敗時は既存 `normalizeUrl()` の safe canonicalization を fallback として継続する
+- 理由: host 固有 canonicalization と redirect 解決の精度向上だけを切り出せば、generic query 除去の拡大や本文 fetch まで広げずに dedupe 基盤を強化でき、runtime / route への波及も抑えやすいため
+- 影響: この task では public JSON の shape や route 構造を変えず、影響は internal normalization と rebuild 後に変わりうる article `id` / dedupe winner に留める。`<link rel="canonical">` 解析や本文取得は別タスクとして扱う
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

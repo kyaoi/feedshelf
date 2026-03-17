@@ -293,6 +293,15 @@ Phase 6 の進め方:
 - `FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` のうち、public JSON 契約を崩さずに再開しやすい次タスクが docs で一意に読める
 - `FS-DATA-06` を先行候補、`FS-DATA-05` をその後の schema 拡張候補、`FS-DATA-07` を最後の高リスク候補として扱う順番が `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で同期している
 
+### Post-v1 canonicalization docs split
+
+- [x] `FS-DOCS-22` `FS-DATA-06` の docs / implementation split を切り、host 固有 canonicalization / redirect resolution の境界を固定する
+
+完了条件:
+- `FS-DATA-06` の implementation が、既存 `normalizeUrl()` の safe canonicalization の上に積む build-time best-effort precision layer であることを docs で追跡できる
+- allowlisted host rule、bounded redirect resolution、timeout / redirect loop / fetch failure 時の fallback、非目標（generic query の一律除去拡大・本文 fetch / HTML canonical parse・route / public JSON shape 変更）を docs で固定してから実装へ進める
+- docs task 完了後も `FS-DATA-06` 自体は未実装の deferred backlog として残り、次の差分が implementation only だと読める
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -301,7 +310,7 @@ Phase 6 の進め方:
 - lint / formatter の縮退判断は UI refresh や feed expansion と切り離した別タスクとして扱い、quality gate 変更の影響を独立に見る
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
-- deferred data backlog を再開するなら、まず `FS-DATA-06` の docs / implementation split を切り、safe normalization の外側にある host 固有 canonicalization / redirect resolution を public JSON 非互換なしでどこまで入れるかを固定する
+- `FS-DOCS-22` で `FS-DATA-06` の docs split は完了したため、次は implementation task として allowlisted host rule と bounded redirect resolution を pipeline 側へ追加し、timeout / redirect loop / fetch failure 時は既存 `normalizeUrl()` の safe canonicalization へ戻す
 - `FS-DATA-05` の richer provenance は `FS-DATA-06` 後に schema 変更タスクとして扱い、`seenInFeeds[]` を置き換えるか併存させるかを先に docs で決める
 - `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後に最後段で再優先付けする
 
