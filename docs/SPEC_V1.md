@@ -849,6 +849,14 @@ v1 の生成優先順位は以下とする。
 - fuzzy merge が成立した場合の winner 選択、summary / author / image / tags / shelfIds / `seenInFeeds[]` の merge rule は既存 exact dedupe と同じにし、incoming provenance entry だけ `matchedBy=fuzzyTitleDate` として retag する
 - `update-state.json` の provenance parser / writer も `matchedBy=fuzzyTitleDate` を受け入れ、問題時は fuzzy fallback を外して full rebuild すれば rollback できる
 
+### 10.5.3 Post-v1 fuzzy dedupe observability docs split (`FS-DOCS-28`)
+
+- `FS-DATA-07` の次の差分は heuristic 自体を広げず、internal observability と明示的 rollback switch に限定する。public JSON shape / route 構造 / checked-in HTML shell / article card UI は変えない
+- 追加してよい surfacing は aggregate な internal signal に限り、`PipelineSummary` / `UpdatePipelineSummary` へ `fuzzyDuplicatesCollapsed` のような count を足し、logger も同じ aggregate count を出す範囲で閉じる。per-article title / URL / confidence / audit trail を既定ログへ出してはならない
+- diagnosis / pre-publish rollback 用に `run.ts` / `update.ts` の CLI へ `--disable-fuzzy-dedupe` のような明示的 kill switch を追加してよい。この switch を有効にした run では exact dedupe だけを残し、新しい fuzzy merge を発生させない
+- ただし kill switch は既に publish 済みの fuzzy merge を自動で復元するものではない。過去 output や retained article を持ち越したままでは rollback が不完全になりうるため、完全に戻したい場合は retained public data / `update-state.json` を持ち越さない full rebuild を前提にする
+- `loadUpdateState()` は既存 `matchedBy=fuzzyTitleDate` entry を引き続き読み込めてよく、この task で migration や public provenance surfacing、manual review UI、cross-source fuzzy 拡張を同時に進めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する
@@ -1427,7 +1435,7 @@ first implementation までで確定した状態:
    - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
    - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback をそれぞれ別の docs-first task として扱う。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 

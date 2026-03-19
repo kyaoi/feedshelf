@@ -384,6 +384,15 @@ Phase 6 の進め方:
 - first implementation は最大 2 件までの secondary source label と `+N` overflow に限定し、unknown source id は黙って無視して new route / filter / query param / manual review surface を追加しない
 - `src/web/app.ts` / checked-in `public/assets/app.js` / `public/assets/styles.css` / web tests が同期し、home と nested page の両方で source page href を崩さず secondary-source chip を表示できる
 
+### Post-v1 fuzzy dedupe observability docs split
+
+- [x] `FS-DOCS-28` fuzzy dedupe extension の次差分を internal summary count と明示的 disable switch に限定し、public export / UI / broader matching 拡張と分離する
+
+完了条件:
+- `PipelineSummary` / `UpdatePipelineSummary` に internal-only `fuzzyDuplicatesCollapsed` を追加できる境界と、`--disable-fuzzy-dedupe` による pre-publish diagnosis / rollback path を docs で追跡できる
+- この task は public JSON / route / checked-in HTML shell / article card UI を変えず、aggregate log / summary までに限定する
+- 既存 `matchedBy=fuzzyTitleDate` を読む update state 互換は維持しつつ、過去 publish 済み merge を完全に戻すには retained public data / update state を持ち越さない full rebuild が必要であることを docs で明示できる
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -401,6 +410,7 @@ Phase 6 の進め方:
 - `FS-UX-22` で `alsoSeenInSourceIds` を shared article card の secondary-source chip へ変換し、最大 2 件 + `+N` overflow、unknown source id 無視、home / nested page ごとの source href 解決を実装済みにした
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
 - deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability を別 docs-first task で扱う
+- `FS-DOCS-28` で fuzzy dedupe の次差分は internal `fuzzyDuplicatesCollapsed` counter と `--disable-fuzzy-dedupe` kill switch に限定したため、実装へ進む場合も `PipelineSummary` / `UpdatePipelineSummary` / CLI args / tests に閉じた最小差分で扱う
 
 ## メモ
 

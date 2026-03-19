@@ -553,6 +553,39 @@ test('FS-DOCS-27 public provenance chip docs split stays aligned across PLAN, SP
   assert.match(traceability, /unknown source id は無視/);
 });
 
+test('FS-DOCS-28 fuzzy dedupe observability docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-28/);
+  assert.match(plan, /internal-only `fuzzyDuplicatesCollapsed`/);
+  assert.match(plan, /`--disable-fuzzy-dedupe`/);
+  assert.match(spec, /10\.5\.3 Post-v1 fuzzy dedupe observability docs split/);
+  assert.match(spec, /per-article title \/ URL \/ confidence \/ audit trail/);
+  assert.match(
+    spec,
+    /retained public data \/ `update-state\.json` を持ち越さない full rebuild/,
+  );
+  assert.match(decisions, /D-147/);
+  assert.match(decisions, /internal summary と明示的 off switch に閉じる/);
+  assert.match(traceability, /FS-161/);
+  assert.match(traceability, /kill switch/);
+});
+
 test('FS-UX-22 provenance chips stay aligned across PLAN, TRACEABILITY, app, and web tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

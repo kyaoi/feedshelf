@@ -964,6 +964,12 @@
 - 理由: export-only で public 化した `alsoSeenInSourceIds` を UI で使い始める際に、時系列 audit・confidence・manual review まで一気に混ぜると差分が大きくなりやすい一方、shared article card の補助 chip なら既存 card / source route 資産を再利用しつつ bounded な surfacing に閉じられるため
 - 影響: first implementation は `src/web/app.ts` / checked-in shell asset / CSS / web tests に閉じ、new route / filter / query param / sort change / search scoring 変更は別 task とする。unknown source id は黙って無視してよく、`matchedBy` / timestamp / confidence を public UI に追加しない
 
+## D-147: fuzzy dedupe の次の拡張は internal counter + explicit kill switch に限定する
+
+- 決定: `FS-DATA-07` の次の差分では heuristic や candidate 条件を広げず、internal observability と rollback のために `PipelineSummary` / `UpdatePipelineSummary` へ `fuzzyDuplicatesCollapsed` のような aggregate counter を追加し、`run.ts` / `update.ts` には `--disable-fuzzy-dedupe` のような明示的 kill switch を足す境界に限定する
+- 理由: fuzzy dedupe は conservative に入っているが、問題が起きた際に「今回の run で何件 collapse したか」と「次の publish で新しい fuzzy merge を止められるか」がすぐ分からないと運用が重い。一方で per-article audit export や broader matching まで同時に入れると public contract や UI へ波及しやすいため、まずは internal summary と明示的 off switch に閉じる方が安全だから
+- 影響: 将来の実装対象は `src/shared/contracts.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / `scripts/pipeline/dedupeArticles.ts` と tests に留め、public JSON / route / checked-in HTML shell は変えない。kill switch は新しい fuzzy merge を止めるためのもので、既に retained output に入った fuzzy merge を自動で元に戻すものではないため、完全 rollback には clean な full rebuild を前提とする
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
