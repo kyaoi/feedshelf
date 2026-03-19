@@ -17,6 +17,7 @@ interface PublicArticleSummaryLike {
   sortAt: string;
   sourceId: string;
   sourceName: string;
+  alsoSeenInSourceIds?: string[];
   shelfIds?: string[];
   categoryId?: string;
   categoryLabel?: string;

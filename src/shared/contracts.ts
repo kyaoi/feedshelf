@@ -67,6 +67,7 @@ export interface PublicArticleSummary {
   sortAt: string;
   sourceId: string;
   sourceName: string;
+  alsoSeenInSourceIds?: string[];
   shelfIds: string[];
   imageUrl: string | null;
   sourceTags: string[];

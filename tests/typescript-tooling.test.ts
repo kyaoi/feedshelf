@@ -469,6 +469,54 @@ test('FS-DOCS-26 public provenance export docs split stays aligned across PLAN, 
   assert.match(traceability, /confidence \/ audit UI \/ `seenInFeeds\[]` 除去/);
 });
 
+test('FS-DATA-09 public provenance export implementation stays aligned across PLAN, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-09/);
+  assert.match(plan, /optional `alsoSeenInSourceIds`/);
+  assert.match(
+    plan,
+    /retained public article merge でも `alsoSeenInSourceIds` を失わず/,
+  );
+  assert.match(traceability, /FS-158/);
+  assert.match(
+    traceability,
+    /retained public article merge 後も `alsoSeenInSourceIds` を保持/,
+  );
+
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, 'load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, 'update-workflow.test.ts'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const buildPublicExports = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/buildPublicExports.ts'),
+    'utf8',
+  );
+
+  assert.match(contracts, /alsoSeenInSourceIds\?: string\[];/);
+  assert.match(buildPublicExports, /deriveAlsoSeenInSourceIds/);
+  assert.match(
+    loadFeedsTest,
+    /buildPublicExports derives alsoSeenInSourceIds from secondary provenance/,
+  );
+  assert.match(updateWorkflowTest, /alsoSeenInSourceIds: \['legacy-feed'\]/);
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

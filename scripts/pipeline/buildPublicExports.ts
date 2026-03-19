@@ -145,6 +145,40 @@ function sortPublicArticles(
   return [...articles].sort(comparePublicArticles);
 }
 
+function sortAlsoSeenInSourceIds(
+  sourceIds: string[],
+  feedOrder: Map<string, number>,
+): string[] {
+  return [...sourceIds].sort((left, right) => {
+    const leftOrder = feedOrder.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = feedOrder.get(right) ?? Number.MAX_SAFE_INTEGER;
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder;
+    }
+    return left.localeCompare(right, 'en');
+  });
+}
+
+function deriveAlsoSeenInSourceIds(
+  article: CanonicalArticle,
+  feedOrder: Map<string, number>,
+): string[] {
+  const candidates = new Set<string>();
+
+  for (const provenance of article.provenance || []) {
+    if (
+      typeof provenance.feedId !== 'string' ||
+      provenance.feedId === '' ||
+      provenance.feedId === article.feedId
+    ) {
+      continue;
+    }
+    candidates.add(provenance.feedId);
+  }
+
+  return sortAlsoSeenInSourceIds(Array.from(candidates), feedOrder);
+}
+
 function buildPublicArticles(
   articles: CanonicalArticle[],
   feeds: FeedDefinition[],
@@ -152,12 +186,16 @@ function buildPublicArticles(
   const feedMap = new Map<string, FeedDefinition>(
     feeds.map((feed) => [feed.id, feed]),
   );
+  const feedOrder = new Map<string, number>(
+    feeds.map((feed, index) => [feed.id, index]),
+  );
   return sortPublicArticles(
     articles.map((article) => {
       const feed = feedMap.get(article.feedId);
       if (!feed) {
         throw new Error(`Unknown feed for article export: ${article.feedId}`);
       }
+      const alsoSeenInSourceIds = deriveAlsoSeenInSourceIds(article, feedOrder);
       return {
         id: article.id,
         title: article.title,
@@ -167,6 +205,7 @@ function buildPublicArticles(
         sortAt: selectSortAt(article),
         sourceId: article.feedId,
         sourceName: article.sourceName,
+        ...(alsoSeenInSourceIds.length > 0 ? { alsoSeenInSourceIds } : {}),
         shelfIds: [...article.shelfIds],
         imageUrl: article.imageUrl,
         sourceTags: uniqueTags(article.sourceTags || feed.tags || []),
@@ -386,6 +425,10 @@ function mergePublicArticleSummary(
 ): PublicArticleSummary {
   const winner = comparePublicArticles(fresh, retained) <= 0 ? fresh : retained;
   const loser = winner === fresh ? retained : fresh;
+  const alsoSeenInSourceIds = uniqueTags([
+    ...(winner.alsoSeenInSourceIds || []),
+    ...(loser.alsoSeenInSourceIds || []),
+  ]).filter((sourceId) => sourceId !== winner.sourceId);
   return {
     ...winner,
     title: winner.title || loser.title,
@@ -397,6 +440,7 @@ function mergePublicArticleSummary(
         ? winner.sortAt
         : loser.sortAt,
     sourceName: winner.sourceName || loser.sourceName,
+    ...(alsoSeenInSourceIds.length > 0 ? { alsoSeenInSourceIds } : {}),
     shelfIds: uniqueStringUnion(winner.shelfIds, loser.shelfIds),
     imageUrl: winner.imageUrl || loser.imageUrl || null,
     sourceTags: uniqueStringUnion(winner.sourceTags, loser.sourceTags),

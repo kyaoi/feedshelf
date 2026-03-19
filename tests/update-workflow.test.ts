@@ -461,6 +461,7 @@ test('runUpdatePipeline writes update-state.json and retains previously publishe
         url: 'https://example.com/retained-article',
         sourceId: 'enabled-feed',
         sourceName: 'Enabled Feed',
+        alsoSeenInSourceIds: ['legacy-feed'],
         shelfIds: ['examples'],
         sourceTags: ['primary'],
         entryTags: [],
@@ -519,7 +520,9 @@ test('runUpdatePipeline writes update-state.json and retains previously publishe
     publishedArticles.map((article: { title: string }) => article.title),
     ['Workflow article', 'Retained Article'],
   );
+  assert.equal(publishedArticles[0].alsoSeenInSourceIds, undefined);
   assert.equal(publishedArticles[1].id, 'retained-article');
+  assert.deepEqual(publishedArticles[1].alsoSeenInSourceIds, ['legacy-feed']);
 });
 
 test('buildNextUpdateState updates source checkpoints for every feed present in provenance', () => {

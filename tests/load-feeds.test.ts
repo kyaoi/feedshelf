@@ -778,6 +778,7 @@ test('buildPublicExports creates shelf-first public JSON contracts', () => {
   });
 
   assert.equal(publicExports.articles[0].shelfIds[0], 'examples');
+  assert.equal(publicExports.articles[0].alsoSeenInSourceIds, undefined);
   assert.equal(publicExports.shelves[0].id, 'examples');
   assert.equal(publicExports.categories[0].id, 'examples');
   assert.equal(publicExports.sources[0].shelfIds[0], 'examples');
@@ -785,6 +786,67 @@ test('buildPublicExports creates shelf-first public JSON contracts', () => {
   assert.equal(publicExports.searchIndex[0].shelfIds[0], 'examples');
   assert.equal(publicExports.meta.shelfCount, 1);
   assert.equal(publicExports.meta.categoryCount, 1);
+});
+
+test('buildPublicExports derives alsoSeenInSourceIds from secondary provenance', () => {
+  const publicExports = buildPublicExports({
+    articles: [
+      {
+        id: 'shared-article',
+        feedId: 'rss-feed',
+        sourceName: 'Example RSS',
+        language: 'en',
+        shelfIds: ['examples'],
+        title: 'Shared exported article',
+        url: 'https://example.com/shared-exported',
+        summary: 'Shared exported summary',
+        publishedAt: '2026-03-08T01:02:03.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['RSS Source'],
+        entryTags: ['Cloud'],
+        sourceItemId: 'shared-article',
+        provenance: [
+          {
+            feedId: 'rss-feed',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'shared-article',
+            matchedBy: 'primary',
+          },
+          {
+            feedId: 'atom-feed',
+            firstSeenAt: '2026-03-08T06:05:00.000Z',
+            lastSeenAt: '2026-03-08T06:05:00.000Z',
+            sourceItemId: 'shared-article-atom',
+            matchedBy: 'normalizedUrl',
+          },
+        ],
+        seenInFeeds: ['rss-feed', 'atom-feed'],
+      },
+    ],
+    feeds: [RSS_FEED, ATOM_FEED],
+    shelves: {
+      site: {
+        title: 'FeedShelf',
+        description: 'Discover articles by shelf',
+        intro: 'Curated shelves',
+      },
+      shelves: [
+        {
+          id: 'examples',
+          title: 'Examples',
+          description: 'Example shelf',
+        },
+      ],
+    },
+    generatedAt: '2026-03-08T06:00:00Z',
+  });
+
+  assert.deepEqual(publicExports.articles[0].alsoSeenInSourceIds, [
+    'atom-feed',
+  ]);
 });
 
 test('slugifyCategoryLabel keeps compatibility export stable', () => {
