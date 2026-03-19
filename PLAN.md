@@ -40,7 +40,7 @@ FeedShelf の v1 を、仕様先行・最小差分・GitHub Pages 前提で安�
 
 ### Deferred: v2 以降で再検討するデータ契約
 
-- [x] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する（first implementation 完了。public provenance surfacing は別 docs task）
+- [x] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する（first implementation 完了。public provenance export 境界は `FS-DOCS-26` で固定）
 - [x] `FS-DATA-06` host 固有の canonical URL 解決と redirect 解決を追加する
 - [x] `FS-DATA-07` fuzzy dedupe を安全な閾値つきで導入する（first implementation 完了。stricter observability / rollback は別 docs task）
 - `FS-DATA-08` の JSON sharding / pagination は post-v1 の `FS-ARCH-10` / `FS-PIPE-05` / `FS-QA-11` で static pagination + build-time page shard として実施済みとみなし、deferred backlog から外す
@@ -356,6 +356,15 @@ Phase 6 の進め方:
 - deferred data backlog を再度「未着手タスク」として扱わず、今後の拡張は public provenance surfacing・canonicalization の追加 precision rule・fuzzy dedupe の stricter observability / rollback を別 docs-first task として扱うことが `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で同期している
 - close-out task 自体は docs / traceability / alignment test に閉じ、public JSON・route・pipeline 実装は変えない
 
+### Post-v1 public provenance export docs split
+
+- [x] `FS-DOCS-26` internal `provenance[]` から public provenance summary を切り出す docs split を行い、`articles.json` / page shard へ載せる最小 field・non-goals・audit UI 分離を固定する
+
+完了条件:
+- `FS-DATA-09` の first implementation が `PublicArticleSummary` 系に optional `alsoSeenInSourceIds: string[]` を追加する public JSON contract change であり、値は internal `provenance[]` から導出して primary `sourceId` を除いた stable order の source id 配列に限定することを docs で追跡できる
+- public へは `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` / confidence score を露出せず、`seenInFeeds[]` の除去や provenance audit UI も同じ task に含めないことが `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で同期している
+- docs split 自体は docs / traceability / alignment test に閉じ、`PublicArticleSummary` / build pipeline / UI 実装は次の implementation task に送る
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -367,9 +376,9 @@ Phase 6 の進め方:
 - `FS-DATA-06` は `b.hatena.ne.jp/entry/...` の allowlisted host rewrite と、その candidate にだけ適用する bounded redirect resolution として実装済みになったため、deferred backlog の次候補は `FS-DATA-05` へ移る
 - `FS-DATA-05` の first implementation は完了し、canonical article object と `update-state.json` に internal `provenance[]` が入り、`seenInFeeds[]` は compatibility summary として残る構成になった
 - `buildNextUpdateState()` は dedupe winner の `feedId` だけではなく `provenance[]` の各 `feedId` を checkpoint 対象にするため、cross-feed dedupe 後でも source ごとの managed checkpoint を前進させられる
-- public JSON への provenance surfacing や `seenInFeeds[]` の除去はまだ行っていないため、internal schema の安定化を確認した後に別 docs task を挟んで検討する
+- `FS-DOCS-26` で public provenance export の境界を先に固定し、次の implementation 候補は `FS-DATA-09` として `PublicArticleSummary` 系へ optional `alsoSeenInSourceIds` を載せる最小差分に限定する
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
-- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了したため、今後の拡張は public JSON への surfacing や stricter rollback / observability が必要かを docs-first で再評価してから扱う
+- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は audit UI・追加 canonicalization rule・stricter rollback / observability を別 docs-first task で扱う
 
 ## メモ
 

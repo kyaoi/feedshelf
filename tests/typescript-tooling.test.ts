@@ -436,6 +436,39 @@ test('FS-DOCS-25 deferred backlog close-out stays aligned across PLAN, SPEC, DEC
   assert.match(traceability, /stricter observability \/ rollback/);
 });
 
+test('FS-DOCS-26 public provenance export docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-26/);
+  assert.match(plan, /optional `alsoSeenInSourceIds: string\[]`/);
+  assert.match(plan, /primary `sourceId` を除いた stable order/);
+  assert.match(spec, /10\.6\.2 Post-v1 public provenance export docs split/);
+  assert.match(spec, /optional `alsoSeenInSourceIds: string\[]`/);
+  assert.match(
+    spec,
+    /provenance audit UI・per-source label chip・manual review surface・`seenInFeeds\[]` 除去/,
+  );
+  assert.match(decisions, /D-145/);
+  assert.match(decisions, /secondary source id の stable ordered list/);
+  assert.match(traceability, /FS-157/);
+  assert.match(traceability, /confidence \/ audit UI \/ `seenInFeeds\[]` 除去/);
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

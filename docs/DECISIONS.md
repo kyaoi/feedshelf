@@ -952,6 +952,11 @@
 - 理由: deferred backlog を未完了のまま残すと、既に実装済みの internal schema / precision layer / conservative fuzzy fallback を再度「未着手 task」と誤認しやすく、次の差分で public JSON や runtime 拡張まで一度に混ぜてしまうため
 - 影響: top-level backlog と詳細 task セクションの整合を docs / traceability / alignment test で同期し、今後の拡張は元の `FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` を直接 reopen せず、新しい docs task から始める
 
+## D-145: public provenance の first implementation は export-only の bounded field に留める
+
+- 決定: internal `provenance[]` を public へ最初に surfacing するときは、`PublicArticleSummary` 系へ optional `alsoSeenInSourceIds: string[]` を追加する export-only task とし、値は `provenance[]` から導出した secondary source id の stable ordered list に限定する。primary source は既存 `sourceId` / `sourceName` を使い続ける
+- 理由: multi-source で観測された記事を public JSON で追跡できるようにしつつ、`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` をそのまま露出すると契約が重くなり、audit UI や confidence score まで一緒に設計したくなって差分が肥大化しやすいため
+- 影響: 最初の実装対象は `src/shared/contracts.ts` / `scripts/pipeline/buildPublicExports.ts` / page shard 生成 / public JSON tests に限定し、audit UI・`seenInFeeds[]` 除去・provenance badge 表示は別 docs-first task へ送る
 
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 

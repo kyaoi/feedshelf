@@ -868,6 +868,13 @@ v1 の生成優先順位は以下とする。
 - 同じ `feedId` が再度観測された場合、`firstSeenAt` は最小値、`lastSeenAt` は最大値を採用して 1 entry に畳み込んでよい。`sourceItemId` は non-null を優先し、`matchedBy` は最初に確定した根拠を保持してよい
 - この task では per-fetch の完全履歴、public `articles.json` への provenance 露出、UI での provenance 表示、external evidence URL の保持までは扱わない
 
+### 10.6.2 Post-v1 public provenance export docs split (`FS-DOCS-26`)
+
+- internal `provenance[]` が安定した後の最初の public surfacing は、`PublicArticleSummary` 系へ optional `alsoSeenInSourceIds: string[]` を追加する export-only task として切り出す
+- `alsoSeenInSourceIds` は internal `provenance[]` から導出し、primary `sourceId` と同じ値を除いた secondary source id だけを stable order で並べる。route ごとの page shard / bootstrap payload は既存 `PublicArticleSummary` 再利用の範囲でこの field をそのまま含んでよい
+- public へは `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` / confidence score を露出しない。source の表示名や棚情報は既存 `sources.json` / `articles.json` の `sourceId` / `sourceName` から解決し、provenance export 側に重複保持しない
+- first implementation は export contract の追加に閉じ、provenance audit UI・per-source label chip・manual review surface・`seenInFeeds[]` 除去は別 docs-first task に分離する
+
 ---
 
 ## 11. 生成物 JSON 契約
@@ -932,6 +939,7 @@ Phase 6 では次の公開 JSON を基本候補とする。
 - UI は `entryTags` / `sourceTags` から visible card tags を軽量導出してよく、`cardTags` のような専用公開 field を v1 必須にしない
 - `sourceItemId`, `seenInFeeds`, `fetchedAt`, `author` などの内部寄り情報は v1 の公開 JSON では必須にしない
 - post-v1 に internal `provenance[]` を導入しても、first implementation では `articles.json` へ露出しない
+- `FS-DATA-09` を行う場合でも、public provenance の first implementation は optional `alsoSeenInSourceIds` に限定し、timestamp や `matchedBy` までは公開しない
 
 ### 11.4 `shelves.json`
 
@@ -1412,7 +1420,7 @@ first implementation までで確定した状態:
    - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
    - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance surfacing、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback をそれぞれ別の docs-first task として扱う。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 
