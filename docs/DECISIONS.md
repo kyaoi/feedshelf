@@ -932,6 +932,12 @@
 - 理由: richer provenance を入れたい一方で、public JSON・UI・既存 tests まで同時に壊すと差分が広がりすぎるため。まず internal schema と checkpoint / dedupe merge に閉じた最小差分で導入し、既存 `seenInFeeds[]` を互換要約として残す方が安全に進められる
 - 影響: `articles.json` など public JSON の shape と route 構造はこの task では変えない。`seenInFeeds[]` は当面 `provenance[]` から導出できる summary として扱い、public provenance export や UI surfacing、per-fetch の完全履歴は後続 docs task へ送る
 
+## D-142: `FS-DATA-07` の first implementation は same-source/title/date fallback に限定する
+
+- 決定: `FS-DATA-07` の最初の実装では、exact dedupe（`normalizedUrl` / `(feedId, sourceItemId)`）で一致しなかった article にだけ fuzzy pass を適用し、candidate は `sourceName` / `language` / `titleCompareKey` 一致 + 両方の `publishedAt` が 72 時間以内である場合に限定する。fuzzy merge が成立した場合の internal provenance / managed update state では `matchedBy=fuzzyTitleDate` を追加で使ってよい
+- 理由: fuzzy dedupe は誤爆コストが最も高いため、同一 source の複数 feed や URL ぶれ由来の duplicate に絞って conservative に始めた方が rollback しやすく、public JSON や UI 契約への波及も抑えやすい
+- 影響: first implementation は `dedupeArticles()` と internal tests を中心に閉じ、body fetch・HTML 類似度・embedding / LLM・cross-source clustering・manual review UI・public confidence score は含めない。問題が出た場合の rollback は fuzzy pass を外して full rebuild すれば足り、追加 migration は前提にしない
+
 
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 

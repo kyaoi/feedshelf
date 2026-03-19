@@ -329,6 +329,15 @@ Phase 6 の進め方:
 - `dedupeArticles()` が `normalizedUrl` / `feedItem` の merge 理由を provenance entry に反映し、feed ごとに 1 件の bounded entry を保ったまま `firstSeenAt` / `lastSeenAt` / `sourceItemId` を統合できる
 - `buildNextUpdateState()` が dedupe winner の `feedId` だけでなく `provenance[]` に含まれる各 `feedId` を checkpoint 対象にし、cross-feed dedupe 後も source ごとの managed checkpoint を前進させられる
 
+### Post-v1 fuzzy dedupe docs split
+
+- [x] `FS-DOCS-24` `FS-DATA-07` の docs / implementation split を切り、same-source fallback・title compare key・publishedAt 72h window・rollback 境界を固定する
+
+完了条件:
+- `FS-DATA-07` の first implementation が public JSON shape / route 構造 / checked-in HTML shell を変えず、`dedupeArticles()` 内の exact dedupe miss fallback と tests に閉じた最小差分として着手できる
+- fuzzy dedupe は `normalizedUrl` / `(feedId, sourceItemId)` の exact match が無かった article にだけ適用し、candidate は少なくとも `sourceName` / `language` / `titleCompareKey` が一致し、両方の `publishedAt` が存在して 72 時間以内である場合に限定する
+- fuzzy merge の根拠は internal provenance / update state で `matchedBy=fuzzyTitleDate` として追跡できるようにしつつ、body fetch・HTML 類似度・embedding / LLM・cross-source clustering・manual review UI はこの task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -341,7 +350,7 @@ Phase 6 の進め方:
 - `FS-DATA-05` の first implementation は完了し、canonical article object と `update-state.json` に internal `provenance[]` が入り、`seenInFeeds[]` は compatibility summary として残る構成になった
 - `buildNextUpdateState()` は dedupe winner の `feedId` だけではなく `provenance[]` の各 `feedId` を checkpoint 対象にするため、cross-feed dedupe 後でも source ごとの managed checkpoint を前進させられる
 - public JSON への provenance surfacing や `seenInFeeds[]` の除去はまだ行っていないため、internal schema の安定化を確認した後に別 docs task を挟んで検討する
-- `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後の次候補として docs split から再優先付けする
+- `FS-DATA-07` の docs split は完了したが実装はまだであり、exact dedupe miss に対する same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を最小差分で入れる task が次候補になる
 
 ## メモ
 

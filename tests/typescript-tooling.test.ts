@@ -317,6 +317,41 @@ test('FS-DATA-06 implementation stays aligned across PLAN, SPEC, DECISIONS, TRAC
   );
 });
 
+test('FS-DATA-07 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-24/);
+  assert.match(
+    plan,
+    /same-source fallback・title compare key・publishedAt 72h window・rollback 境界/,
+  );
+  assert.match(plan, /exact dedupe miss fallback/);
+  assert.match(spec, /10\.5\.1 Post-v1 fuzzy dedupe docs split/);
+  assert.match(spec, /`titleCompareKey`/);
+  assert.match(spec, /72 時間以内/);
+  assert.match(spec, /matchedBy=fuzzyTitleDate/);
+  assert.match(decisions, /D-142/);
+  assert.match(decisions, /same-source\/title\/date fallback/);
+  assert.match(decisions, /full rebuild/);
+  assert.match(traceability, /FS-154/);
+  assert.match(traceability, /embedding \/ LLM/);
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

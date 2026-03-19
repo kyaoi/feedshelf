@@ -829,6 +829,18 @@ v1 の生成優先順位は以下とする。
 - `feedId` / `sourceName` / `shelfIds` / `language`: winner とした primary record の値を使う
 - 同点時は `fetchedAt` が早い record を winner にしてよい
 
+### 10.5.1 Post-v1 fuzzy dedupe docs split (`FS-DOCS-24`)
+
+- `FS-DATA-07` の first implementation は、exact dedupe（`normalizedUrl` / `(feedId, sourceItemId)`）が外れた article にだけ適用する conservative fallback とし、public JSON shape / route 構造 / checked-in HTML shell は変えない
+- fuzzy candidate は少なくとも次をすべて満たす場合に限る
+  - `sourceName` が一致する
+  - `language` が一致する
+  - title から導く `titleCompareKey` が一致する
+  - 両方の `publishedAt` が non-null で、差が 72 時間以内である
+- `titleCompareKey` は first implementation では title を lowercase 化し、前後空白 trim と連続空白 collapse を行った deterministic compare key で十分とする。語幹化、embedding、本文類似度、LLM 判定は含めない
+- fuzzy merge が成立した場合、winner selection と既存 merge rule は維持しつつ、internal provenance / managed update state では `matchedBy=fuzzyTitleDate` を追加で追跡できるようにする
+- この task では cross-source clustering、body fetch、HTML canonical parse、manual review UI、public confidence score は扱わない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する
@@ -1384,8 +1396,8 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
    - first implementation では internal canonical article object / managed update state に `provenance[]` を追加し、`seenInFeeds[]` は derived compatibility summary として併存させる
    - `provenance[]` は `feedId` ごとの bounded entry（`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy`）を持ち、public JSON への surfacing は別 docs task まで見送る
 2. `FS-DATA-07` fuzzy dedupe
-   - 誤爆の影響が最も大きく、title/date 類似だけで別記事を潰す危険があるため最後段に置く
-   - canonicalization と provenance の整理後に、必要なら scorer / threshold / rollback 方針を docs で閉じてから着手する
+   - docs split により、first implementation は exact dedupe miss にだけ適用する same-source/title/date fallback に限定し、`titleCompareKey` 一致 + 両方の `publishedAt` が 72 時間以内の candidate だけを collapse 対象にする
+   - merge 理由は internal `matchedBy=fuzzyTitleDate` で追跡し、public JSON surfacing / manual review UI / cross-source clustering は別 task に分離する
 
 この順番により、canonicalization 完了後の deferred backlog は provenance → fuzzy dedupe の順で再開できる。
 
