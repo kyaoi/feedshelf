@@ -161,6 +161,62 @@ test('buildSearchPageViewModel returns score-sorted results resolved via article
   assert.equal(viewModel.articlesCountText, '2 件');
 });
 
+test('buildSearchPageViewModel uses nested source hrefs for secondary-source chips', () => {
+  const viewModel = buildSearchPageViewModel({
+    query: 'kubernetes',
+    articles: [
+      {
+        id: 'article-title',
+        title: 'Kubernetes cloud rollout guide',
+        url: 'https://example.com/title',
+        summary: 'Title match article.',
+        publishedAt: '2026-03-09T00:00:00Z',
+        sortAt: '2026-03-09T00:00:00Z',
+        sourceId: 'source-a',
+        sourceName: 'Example Source',
+        alsoSeenInSourceIds: ['source-b'],
+        categoryId: 'examples',
+        categoryLabel: 'Examples',
+        imageUrl: null,
+        sourceTags: ['Cloud'],
+        entryTags: ['Kubernetes'],
+      },
+    ],
+    searchIndex: [
+      {
+        articleId: 'article-title',
+        sortAt: '2026-03-09T00:00:00Z',
+        title: 'Kubernetes cloud rollout guide',
+        sourceName: 'Example Source',
+        sourceTags: ['Cloud'],
+        entryTags: ['Kubernetes'],
+      },
+    ],
+    sources: [
+      {
+        id: 'source-a',
+        name: 'Example Source',
+        articleCount: 1,
+        shelfIds: ['examples'],
+        language: 'en',
+      },
+      {
+        id: 'source-b',
+        name: 'Mirror Source',
+        articleCount: 1,
+        shelfIds: ['examples'],
+        language: 'en',
+      },
+    ],
+    meta: { generatedAt: '2026-03-09T00:00:00Z' },
+  });
+
+  assert.equal(viewModel.kind, 'ready');
+  assert.deepEqual(viewModel.articles[0].secondarySourceChips, [
+    { label: 'Mirror Source', href: '../sources/?id=source-b' },
+  ]);
+});
+
 test('buildSearchPageViewModel returns no-results when query matches nothing', () => {
   const viewModel = buildSearchPageViewModel({
     query: 'quantum',

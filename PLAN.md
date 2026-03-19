@@ -377,11 +377,12 @@ Phase 6 の進め方:
 ### Post-v1 public provenance chip docs split
 
 - [x] `FS-DOCS-27` public provenance の最初の UI surfacing を article card 上の bounded secondary-source chip に限定し、label 解決・表示上限・non-goals を docs に固定する
+- [x] `FS-UX-22` `alsoSeenInSourceIds` を shared article card 上の bounded secondary-source chip として surfacing する
 
 完了条件:
-- `FS-UX-22` の first implementation が shared article card 上の補助表示に閉じ、`alsoSeenInSourceIds` を既存 `sources.json` / source registry で解決した secondary source label chip だけを表示対象にすることを docs で追跡できる
-- first implementation は最大 2 件までの secondary source label と `+N` overflow に限定し、unknown source id は黙って無視して new route / filter / query param / manual review surface を追加しないことが `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で同期している
-- docs split 自体は docs / traceability / alignment test に閉じ、UI 実装・CSS・checked-in asset sync は次の implementation task に送る
+- `FS-UX-22` の first implementation が shared article card 上の補助表示に閉じ、`alsoSeenInSourceIds` を既存 `sources.json` / source registry で解決した secondary source label chip だけを表示対象にすることを docs と実装で追跡できる
+- first implementation は最大 2 件までの secondary source label と `+N` overflow に限定し、unknown source id は黙って無視して new route / filter / query param / manual review surface を追加しない
+- `src/web/app.ts` / checked-in `public/assets/app.js` / `public/assets/styles.css` / web tests が同期し、home と nested page の両方で source page href を崩さず secondary-source chip を表示できる
 
 ## 直近の次タスク
 
@@ -396,8 +397,8 @@ Phase 6 の進め方:
 - `buildNextUpdateState()` は dedupe winner の `feedId` だけではなく `provenance[]` の各 `feedId` を checkpoint 対象にするため、cross-feed dedupe 後でも source ごとの managed checkpoint を前進させられる
 - `FS-DOCS-26` で public provenance export の境界を先に固定し、`FS-DATA-09` では `PublicArticleSummary` 系へ optional `alsoSeenInSourceIds` を載せる export-only の最小差分を実装済みにできる
 - `FS-DATA-09` の export は `CanonicalArticle.provenance[]` から secondary source id だけを public JSON へ流し、`runUpdatePipeline` の retained public article merge でも `alsoSeenInSourceIds` を失わない
-- `FS-DOCS-27` で public provenance の最初の UI surfacing は shared article card 上の bounded secondary-source chip に限定し、label 解決・表示上限・unknown source fallback・non-goals を docs で先に固定する
-- 次の implementation 候補は `FS-UX-22` として `alsoSeenInSourceIds` を source label chip へ変換する shared article card の補助表示に閉じ、new route / filter / query param / manual review surface を混ぜない
+- `FS-DOCS-27` で public provenance の最初の UI surfacing は shared article card 上の bounded secondary-source chip に限定し、label 解決・表示上限・unknown source fallback・non-goals を docs で先に固定した
+- `FS-UX-22` で `alsoSeenInSourceIds` を shared article card の secondary-source chip へ変換し、最大 2 件 + `+N` overflow、unknown source id 無視、home / nested page ごとの source href 解決を実装済みにした
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
 - deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability を別 docs-first task で扱う
 

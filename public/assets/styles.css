@@ -560,7 +560,8 @@ h3 {
   font-style: italic;
 }
 
-.article-card__tags {
+.article-card__tags,
+.article-card__secondary-sources {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

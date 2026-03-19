@@ -8,9 +8,11 @@ const {
   buildDataPaths,
   buildPaginationHref,
   loadHomePageData,
+  buildArticleViewModels,
   buildHomePageViewModel,
   buildShelfHrefFromHome,
   buildSourceNavigationItems,
+  renderArticleItems,
   getPageFromLocation,
   MISSING_PUBLIC_DATA_ERROR,
 } = require('../public/assets/app.js');
@@ -204,6 +206,77 @@ test('buildHomePageViewModel uses shelfCount and shelf summaries', () => {
   assert.equal(viewModel.shelves[0].title, 'Example Shelf');
   assert.match(viewModel.shelves[0].description, /Shelf description/);
   assert.match(viewModel.shelves[0].description, /Entry Tag/);
+});
+
+test('buildArticleViewModels resolves bounded secondary-source chips for home cards', () => {
+  const viewModels = buildArticleViewModels(
+    [
+      {
+        id: 'article-1',
+        title: 'Example article',
+        url: 'https://example.com/article',
+        summary: 'summary',
+        publishedAt: '2026-03-10T00:00:00Z',
+        sortAt: '2026-03-10T00:00:00Z',
+        sourceId: 'source-1',
+        sourceName: 'Example Source',
+        alsoSeenInSourceIds: [
+          'source-2',
+          'missing-source',
+          'source-3',
+          'source-4',
+        ],
+        shelfIds: ['example'],
+        imageUrl: null,
+        sourceTags: ['Source Tag'],
+        entryTags: ['Entry Tag'],
+      },
+    ],
+    {
+      sources: [
+        {
+          id: 'source-1',
+          name: 'Example Source',
+          articleCount: 1,
+          shelfIds: ['example'],
+          language: 'en',
+        },
+        {
+          id: 'source-2',
+          name: 'Mirror One',
+          articleCount: 1,
+          shelfIds: ['example'],
+          language: 'en',
+        },
+        {
+          id: 'source-3',
+          name: 'Mirror Two',
+          articleCount: 1,
+          shelfIds: ['example'],
+          language: 'en',
+        },
+        {
+          id: 'source-4',
+          name: 'Mirror Three',
+          articleCount: 1,
+          shelfIds: ['example'],
+          language: 'en',
+        },
+      ],
+      sourceHrefBuilder: (sourceId: string) => `./sources/?id=${sourceId}`,
+    },
+  );
+
+  assert.deepEqual(viewModels[0].secondarySourceChips, [
+    { label: 'Mirror One', href: './sources/?id=source-2' },
+    { label: 'Mirror Two', href: './sources/?id=source-3' },
+    { label: '+1', href: null },
+  ]);
+
+  const markup = renderArticleItems(viewModels);
+  assert.match(markup, /article-card__secondary-sources/);
+  assert.match(markup, /\.\/sources\/\?id=source-2/);
+  assert.match(markup, />\+1</);
 });
 
 test('buildSourceNavigationItems shows shelf count and language', () => {

@@ -151,6 +151,11 @@ interface StatViewModel {
   value: string;
 }
 
+interface ArticleSecondarySourceChipViewModel {
+  label: string;
+  href: string | null;
+}
+
 interface ArticleViewModel {
   title: string;
   url: string | null;
@@ -163,6 +168,7 @@ interface ArticleViewModel {
   canOpenExternal: boolean;
   externalLinkDescription: string;
   visibleTags: string[];
+  secondarySourceChips: ArticleSecondarySourceChipViewModel[];
 }
 
 interface CategoryNavigationItem {
@@ -790,7 +796,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       sources: buildSourceNavigationItems(sources, {
         hrefBuilder: buildSourceHrefFromHome,
       }),
-      articles: buildArticleViewModels(articles),
+      articles: buildArticleViewModels(articles, {
+        sources,
+        sourceHrefBuilder: buildSourceHrefFromHome,
+      }),
     };
   }
 
@@ -957,8 +966,61 @@ type FeedShelfGlobalScope = typeof globalThis & {
     }
   }
 
+  function buildSecondarySourceChips(
+    article: PublicArticleSummaryLike,
+    {
+      sources = [],
+      hrefBuilder = null,
+    }: {
+      sources?: PublicSourceSummaryLike[];
+      hrefBuilder?: ((sourceId: string) => string) | null;
+    } = {},
+  ): ArticleSecondarySourceChipViewModel[] {
+    const sourceMap = new Map(
+      sources.map((source) => [source.id, source] as const),
+    );
+    const visibleChips: ArticleSecondarySourceChipViewModel[] = [];
+    let overflowCount = 0;
+
+    for (const sourceId of Array.isArray(article.alsoSeenInSourceIds)
+      ? article.alsoSeenInSourceIds
+      : []) {
+      if (sourceId === article.sourceId) {
+        continue;
+      }
+
+      const source = sourceMap.get(sourceId);
+      if (!source) {
+        continue;
+      }
+
+      if (visibleChips.length < 2) {
+        visibleChips.push({
+          label: source.name,
+          href:
+            typeof hrefBuilder === 'function' ? hrefBuilder(source.id) : null,
+        });
+      } else {
+        overflowCount += 1;
+      }
+    }
+
+    if (overflowCount > 0) {
+      visibleChips.push({ label: `+${overflowCount}`, href: null });
+    }
+
+    return visibleChips;
+  }
+
   function buildArticleViewModels(
     articles: PublicArticleSummaryLike[],
+    {
+      sources = [],
+      sourceHrefBuilder = null,
+    }: {
+      sources?: PublicSourceSummaryLike[];
+      sourceHrefBuilder?: ((sourceId: string) => string) | null;
+    } = {},
   ): ArticleViewModel[] {
     return articles.map((article) => {
       const externalUrl = normalizeExternalArticleUrl(article.url);
@@ -977,6 +1039,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
           ? '元記事で続きを読む'
           : INVALID_ARTICLE_LINK_LABEL,
         visibleTags: buildVisibleTags(article),
+        secondarySourceChips: buildSecondarySourceChips(article, {
+          sources,
+          hrefBuilder: sourceHrefBuilder,
+        }),
       };
     });
   }
@@ -1159,6 +1225,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     );
     const featuredArticles = buildArticleViewModels(
       selectedArticles.slice(0, 3),
+      {
+        sources,
+        sourceHrefBuilder: buildSourceHrefFromShelfPage,
+      },
     );
     const relatedSources = buildSourceNavigationItems(
       sources.filter((source) =>
@@ -1186,7 +1256,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       featuredCountText: `${featuredArticles.length} 件`,
       featuredArticles,
       articlesCountText: `${selectedArticles.length} 件`,
-      articles: buildArticleViewModels(selectedArticles),
+      articles: buildArticleViewModels(selectedArticles, {
+        sources,
+        sourceHrefBuilder: buildSourceHrefFromShelfPage,
+      }),
       statusMessage:
         selectedArticles.length === 0 ? EMPTY_SHELF_ARTICLES_MESSAGE : '',
       selectedShelfTitle: selectedShelf.title,
@@ -1286,7 +1359,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       title: `${selectedSource.name} の記事一覧`,
       description,
       articlesCountText: `${selectedArticles.length} 件`,
-      articles: buildArticleViewModels(selectedArticles),
+      articles: buildArticleViewModels(selectedArticles, {
+        sources,
+        sourceHrefBuilder: buildSourceHrefFromSourcePage,
+      }),
       statusMessage:
         selectedArticles.length === 0 ? EMPTY_SOURCE_ARTICLES_MESSAGE : '',
       selectedSourceName: selectedSource.name,
@@ -1297,11 +1373,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     categoryId,
     articles,
     categories,
+    sources = [],
     meta,
   }: {
     categoryId: string;
     articles: PublicArticleSummaryLike[];
     categories: PublicCategorySummaryLike[];
+    sources?: PublicSourceSummaryLike[];
     meta: PublicMetaLike;
   }): CategoryPageViewModel {
     const navigationItems = buildCategoryNavigationItems(categories, {
@@ -1359,7 +1437,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       title: `${selectedCategory.label} の記事一覧`,
       description: `${selectedCategory.label} の legacy category deep link を compatibility route で表示しています。必要に応じて棚・タグ・検索へ戻って探し直せます。`,
       articlesCountText: `${selectedArticles.length} 件`,
-      articles: buildArticleViewModels(selectedArticles),
+      articles: buildArticleViewModels(selectedArticles, {
+        sources,
+        sourceHrefBuilder: buildSourceHrefFromShelfPage,
+      }),
       statusMessage:
         selectedArticles.length === 0 ? EMPTY_CATEGORY_ARTICLES_MESSAGE : '',
       selectedCategoryLabel: selectedCategory.label,
@@ -1384,11 +1465,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     tagId,
     articles,
     tags,
+    sources = [],
     meta,
   }: {
     tagId: string;
     articles: PublicArticleSummaryLike[];
     tags: PublicTagSummaryLike[];
+    sources?: PublicSourceSummaryLike[];
     meta: PublicMetaLike;
   }): TagPageViewModel {
     const navigationItems = buildTagNavigationItems(tags, {
@@ -1438,7 +1521,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       title: `${selectedTag.label} の記事一覧`,
       description: `${selectedTag.label} に関連する記事を新着順で表示しています。sourceTags と entryTags の両方を統合した導線です。`,
       articlesCountText: `${selectedArticles.length} 件`,
-      articles: buildArticleViewModels(selectedArticles),
+      articles: buildArticleViewModels(selectedArticles, {
+        sources,
+        sourceHrefBuilder: buildSourceHrefFromShelfPage,
+      }),
       statusMessage:
         selectedArticles.length === 0 ? EMPTY_TAG_ARTICLES_MESSAGE : '',
       selectedTagLabel: selectedTag.label,
@@ -1449,11 +1535,13 @@ type FeedShelfGlobalScope = typeof globalThis & {
     query,
     articles,
     searchIndex,
+    sources = [],
     meta,
   }: {
     query: string;
     articles: PublicArticleSummaryLike[];
     searchIndex: PublicSearchIndexEntryLike[];
+    sources?: PublicSourceSummaryLike[];
     meta: PublicMetaLike;
   }): SearchPageViewModel {
     const generatedAtText =
@@ -1543,6 +1631,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
       articlesCountText: `${matches.length} 件`,
       articles: buildArticleViewModels(
         matches.map((candidate) => candidate.article),
+        {
+          sources,
+          sourceHrefBuilder: buildSourceHrefFromShelfPage,
+        },
       ),
       statusMessage: '',
       queryValue,
@@ -1695,6 +1787,20 @@ type FeedShelfGlobalScope = typeof globalThis & {
                 </div>
               `
             : '';
+        const secondarySourceChipsMarkup =
+          article.secondarySourceChips.length > 0
+            ? `
+                <div class="article-card__secondary-sources" aria-label="他媒体でも掲載">
+                  ${article.secondarySourceChips
+                    .map((chip) =>
+                      chip.href
+                        ? `<a class="chip chip--muted" href="${escapeHtml(chip.href)}">${escapeHtml(chip.label)}</a>`
+                        : `<span class="chip chip--muted">${escapeHtml(chip.label)}</span>`,
+                    )
+                    .join('')}
+                </div>
+              `
+            : '';
 
         return `
           <li class="article-card ${article.imageUrl ? 'article-card--with-image' : ''}">
@@ -1708,6 +1814,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
                 ${articleTitleMarkup}
               </h3>
               ${visibleTagsMarkup}
+              ${secondarySourceChipsMarkup}
               <p class="article-card__summary ${article.hasSummary ? '' : 'article-card__summary--missing'}">
                 ${escapeHtml(article.summary)}
               </p>
@@ -1939,7 +2046,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       shelfId: shelfId || '',
       articles: articlePage ? articlePage.articles : payload.articles,
       shelves: payload.shelves,
-      sources: relatedSources || payload.sources,
+      sources: payload.sources,
       meta: payload.meta,
     });
     const generatedAtElement = documentRef.getElementById('generated-at');
@@ -1982,7 +2089,10 @@ type FeedShelfGlobalScope = typeof globalThis & {
     }
 
     const renderedFeaturedArticles = featuredArticles
-      ? buildArticleViewModels(featuredArticles)
+      ? buildArticleViewModels(featuredArticles, {
+          sources: payload.sources,
+          sourceHrefBuilder: buildSourceHrefFromShelfPage,
+        })
       : viewModel.featuredArticles;
 
     if (featuredCountElement) {
@@ -2032,6 +2142,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       categoryId: categoryId || '',
       articles: payload.articles,
       categories: payload.categories,
+      sources: payload.sources,
       meta: payload.meta,
     });
     const generatedAtElement = documentRef.getElementById('generated-at');
@@ -2166,6 +2277,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       tagId: tagId || '',
       articles: articlePage ? articlePage.articles : payload.articles,
       tags: payload.tags,
+      sources: payload.sources,
       meta: payload.meta,
     });
     const generatedAtElement = documentRef.getElementById('generated-at');
@@ -2231,6 +2343,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
       query: query || '',
       articles: payload.articles,
       searchIndex: payload.searchIndex,
+      sources: payload.sources,
       meta: payload.meta,
     });
     const generatedAtElement = documentRef.getElementById('generated-at');
@@ -2622,6 +2735,7 @@ type FeedShelfGlobalScope = typeof globalThis & {
     UNKNOWN_SHELF_MESSAGE,
     UNKNOWN_SOURCE_MESSAGE,
     buildArticleViewModels,
+    buildSecondarySourceChips,
     buildCategoryHrefFromCategoryPage,
     buildCategoryHrefFromHome,
     buildCategoryHrefFromSourcePage,

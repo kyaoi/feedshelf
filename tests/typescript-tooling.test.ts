@@ -553,6 +553,38 @@ test('FS-DOCS-27 public provenance chip docs split stays aligned across PLAN, SP
   assert.match(traceability, /unknown source id は無視/);
 });
 
+test('FS-UX-22 provenance chips stay aligned across PLAN, TRACEABILITY, app, and web tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const appSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/web/app.ts'),
+    'utf8',
+  );
+  const webHomeTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/web-home.test.ts'),
+    'utf8',
+  );
+  const webSearchTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/web-search.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-UX-22/);
+  assert.match(plan, /shared article card 上の補助表示/);
+  assert.match(traceability, /FS-160/);
+  assert.match(appSource, /buildSecondarySourceChips/);
+  assert.match(appSource, /article-card__secondary-sources/);
+  assert.match(appSource, /visibleChips.length < 2/);
+  assert.match(webHomeTest, /bounded secondary-source chips for home cards/);
+  assert.match(webSearchTest, /nested source hrefs for secondary-source chips/);
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
