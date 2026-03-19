@@ -841,6 +841,14 @@ v1 の生成優先順位は以下とする。
 - fuzzy merge が成立した場合、winner selection と既存 merge rule は維持しつつ、internal provenance / managed update state では `matchedBy=fuzzyTitleDate` を追加で追跡できるようにする
 - この task では cross-source clustering、body fetch、HTML canonical parse、manual review UI、public confidence score は扱わない
 
+### 10.5.2 Post-v1 fuzzy dedupe implementation (`FS-DATA-07`)
+
+- `dedupeArticles()` は first pass として既存の exact dedupe（`normalizedUrl` / `(feedId, sourceItemId)`）を維持し、その pass で一致しなかった article にだけ fuzzy fallback を適用する
+- fuzzy fallback の compare key は `sourceName` / `language` / `titleCompareKey` の組み合わせとし、`titleCompareKey` は title の trim・連続空白 collapse・lowercase 化で導く
+- fuzzy candidate は deduped 済み article 側でも `publishedAt` が non-null であり、incoming article との差が 72 時間以内のものだけを採用する
+- fuzzy merge が成立した場合の winner 選択、summary / author / image / tags / shelfIds / `seenInFeeds[]` の merge rule は既存 exact dedupe と同じにし、incoming provenance entry だけ `matchedBy=fuzzyTitleDate` として retag する
+- `update-state.json` の provenance parser / writer も `matchedBy=fuzzyTitleDate` を受け入れ、問題時は fuzzy fallback を外して full rebuild すれば rollback できる
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

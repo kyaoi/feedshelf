@@ -397,6 +397,50 @@ test('runUpdatePipeline applies canonicalization precision layer before publishi
   );
 });
 
+test('loadUpdateState keeps fuzzyTitleDate provenance entries', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-state-fuzzy-'),
+  );
+  const statePath = path.join(tempDir, 'update-state.json');
+
+  await fsp.writeFile(
+    statePath,
+    JSON.stringify({
+      version: 1,
+      updatedAt: '2026-03-10T09:10:11.000Z',
+      safetyWindowHours: 72,
+      sources: {
+        'rss-feed': {
+          feedId: 'rss-feed',
+          checkpointArticleId: 'shared-article',
+          checkpointSortAt: '2026-03-10T09:00:00.000Z',
+          lastSuccessfulFetchAt: '2026-03-10T09:10:11.000Z',
+          provenance: [
+            {
+              feedId: 'rss-feed',
+              firstSeenAt: '2026-03-10T09:05:00.000Z',
+              lastSeenAt: '2026-03-10T09:05:00.000Z',
+              sourceItemId: 'rss-shared',
+              matchedBy: 'fuzzyTitleDate',
+            },
+          ],
+        },
+      },
+    }),
+  );
+
+  const state = await loadUpdateState(statePath);
+  assert.deepEqual(state?.sources['rss-feed']?.provenance, [
+    {
+      feedId: 'rss-feed',
+      firstSeenAt: '2026-03-10T09:05:00.000Z',
+      lastSeenAt: '2026-03-10T09:05:00.000Z',
+      sourceItemId: 'rss-shared',
+      matchedBy: 'fuzzyTitleDate',
+    },
+  ]);
+});
+
 test('runUpdatePipeline writes update-state.json and retains previously published articles', async () => {
   const tempDir = await fsp.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-update-state-'),

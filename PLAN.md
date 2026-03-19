@@ -338,6 +338,15 @@ Phase 6 の進め方:
 - fuzzy dedupe は `normalizedUrl` / `(feedId, sourceItemId)` の exact match が無かった article にだけ適用し、candidate は少なくとも `sourceName` / `language` / `titleCompareKey` が一致し、両方の `publishedAt` が存在して 72 時間以内である場合に限定する
 - fuzzy merge の根拠は internal provenance / update state で `matchedBy=fuzzyTitleDate` として追跡できるようにしつつ、body fetch・HTML 類似度・embedding / LLM・cross-source clustering・manual review UI はこの task に含めない
 
+### Post-v1 fuzzy dedupe implementation
+
+- [x] `FS-DATA-07` exact dedupe miss 後の same-source/title/date fallback を `dedupeArticles()` に追加し、internal `matchedBy=fuzzyTitleDate` を update state まで通す
+
+完了条件:
+- `dedupeArticles()` が exact dedupe（`normalizedUrl` / `(feedId, sourceItemId)`）で一致しなかった article にだけ fuzzy fallback を適用し、same `sourceName` / `language` / `titleCompareKey` かつ `publishedAt` 差が 72 時間以内の candidate だけを merge 対象にできる
+- fuzzy merge 後も public JSON shape / route 構造 / checked-in HTML shell は変えず、既存 winner 選択・field merge・`seenInFeeds[]` derived compatibility summary を維持したまま、incoming provenance を `matchedBy=fuzzyTitleDate` へ retag して internal state に残せる
+- `loadUpdateState()` / `buildNextUpdateState()` が `matchedBy=fuzzyTitleDate` を落とさず扱え、問題時は fuzzy fallback を外して full rebuild すれば rollback できる
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -350,7 +359,8 @@ Phase 6 の進め方:
 - `FS-DATA-05` の first implementation は完了し、canonical article object と `update-state.json` に internal `provenance[]` が入り、`seenInFeeds[]` は compatibility summary として残る構成になった
 - `buildNextUpdateState()` は dedupe winner の `feedId` だけではなく `provenance[]` の各 `feedId` を checkpoint 対象にするため、cross-feed dedupe 後でも source ごとの managed checkpoint を前進させられる
 - public JSON への provenance surfacing や `seenInFeeds[]` の除去はまだ行っていないため、internal schema の安定化を確認した後に別 docs task を挟んで検討する
-- `FS-DATA-07` の docs split は完了したが実装はまだであり、exact dedupe miss に対する same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を最小差分で入れる task が次候補になる
+- `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
+- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了したため、今後の拡張は public JSON への surfacing や stricter rollback / observability が必要かを docs-first で再評価してから扱う
 
 ## メモ
 

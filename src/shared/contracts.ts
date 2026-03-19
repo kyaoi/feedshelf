@@ -27,7 +27,8 @@ export interface ShelvesDocument {
 export type ArticleProvenanceMatchedBy =
   | 'primary'
   | 'normalizedUrl'
-  | 'feedItem';
+  | 'feedItem'
+  | 'fuzzyTitleDate';
 
 export interface ArticleProvenanceEntry {
   feedId: string;

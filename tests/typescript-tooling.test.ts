@@ -352,6 +352,54 @@ test('FS-DATA-07 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABI
   assert.match(traceability, /embedding \/ LLM/);
 });
 
+test('FS-DATA-07 implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /Post-v1 fuzzy dedupe implementation/);
+  assert.match(
+    plan,
+    /FS-DATA-07` exact dedupe miss 後の same-source\/title\/date fallback/,
+  );
+  assert.match(plan, /`matchedBy=fuzzyTitleDate` を update state まで通す/);
+  assert.match(spec, /10\.5\.2 Post-v1 fuzzy dedupe implementation/);
+  assert.match(spec, /trim・連続空白 collapse・lowercase 化/);
+  assert.match(spec, /full rebuild すれば rollback できる/);
+  assert.match(decisions, /D-143/);
+  assert.match(decisions, /exact dedupe で未一致だった article にだけ/);
+  assert.match(traceability, /FS-155/);
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticles applies conservative fuzzy fallback for same-source title matches within 72 hours/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /loadUpdateState keeps fuzzyTitleDate provenance entries/,
+  );
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

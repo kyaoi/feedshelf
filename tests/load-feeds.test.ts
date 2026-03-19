@@ -586,6 +586,148 @@ test('dedupeArticles merges shelfIds, sourceTags, and entryTags across duplicate
   ]);
 });
 
+test('dedupeArticles applies conservative fuzzy fallback for same-source title matches within 72 hours', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-fuzzy-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared Title',
+      url: 'https://example.com/posts/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: '  shared   title  ',
+      url: 'https://example.com/posts/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 1);
+  assert.deepEqual(deduped[0].shelfIds, ['examples', 'research']);
+  assert.deepEqual(deduped[0].sourceTags, ['Atom Source', 'RSS Source']);
+  assert.deepEqual(deduped[0].entryTags, ['atom', 'rss']);
+  assert.deepEqual(deduped[0].seenInFeeds, ['atom-feed', 'rss-feed']);
+  assert.deepEqual(deduped[0].provenance, [
+    {
+      feedId: 'atom-feed',
+      firstSeenAt: '2026-03-10T06:05:00.000Z',
+      lastSeenAt: '2026-03-10T06:05:00.000Z',
+      sourceItemId: 'atom-shared-b',
+      matchedBy: 'primary',
+    },
+    {
+      feedId: 'rss-feed',
+      firstSeenAt: '2026-03-08T06:00:00.000Z',
+      lastSeenAt: '2026-03-08T06:00:00.000Z',
+      sourceItemId: 'rss-shared-a',
+      matchedBy: 'fuzzyTitleDate',
+    },
+  ]);
+});
+
+test('dedupeArticles does not fuzzy-merge same-source title matches outside the 72 hour window', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-window-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared Title',
+      url: 'https://example.com/posts/window-a',
+      summary: 'Older article.',
+      publishedAt: '2026-03-01T00:00:00.000Z',
+      fetchedAt: '2026-03-01T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-window-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-01T06:00:00.000Z',
+          lastSeenAt: '2026-03-01T06:00:00.000Z',
+          sourceItemId: 'rss-window-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-window-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'shared title',
+      url: 'https://example.com/posts/window-b',
+      summary: 'Newer article.',
+      publishedAt: '2026-03-05T00:00:01.000Z',
+      fetchedAt: '2026-03-05T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-window-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-05T06:00:00.000Z',
+          lastSeenAt: '2026-03-05T06:00:00.000Z',
+          sourceItemId: 'atom-window-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 2);
+});
+
 test('buildPublicExports creates shelf-first public JSON contracts', () => {
   const publicExports = buildPublicExports({
     articles: [

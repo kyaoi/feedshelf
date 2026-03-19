@@ -939,6 +939,13 @@
 - 影響: first implementation は `dedupeArticles()` と internal tests を中心に閉じ、body fetch・HTML 類似度・embedding / LLM・cross-source clustering・manual review UI・public confidence score は含めない。問題が出た場合の rollback は fuzzy pass を外して full rebuild すれば足り、追加 migration は前提にしない
 
 
+## D-143: `FS-DATA-07` は exact miss 後の conservative fallback として `dedupeArticles()` に閉じて実装する
+
+- 決定: `FS-DATA-07` の first implementation では、exact dedupe で未一致だった article にだけ same `sourceName` / `language` / `titleCompareKey` + `publishedAt` 72 時間 window の fuzzy fallback を適用し、merge 成立時は incoming provenance を `matchedBy=fuzzyTitleDate` として retag する
+- 理由: docs split で固定した conservative 境界をそのまま `dedupeArticles()` に閉じて消費すれば、public JSON / route / checked-in HTML shell を変えずに duplicate precision だけを上げられるため。exact key miss 後の fallback に限定すれば rollback も単純で、追加 migration なしに full rebuild で戻せる
+- 影響: `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/update.ts` と internal tests が主な変更対象になる。`matchedBy` の許容値には `fuzzyTitleDate` が増えるが、public exports には surfacing しない
+
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

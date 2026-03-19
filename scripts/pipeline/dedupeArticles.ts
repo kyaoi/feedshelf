@@ -12,6 +12,8 @@ interface DedupeMatch {
   matchedBy: DedupeMatchedBy | null;
 }
 
+const FUZZY_DEDUPE_WINDOW_MS = 72 * 60 * 60 * 1000;
+
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
@@ -134,6 +136,48 @@ function resolveDedupeMatch(article: CanonicalArticle): DedupeMatch {
   };
 }
 
+export function createTitleCompareKey(title: string): string {
+  return title.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US');
+}
+
+function resolveFuzzyDedupeKey(article: CanonicalArticle): string | null {
+  if (typeof article.publishedAt !== 'string') {
+    return null;
+  }
+
+  const publishedAt = toComparableTime(article.publishedAt);
+  if (!Number.isFinite(publishedAt)) {
+    return null;
+  }
+
+  const titleCompareKey = createTitleCompareKey(article.title);
+  if (titleCompareKey === '') {
+    return null;
+  }
+
+  return [article.sourceName, article.language, titleCompareKey].join('\u0000');
+}
+
+function areWithinFuzzyWindow(
+  leftPublishedAt: string | null,
+  rightPublishedAt: string | null,
+): boolean {
+  if (
+    typeof leftPublishedAt !== 'string' ||
+    typeof rightPublishedAt !== 'string'
+  ) {
+    return false;
+  }
+
+  const leftTime = toComparableTime(leftPublishedAt);
+  const rightTime = toComparableTime(rightPublishedAt);
+  if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) {
+    return false;
+  }
+
+  return Math.abs(leftTime - rightTime) <= FUZZY_DEDUPE_WINDOW_MS;
+}
+
 function cloneProvenanceEntry(
   entry: ArticleProvenanceEntry,
 ): ArticleProvenanceEntry {
@@ -233,6 +277,77 @@ function deriveSeenInFeeds(provenance: ArticleProvenanceEntry[]): string[] {
   return feeds;
 }
 
+function registerExactDedupeKey(
+  keyToIndex: Map<string, number>,
+  article: CanonicalArticle,
+  index: number,
+): void {
+  const { key } = resolveDedupeMatch(article);
+  if (key !== null) {
+    keyToIndex.set(key, index);
+  }
+}
+
+function registerFuzzyDedupeKey(
+  fuzzyKeyToIndexes: Map<string, Set<number>>,
+  article: CanonicalArticle,
+  index: number,
+): void {
+  const key = resolveFuzzyDedupeKey(article);
+  if (key === null) {
+    return;
+  }
+
+  const existing = fuzzyKeyToIndexes.get(key);
+  if (existing) {
+    existing.add(index);
+    return;
+  }
+
+  fuzzyKeyToIndexes.set(key, new Set([index]));
+}
+
+function findFuzzyDuplicateIndex(
+  fuzzyKeyToIndexes: Map<string, Set<number>>,
+  dedupedArticles: CanonicalArticle[],
+  article: CanonicalArticle,
+): number | null {
+  const key = resolveFuzzyDedupeKey(article);
+  if (key === null) {
+    return null;
+  }
+
+  const candidateIndexes = fuzzyKeyToIndexes.get(key);
+  if (!candidateIndexes) {
+    return null;
+  }
+
+  let bestIndex: number | null = null;
+  let bestDelta = Number.POSITIVE_INFINITY;
+
+  for (const index of candidateIndexes) {
+    const candidate = dedupedArticles[index];
+    if (!candidate) {
+      continue;
+    }
+
+    if (!areWithinFuzzyWindow(candidate.publishedAt, article.publishedAt)) {
+      continue;
+    }
+
+    const delta = Math.abs(
+      toComparableTime(candidate.publishedAt || '') -
+        toComparableTime(article.publishedAt || ''),
+    );
+    if (delta < bestDelta) {
+      bestIndex = index;
+      bestDelta = delta;
+    }
+  }
+
+  return bestIndex;
+}
+
 export function getDedupeKey(article: CanonicalArticle): string | null {
   return resolveDedupeMatch(article).key;
 }
@@ -279,26 +394,52 @@ export function dedupeArticles(
 ): CanonicalArticle[] {
   const dedupedArticles: CanonicalArticle[] = [];
   const keyToIndex = new Map<string, number>();
+  const fuzzyKeyToIndexes = new Map<string, Set<number>>();
 
   for (const article of articles) {
     const dedupeMatch = resolveDedupeMatch(article);
-    if (dedupeMatch.key === null) {
-      dedupedArticles.push(article);
-      continue;
+    if (dedupeMatch.key !== null) {
+      const existingIndex = keyToIndex.get(dedupeMatch.key);
+      if (existingIndex !== undefined) {
+        const mergedArticle = mergeDuplicateArticles(
+          dedupedArticles[existingIndex],
+          article,
+          dedupeMatch.matchedBy || undefined,
+        );
+        dedupedArticles[existingIndex] = mergedArticle;
+        registerExactDedupeKey(keyToIndex, article, existingIndex);
+        registerExactDedupeKey(keyToIndex, mergedArticle, existingIndex);
+        registerFuzzyDedupeKey(fuzzyKeyToIndexes, mergedArticle, existingIndex);
+        continue;
+      }
     }
 
-    const existingIndex = keyToIndex.get(dedupeMatch.key);
-    if (existingIndex === undefined) {
-      keyToIndex.set(dedupeMatch.key, dedupedArticles.length);
-      dedupedArticles.push(article);
-      continue;
-    }
-
-    dedupedArticles[existingIndex] = mergeDuplicateArticles(
-      dedupedArticles[existingIndex],
+    const fuzzyDuplicateIndex = findFuzzyDuplicateIndex(
+      fuzzyKeyToIndexes,
+      dedupedArticles,
       article,
-      dedupeMatch.matchedBy || undefined,
     );
+    if (fuzzyDuplicateIndex !== null) {
+      const mergedArticle = mergeDuplicateArticles(
+        dedupedArticles[fuzzyDuplicateIndex],
+        article,
+        'fuzzyTitleDate',
+      );
+      dedupedArticles[fuzzyDuplicateIndex] = mergedArticle;
+      registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
+      registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
+      registerFuzzyDedupeKey(
+        fuzzyKeyToIndexes,
+        mergedArticle,
+        fuzzyDuplicateIndex,
+      );
+      continue;
+    }
+
+    dedupedArticles.push(article);
+    const nextIndex = dedupedArticles.length - 1;
+    registerExactDedupeKey(keyToIndex, article, nextIndex);
+    registerFuzzyDedupeKey(fuzzyKeyToIndexes, article, nextIndex);
   }
 
   return dedupedArticles;

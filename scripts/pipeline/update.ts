@@ -27,6 +27,7 @@ const PROVENANCE_MATCHED_BY_VALUES = new Set<ArticleProvenanceMatchedBy>([
   'primary',
   'normalizedUrl',
   'feedItem',
+  'fuzzyTitleDate',
 ]);
 
 function normalizeProvenanceEntries(
