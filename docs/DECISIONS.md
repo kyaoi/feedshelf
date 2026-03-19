@@ -926,6 +926,12 @@
 - 理由: 既存 curated source の中で redirector 的な URL を最小コストで改善でき、article ごとの追加 request を無制限に増やさずに precision layer を導入できるため
 - 影響: precision layer は `runPipeline` / `runUpdatePipeline` の両方で使えるが、追加 network I/O は allowlisted rewrite が発火した article に限定される。次の deferred backlog は richer provenance (`FS-DATA-05`) へ進める
 
+## D-141: `FS-DATA-05` の first implementation は internal `provenance[]` 追加 + `seenInFeeds[]` 併存で閉じる
+
+- 決定: `FS-DATA-05` の最初の実装では、canonical article object と managed update state に `provenance[]` を追加する一方、既存 `seenInFeeds[]` は derived compatibility summary として残す。`provenance[]` の各 entry は `feedId` / `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` を持ち、`matchedBy` は `primary` / `normalizedUrl` / `feedItem` に限定する
+- 理由: richer provenance を入れたい一方で、public JSON・UI・既存 tests まで同時に壊すと差分が広がりすぎるため。まず internal schema と checkpoint / dedupe merge に閉じた最小差分で導入し、既存 `seenInFeeds[]` を互換要約として残す方が安全に進められる
+- 影響: `articles.json` など public JSON の shape と route 構造はこの task では変えない。`seenInFeeds[]` は当面 `provenance[]` から導出できる summary として扱い、public provenance export や UI surfacing、per-fetch の完全履歴は後続 docs task へ送る
+
 
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 

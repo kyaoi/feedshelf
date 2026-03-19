@@ -258,7 +258,7 @@ test('FS-DATA-06 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABI
   assert.match(plan, /allowlisted host rule と bounded redirect resolution/);
   assert.match(spec, /build-time の best-effort precision layer/);
   assert.match(spec, /article HTML 本文の取得/);
-  assert.match(spec, /<link rel=\"canonical\">/);
+  assert.match(spec, /<link rel="canonical">/);
   assert.match(
     spec,
     /public JSON の shape、route 構造、checked-in HTML shell はこの task では変えない/,
@@ -300,7 +300,7 @@ test('FS-DATA-06 implementation stays aligned across PLAN, SPEC, DECISIONS, TRAC
     plan,
     /FS-DATA-06` allowlisted host rule と bounded redirect resolution/,
   );
-  assert.match(plan, /`FS-DATA-05` の richer provenance/);
+  assert.match(plan, /deferred backlog の次候補は `FS-DATA-05` へ移る/);
   assert.match(spec, /10\.2\.2 Post-v1 canonicalization implementation/);
   assert.match(spec, /b\.hatena\.ne\.jp\/entry/);
   assert.match(spec, /candidate にだけ適用/);
@@ -315,6 +315,45 @@ test('FS-DATA-06 implementation stays aligned across PLAN, SPEC, DECISIONS, TRAC
     updateWorkflowTest,
     /runUpdatePipeline applies canonicalization precision layer/,
   );
+});
+
+test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-23/);
+  assert.match(
+    plan,
+    /`seenInFeeds\[\]` は削除せず derived compatibility summary/,
+  );
+  assert.match(plan, /`matchedBy=primary\|normalizedUrl\|feedItem`/);
+  assert.match(spec, /10\.6\.1 Post-v1 richer provenance docs split/);
+  assert.match(
+    spec,
+    /`provenance\[\]` は `feedId` ごとに高々 1 件の bounded entry/,
+  );
+  assert.match(spec, /public JSON の shape と route 構造は変えない/);
+  assert.match(decisions, /D-141/);
+  assert.match(
+    decisions,
+    /internal `provenance\[\]` 追加 \+ `seenInFeeds\[\]` 併存/,
+  );
+  assert.match(traceability, /FS-152/);
+  assert.match(traceability, /matchedBy=primary\|normalizedUrl\|feedItem/);
 });
 
 test('feed and shelf registry validation stays aligned across README, docs, and tests', () => {

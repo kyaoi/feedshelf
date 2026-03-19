@@ -835,6 +835,19 @@ v1 の生成優先順位は以下とする。
 - 媒体名や棚所属などの表示系メタデータは primary record の値を採用する
 - より詳細な provenance 構造は v2 で再検討する
 
+### 10.6.1 Post-v1 richer provenance docs split (`FS-DOCS-23`)
+
+- `FS-DATA-05` の first implementation では、canonical article object と managed update state にだけ `provenance[]` を追加し、public JSON の shape と route 構造は変えない
+- `seenInFeeds[]` は即時置換しない。`provenance[]` から導出できる compatibility summary として当面残し、既存 tests / merge rule / internal consumers を段階的に移行できる境界を優先する
+- `provenance[]` は `feedId` ごとに高々 1 件の bounded entry を持つ配列とし、各 entry は少なくとも次を持つ
+  - `feedId`: 観測元 feed の識別子
+  - `firstSeenAt`: その feed で最初に観測した時刻
+  - `lastSeenAt`: その feed で最後に観測した時刻
+  - `sourceItemId`: その feed 側 item identifier（無ければ `null`）
+  - `matchedBy`: その entry が canonical article に束ねられた根拠。初期値は `primary`、dedupe merge 経由は `normalizedUrl` または `feedItem` に限定する
+- 同じ `feedId` が再度観測された場合、`firstSeenAt` は最小値、`lastSeenAt` は最大値を採用して 1 entry に畳み込んでよい。`sourceItemId` は non-null を優先し、`matchedBy` は最初に確定した根拠を保持してよい
+- この task では per-fetch の完全履歴、public `articles.json` への provenance 露出、UI での provenance 表示、external evidence URL の保持までは扱わない
+
 ---
 
 ## 11. 生成物 JSON 契約
@@ -898,6 +911,7 @@ Phase 6 では次の公開 JSON を基本候補とする。
 - `sourceTags` と `entryTags` は検索・タグ導線・記事カード補助情報に使えるよう公開してよい
 - UI は `entryTags` / `sourceTags` から visible card tags を軽量導出してよく、`cardTags` のような専用公開 field を v1 必須にしない
 - `sourceItemId`, `seenInFeeds`, `fetchedAt`, `author` などの内部寄り情報は v1 の公開 JSON では必須にしない
+- post-v1 に internal `provenance[]` を導入しても、first implementation では `articles.json` へ露出しない
 
 ### 11.4 `shelves.json`
 
@@ -1359,7 +1373,7 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 - PWA 化
 - 外部本文抽出補助
 - fuzzy dedupe
-- richer provenance 記録
+- public provenance export / audit UI
 - current page shard を超える finer-grained public JSON split
 
 ## 15.1.0 Deferred data backlog reprioritization
@@ -1367,8 +1381,8 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 `FS-DATA-06` は allowlisted host rewrite と bounded redirect resolution の precision layer として実装済みになったため、残る deferred backlog は次の順番で扱う。
 
 1. `FS-DATA-05` richer provenance
-   - canonicalization の前提が固まった後で、`seenInFeeds[]` を richer object へ置き換えるか併存させるかを決める
-   - public JSON や internal canonical article object の schema 変更を伴いやすいため、deferred backlog の次候補として扱う
+   - first implementation では internal canonical article object / managed update state に `provenance[]` を追加し、`seenInFeeds[]` は derived compatibility summary として併存させる
+   - `provenance[]` は `feedId` ごとの bounded entry（`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy`）を持ち、public JSON への surfacing は別 docs task まで見送る
 2. `FS-DATA-07` fuzzy dedupe
    - 誤爆の影響が最も大きく、title/date 類似だけで別記事を潰す危険があるため最後段に置く
    - canonicalization と provenance の整理後に、必要なら scorer / threshold / rollback 方針を docs で閉じてから着手する

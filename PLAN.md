@@ -311,6 +311,15 @@ Phase 6 の進め方:
 - bounded redirect resolution は allowlisted host rewrite 後の candidate にだけ適用し、redirect loop / timeout / fetch failure 時は既存 `normalizeUrl()` ベースの safe canonicalization へ戻る
 - `runPipeline` / `runUpdatePipeline` のどちらでも precision layer が public JSON shape を変えずに効き、影響が article `url` / `id` / dedupe winner に留まることを tests で追跡できる
 
+### Post-v1 richer provenance docs split
+
+- [x] `FS-DOCS-23` `FS-DATA-05` の docs / implementation split を切り、`seenInFeeds[]` との共存方針・feed ごとの観測 evidence・public JSON 境界を固定する
+
+完了条件:
+- `FS-DATA-05` の first implementation が public JSON shape / route 構造を変えず、internal canonical article object と managed update state に閉じた schema 拡張として着手できることを docs で追跡できる
+- `seenInFeeds[]` は削除せず derived compatibility summary として残し、post-v1 の richer provenance は `feedId` ごとに 1 件の bounded entry を持つ `provenance[]` として先に固定する
+- 各 provenance entry が少なくとも `feedId` / `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` を持ち、timestamp の min/max merge・`sourceItemId` の non-null 優先・`matchedBy=primary|normalizedUrl|feedItem` の境界を docs で固定してから実装へ進める
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -320,7 +329,9 @@ Phase 6 の進め方:
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
 - `FS-DATA-06` は `b.hatena.ne.jp/entry/...` の allowlisted host rewrite と、その candidate にだけ適用する bounded redirect resolution として実装済みになったため、deferred backlog の次候補は `FS-DATA-05` へ移る
-- `FS-DATA-05` の richer provenance は schema 変更タスクとして扱い、`seenInFeeds[]` を置き換えるか併存させるか、feed ごとの evidence を public JSON にどこまで出すかを先に docs で決める
+- `FS-DOCS-23` により、`FS-DATA-05` の first implementation は internal `provenance[]` 追加 + `seenInFeeds[]` 併存 + public JSON 非変更の境界まで docs で固定されたため、次はこの境界を消費する実装タスクへ進める
+- `FS-DATA-05` 実装では feed ごとの provenance entry を `feedId` 単位で 1 件に束ね、`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` を managed checkpoint と dedupe merge に反映するところまでを最小差分の範囲とする
+- public JSON への provenance surfacing や `seenInFeeds[]` の除去はこの次ではなく、internal schema の安定化後に別 docs task を挟んで検討する
 - `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後に最後段で再優先付けする
 
 ## メモ
