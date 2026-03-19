@@ -1396,18 +1396,23 @@ v2 以降で追加検討可能な項目（当初 future 扱いだった tag / se
 - public provenance export / audit UI
 - current page shard を超える finer-grained public JSON split
 
-## 15.1.0 Deferred data backlog reprioritization
+## 15.1.0 Deferred data backlog close-out
 
-`FS-DATA-06` は allowlisted host rewrite と bounded redirect resolution の precision layer として実装済みになったため、残る deferred backlog は次の順番で扱う。
+`FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` の first implementation は完了したため、deferred data backlog は「未着手の残タスク」ではなく、internal precision layer / provenance / conservative fuzzy dedupe の最小実装が揃った状態として扱う。
+
+first implementation までで確定した状態:
 
 1. `FS-DATA-05` richer provenance
-   - first implementation では internal canonical article object / managed update state に `provenance[]` を追加し、`seenInFeeds[]` は derived compatibility summary として併存させる
-   - `provenance[]` は `feedId` ごとの bounded entry（`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy`）を持ち、public JSON への surfacing は別 docs task まで見送る
-2. `FS-DATA-07` fuzzy dedupe
-   - docs split により、first implementation は exact dedupe miss にだけ適用する same-source/title/date fallback に限定し、`titleCompareKey` 一致 + 両方の `publishedAt` が 72 時間以内の candidate だけを collapse 対象にする
-   - merge 理由は internal `matchedBy=fuzzyTitleDate` で追跡し、public JSON surfacing / manual review UI / cross-source clustering は別 task に分離する
+   - canonical article object / managed update state に internal `provenance[]` が入り、`seenInFeeds[]` は derived compatibility summary として併存する
+   - `provenance[]` は `feedId` ごとの bounded entry（`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy`）を持ち、public JSON への surfacing はまだ行わない
+2. `FS-DATA-06` canonicalization precision layer
+   - allowlisted host rewrite + bounded redirect resolution を実装済みとし、safe canonicalization を fallback として維持する
+   - broader host rule や HTML canonical parse は別 docs-first task まで含めない
+3. `FS-DATA-07` fuzzy dedupe
+   - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
+   - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-この順番により、canonicalization 完了後の deferred backlog は provenance → fuzzy dedupe の順で再開できる。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance surfacing、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 

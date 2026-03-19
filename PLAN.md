@@ -40,9 +40,9 @@ FeedShelf の v1 を、仕様先行・最小差分・GitHub Pages 前提で安�
 
 ### Deferred: v2 以降で再検討するデータ契約
 
-- [ ] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する
+- [x] `FS-DATA-05` provenance を `seenInFeeds[]` より豊かに表現する（first implementation 完了。public provenance surfacing は別 docs task）
 - [x] `FS-DATA-06` host 固有の canonical URL 解決と redirect 解決を追加する
-- [ ] `FS-DATA-07` fuzzy dedupe を安全な閾値つきで導入する
+- [x] `FS-DATA-07` fuzzy dedupe を安全な閾値つきで導入する（first implementation 完了。stricter observability / rollback は別 docs task）
 - `FS-DATA-08` の JSON sharding / pagination は post-v1 の `FS-ARCH-10` / `FS-PIPE-05` / `FS-QA-11` で static pagination + build-time page shard として実施済みとみなし、deferred backlog から外す
 
 完了条件:
@@ -346,6 +346,15 @@ Phase 6 の進め方:
 - `dedupeArticles()` が exact dedupe（`normalizedUrl` / `(feedId, sourceItemId)`）で一致しなかった article にだけ fuzzy fallback を適用し、same `sourceName` / `language` / `titleCompareKey` かつ `publishedAt` 差が 72 時間以内の candidate だけを merge 対象にできる
 - fuzzy merge 後も public JSON shape / route 構造 / checked-in HTML shell は変えず、既存 winner 選択・field merge・`seenInFeeds[]` derived compatibility summary を維持したまま、incoming provenance を `matchedBy=fuzzyTitleDate` へ retag して internal state に残せる
 - `loadUpdateState()` / `buildNextUpdateState()` が `matchedBy=fuzzyTitleDate` を落とさず扱え、問題時は fuzzy fallback を外して full rebuild すれば rollback できる
+
+### Post-v1 deferred data backlog close-out
+
+- [x] `FS-DOCS-25` deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）の first implementation 完了状態と、今後の docs-first extension 境界を同期する
+
+完了条件:
+- Deferred 一覧と各詳細セクションの両方で、`FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` の first implementation が完了済みであることを矛盾なく読める
+- deferred data backlog を再度「未着手タスク」として扱わず、今後の拡張は public provenance surfacing・canonicalization の追加 precision rule・fuzzy dedupe の stricter observability / rollback を別 docs-first task として扱うことが `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` で同期している
+- close-out task 自体は docs / traceability / alignment test に閉じ、public JSON・route・pipeline 実装は変えない
 
 ## 直近の次タスク
 

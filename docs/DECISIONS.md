@@ -946,6 +946,13 @@
 - 影響: `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/update.ts` と internal tests が主な変更対象になる。`matchedBy` の許容値には `fuzzyTitleDate` が増えるが、public exports には surfacing しない
 
 
+## D-144: deferred data backlog は first implementation 完了後の close-out 状態として扱い、以後は拡張ごとに docs-first で再分割する
+
+- 決定: `FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` は first implementation まで完了済みとして close-out し、以後の作業は public provenance surfacing、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback などを別々の docs-first task に切り分けて扱う
+- 理由: deferred backlog を未完了のまま残すと、既に実装済みの internal schema / precision layer / conservative fuzzy fallback を再度「未着手 task」と誤認しやすく、次の差分で public JSON や runtime 拡張まで一度に混ぜてしまうため
+- 影響: top-level backlog と詳細 task セクションの整合を docs / traceability / alignment test で同期し、今後の拡張は元の `FS-DATA-05` / `FS-DATA-06` / `FS-DATA-07` を直接 reopen せず、新しい docs task から始める
+
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

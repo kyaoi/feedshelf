@@ -400,6 +400,42 @@ test('FS-DATA-07 implementation stays aligned across PLAN, SPEC, DECISIONS, TRAC
   );
 });
 
+test('FS-DOCS-25 deferred backlog close-out stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-25/);
+  assert.match(plan, /Deferred 一覧と各詳細セクションの両方/);
+  assert.match(
+    plan,
+    /public provenance surfacing・canonicalization の追加 precision rule・fuzzy dedupe の stricter observability \/ rollback/,
+  );
+  assert.match(spec, /15\.1\.0 Deferred data backlog close-out/);
+  assert.match(spec, /deferred data backlog は「未着手の残タスク」ではなく/);
+  assert.match(spec, /追加 precision rule/);
+  assert.match(decisions, /D-144/);
+  assert.match(
+    decisions,
+    /元の `FS-DATA-05` \/ `FS-DATA-06` \/ `FS-DATA-07` を直接 reopen せず/,
+  );
+  assert.match(traceability, /FS-156/);
+  assert.match(traceability, /stricter observability \/ rollback/);
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
