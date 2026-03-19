@@ -517,6 +517,42 @@ test('FS-DATA-09 public provenance export implementation stays aligned across PL
   assert.match(updateWorkflowTest, /alsoSeenInSourceIds: \['legacy-feed'\]/);
 });
 
+test('FS-DOCS-27 public provenance chip docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-27/);
+  assert.match(plan, /shared article card 上の bounded secondary-source chip/);
+  assert.match(
+    plan,
+    /最大 2 件までの secondary source label と `\+N` overflow/,
+  );
+  assert.match(spec, /10\.6\.3 Post-v1 public provenance chip docs split/);
+  assert.match(spec, /既存 `sources\.json` \/ source registry/);
+  assert.match(
+    spec,
+    /new route \/ filter \/ query param \/ sort change \/ search scoring change は行わない/,
+  );
+  assert.match(decisions, /D-146/);
+  assert.match(decisions, /最大 2 件 \+ `\+N` overflow/);
+  assert.match(traceability, /FS-159/);
+  assert.match(traceability, /unknown source id は無視/);
+});
+
 test('FS-DATA-05 docs split stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

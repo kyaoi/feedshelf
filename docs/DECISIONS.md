@@ -958,6 +958,12 @@
 - 理由: multi-source で観測された記事を public JSON で追跡できるようにしつつ、`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` をそのまま露出すると契約が重くなり、audit UI や confidence score まで一緒に設計したくなって差分が肥大化しやすいため
 - 影響: 最初の実装対象は `src/shared/contracts.ts` / `scripts/pipeline/buildPublicExports.ts` / page shard 生成 / public JSON tests に限定し、audit UI・`seenInFeeds[]` 除去・provenance badge 表示は別 docs-first task へ送る
 
+## D-146: public provenance の最初の UI surfacing は bounded secondary-source chip に限定する
+
+- 決定: `FS-DATA-09` 後の最初の provenance UI は、shared article card 上で secondary source を補助表示する chip 群に限定する。label と href は既存 `sources.json` / source registry の `sourceId -> name` / source page href 解決を再利用し、最大 2 件 + `+N` overflow までに抑える
+- 理由: export-only で public 化した `alsoSeenInSourceIds` を UI で使い始める際に、時系列 audit・confidence・manual review まで一気に混ぜると差分が大きくなりやすい一方、shared article card の補助 chip なら既存 card / source route 資産を再利用しつつ bounded な surfacing に閉じられるため
+- 影響: first implementation は `src/web/app.ts` / checked-in shell asset / CSS / web tests に閉じ、new route / filter / query param / sort change / search scoring 変更は別 task とする。unknown source id は黙って無視してよく、`matchedBy` / timestamp / confidence を public UI に追加しない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

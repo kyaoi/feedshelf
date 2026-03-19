@@ -875,6 +875,13 @@ v1 の生成優先順位は以下とする。
 - public へは `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` / confidence score を露出しない。source の表示名や棚情報は既存 `sources.json` / `articles.json` の `sourceId` / `sourceName` から解決し、provenance export 側に重複保持しない
 - first implementation は export contract の追加に閉じ、provenance audit UI・per-source label chip・manual review surface・`seenInFeeds[]` 除去は別 docs-first task に分離する
 
+### 10.6.3 Post-v1 public provenance chip docs split (`FS-DOCS-27`)
+
+- `FS-DATA-09` で export 済みの `alsoSeenInSourceIds` を最初に UI へ surfacing するときは、shared article card 上の bounded secondary-source chip に限定する
+- chip の label / href は新しい public field を増やさず、既存 `sources.json` / source registry の `sourceId -> name` / source page href 解決を再利用して導く。unknown source id は best-effort で黙って無視してよい
+- first implementation は secondary source を最大 2 件まで表示し、残りは `+N` overflow で畳む。source の時刻差・`matchedBy`・confidence・feed 単位 provenance・manual review affordance は同じ task に含めない
+- 表示面は shared article card 系に閉じ、new route / filter / query param / sort change / search scoring change は行わない。`alsoSeenInSourceIds` が空または unknown の場合は chip 群自体を出さなくてよい
+
 ---
 
 ## 11. 生成物 JSON 契約
@@ -1420,7 +1427,7 @@ first implementation までで確定した状態:
    - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
    - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback をそれぞれ別の docs-first task として扱う。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 
