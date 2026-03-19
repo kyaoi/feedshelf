@@ -1,5 +1,16 @@
-import type { CanonicalArticle } from '../../src/shared/contracts.ts';
+import type {
+  ArticleProvenanceEntry,
+  ArticleProvenanceMatchedBy,
+  CanonicalArticle,
+} from '../../src/shared/contracts.ts';
 import { normalizeUrl } from './normalizeFeed.ts';
+
+type DedupeMatchedBy = Exclude<ArticleProvenanceMatchedBy, 'primary'>;
+
+interface DedupeMatch {
+  key: string | null;
+  matchedBy: DedupeMatchedBy | null;
+}
 
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
@@ -101,25 +112,148 @@ function pickEarliestFetchedAt(left: string, right: string): string {
   return toComparableTime(left) <= toComparableTime(right) ? left : right;
 }
 
-export function getDedupeKey(article: CanonicalArticle): string | null {
+function resolveDedupeMatch(article: CanonicalArticle): DedupeMatch {
   const normalizedUrl = normalizeUrl(article.url);
   if (normalizedUrl !== null) {
-    return `url:${normalizedUrl}`;
+    return {
+      key: `url:${normalizedUrl}`,
+      matchedBy: 'normalizedUrl',
+    };
   }
 
   if (article.sourceItemId) {
-    return `feed-item:${article.feedId}:${article.sourceItemId}`;
+    return {
+      key: `feed-item:${article.feedId}:${article.sourceItemId}`,
+      matchedBy: 'feedItem',
+    };
   }
 
-  return null;
+  return {
+    key: null,
+    matchedBy: null,
+  };
+}
+
+function cloneProvenanceEntry(
+  entry: ArticleProvenanceEntry,
+): ArticleProvenanceEntry {
+  return {
+    feedId: entry.feedId,
+    firstSeenAt: entry.firstSeenAt,
+    lastSeenAt: entry.lastSeenAt,
+    sourceItemId: entry.sourceItemId,
+    matchedBy: entry.matchedBy,
+  };
+}
+
+function retagIncomingProvenanceEntry(
+  entry: ArticleProvenanceEntry,
+  matchedBy: DedupeMatchedBy,
+): ArticleProvenanceEntry {
+  return {
+    ...cloneProvenanceEntry(entry),
+    matchedBy: entry.matchedBy === 'primary' ? matchedBy : entry.matchedBy,
+  };
+}
+
+function pickEarlierTimestamp(left: string, right: string): string {
+  return toComparableTime(left) <= toComparableTime(right) ? left : right;
+}
+
+function pickLaterTimestamp(left: string, right: string): string {
+  return toComparableTime(left) >= toComparableTime(right) ? left : right;
+}
+
+function mergeProvenanceEntry(
+  existing: ArticleProvenanceEntry,
+  incoming: ArticleProvenanceEntry,
+): ArticleProvenanceEntry {
+  return {
+    feedId: existing.feedId,
+    firstSeenAt: pickEarlierTimestamp(
+      existing.firstSeenAt,
+      incoming.firstSeenAt,
+    ),
+    lastSeenAt: pickLaterTimestamp(existing.lastSeenAt, incoming.lastSeenAt),
+    sourceItemId: existing.sourceItemId || incoming.sourceItemId || null,
+    matchedBy: existing.matchedBy,
+  };
+}
+
+function mergeProvenanceEntries({
+  winner,
+  loser,
+  matchedBy,
+}: {
+  winner: ArticleProvenanceEntry[];
+  loser: ArticleProvenanceEntry[];
+  matchedBy: DedupeMatchedBy;
+}): ArticleProvenanceEntry[] {
+  const merged: ArticleProvenanceEntry[] = [];
+  const indexByFeedId = new Map<string, number>();
+
+  const appendEntry = (entry: ArticleProvenanceEntry) => {
+    const existingIndex = indexByFeedId.get(entry.feedId);
+    if (existingIndex === undefined) {
+      indexByFeedId.set(entry.feedId, merged.length);
+      merged.push(entry);
+      return;
+    }
+
+    merged[existingIndex] = mergeProvenanceEntry(merged[existingIndex], entry);
+  };
+
+  for (const entry of winner) {
+    appendEntry(cloneProvenanceEntry(entry));
+  }
+
+  for (const entry of loser) {
+    appendEntry(retagIncomingProvenanceEntry(entry, matchedBy));
+  }
+
+  return merged;
+}
+
+function deriveSeenInFeeds(provenance: ArticleProvenanceEntry[]): string[] {
+  const seen = new Set<string>();
+  const feeds: string[] = [];
+
+  for (const entry of provenance) {
+    if (
+      typeof entry.feedId !== 'string' ||
+      entry.feedId === '' ||
+      seen.has(entry.feedId)
+    ) {
+      continue;
+    }
+    seen.add(entry.feedId);
+    feeds.push(entry.feedId);
+  }
+
+  return feeds;
+}
+
+export function getDedupeKey(article: CanonicalArticle): string | null {
+  return resolveDedupeMatch(article).key;
 }
 
 export function mergeDuplicateArticles(
   left: CanonicalArticle,
   right: CanonicalArticle,
+  matchedBy?: DedupeMatchedBy,
 ): CanonicalArticle {
+  const dedupeMatchedBy = matchedBy || resolveDedupeMatch(left).matchedBy;
+  if (dedupeMatchedBy === null) {
+    return pickWinner(left, right);
+  }
+
   const winner = pickWinner(left, right);
   const loser = winner === left ? right : left;
+  const provenance = mergeProvenanceEntries({
+    winner: winner.provenance,
+    loser: loser.provenance,
+    matchedBy: dedupeMatchedBy,
+  });
 
   return {
     ...winner,
@@ -135,7 +269,8 @@ export function mergeDuplicateArticles(
     sourceTags: uniqueUnion(winner.sourceTags, loser.sourceTags),
     entryTags: uniqueUnion(winner.entryTags, loser.entryTags),
     sourceItemId: winner.sourceItemId || loser.sourceItemId || null,
-    seenInFeeds: uniqueUnion(winner.seenInFeeds, loser.seenInFeeds),
+    provenance,
+    seenInFeeds: deriveSeenInFeeds(provenance),
   };
 }
 
@@ -146,15 +281,15 @@ export function dedupeArticles(
   const keyToIndex = new Map<string, number>();
 
   for (const article of articles) {
-    const dedupeKey = getDedupeKey(article);
-    if (dedupeKey === null) {
+    const dedupeMatch = resolveDedupeMatch(article);
+    if (dedupeMatch.key === null) {
       dedupedArticles.push(article);
       continue;
     }
 
-    const existingIndex = keyToIndex.get(dedupeKey);
+    const existingIndex = keyToIndex.get(dedupeMatch.key);
     if (existingIndex === undefined) {
-      keyToIndex.set(dedupeKey, dedupedArticles.length);
+      keyToIndex.set(dedupeMatch.key, dedupedArticles.length);
       dedupedArticles.push(article);
       continue;
     }
@@ -162,6 +297,7 @@ export function dedupeArticles(
     dedupedArticles[existingIndex] = mergeDuplicateArticles(
       dedupedArticles[existingIndex],
       article,
+      dedupeMatch.matchedBy || undefined,
     );
   }
 

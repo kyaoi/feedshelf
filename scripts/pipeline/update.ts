@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
+  ArticleProvenanceEntry,
+  ArticleProvenanceMatchedBy,
   CanonicalArticle,
   FeedDefinition,
   FeedDocumentInput,
@@ -21,6 +23,117 @@ import {
 import { runPipeline } from './run.ts';
 
 const DEFAULT_SAFETY_WINDOW_HOURS = 72;
+const PROVENANCE_MATCHED_BY_VALUES = new Set<ArticleProvenanceMatchedBy>([
+  'primary',
+  'normalizedUrl',
+  'feedItem',
+]);
+
+function normalizeProvenanceEntries(
+  value: unknown,
+  fallbackFeedId?: string,
+): ArticleProvenanceEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const normalized: ArticleProvenanceEntry[] = [];
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') {
+      continue;
+    }
+
+    const candidate = entry as Partial<ArticleProvenanceEntry>;
+    const feedId =
+      typeof candidate.feedId === 'string' && candidate.feedId !== ''
+        ? candidate.feedId
+        : fallbackFeedId;
+    const firstSeenAt =
+      typeof candidate.firstSeenAt === 'string' ? candidate.firstSeenAt : null;
+    const lastSeenAt =
+      typeof candidate.lastSeenAt === 'string' ? candidate.lastSeenAt : null;
+    const matchedBy =
+      typeof candidate.matchedBy === 'string' &&
+      PROVENANCE_MATCHED_BY_VALUES.has(
+        candidate.matchedBy as ArticleProvenanceMatchedBy,
+      )
+        ? (candidate.matchedBy as ArticleProvenanceMatchedBy)
+        : null;
+
+    if (
+      typeof feedId !== 'string' ||
+      feedId === '' ||
+      firstSeenAt === null ||
+      lastSeenAt === null ||
+      matchedBy === null
+    ) {
+      continue;
+    }
+
+    normalized.push({
+      feedId,
+      firstSeenAt,
+      lastSeenAt,
+      sourceItemId:
+        typeof candidate.sourceItemId === 'string'
+          ? candidate.sourceItemId
+          : null,
+      matchedBy,
+    });
+  }
+
+  return normalized;
+}
+
+function normalizeSourceState(
+  fallbackFeedId: string,
+  value: unknown,
+): UpdateSourceState | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = value as Partial<UpdateSourceState>;
+  const feedId =
+    typeof candidate.feedId === 'string' && candidate.feedId !== ''
+      ? candidate.feedId
+      : fallbackFeedId;
+  const lastSuccessfulFetchAt =
+    typeof candidate.lastSuccessfulFetchAt === 'string'
+      ? candidate.lastSuccessfulFetchAt
+      : null;
+
+  if (lastSuccessfulFetchAt === null) {
+    return null;
+  }
+
+  return {
+    feedId,
+    checkpointArticleId:
+      typeof candidate.checkpointArticleId === 'string'
+        ? candidate.checkpointArticleId
+        : null,
+    checkpointSortAt:
+      typeof candidate.checkpointSortAt === 'string'
+        ? candidate.checkpointSortAt
+        : null,
+    lastSuccessfulFetchAt,
+    provenance: normalizeProvenanceEntries(candidate.provenance, feedId),
+  };
+}
+
+function cloneProvenanceEntries(
+  provenance: ArticleProvenanceEntry[],
+): ArticleProvenanceEntry[] {
+  return provenance.map((entry) => ({
+    feedId: entry.feedId,
+    firstSeenAt: entry.firstSeenAt,
+    lastSeenAt: entry.lastSeenAt,
+    sourceItemId: entry.sourceItemId,
+    matchedBy: entry.matchedBy,
+  }));
+}
 
 export interface UpdatePipelineArgs {
   feedsPath: string;
@@ -306,6 +419,15 @@ export async function loadUpdateState(
     ) {
       return null;
     }
+    const normalizedSources: Record<string, UpdateSourceState> = {};
+
+    for (const [feedId, sourceState] of Object.entries(parsed.sources)) {
+      const normalizedState = normalizeSourceState(feedId, sourceState);
+      if (normalizedState) {
+        normalizedSources[feedId] = normalizedState;
+      }
+    }
+
     return {
       version: 1,
       updatedAt:
@@ -317,7 +439,7 @@ export async function loadUpdateState(
         parsed.safetyWindowHours > 0
           ? parsed.safetyWindowHours
           : DEFAULT_SAFETY_WINDOW_HOURS,
-      sources: parsed.sources as Record<string, UpdateSourceState>,
+      sources: normalizedSources,
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -386,34 +508,74 @@ export function buildNextUpdateState({
   generatedAt: string;
   safetyWindowHours: number;
 }): UpdateState {
-  const nextSources: Record<string, UpdateSourceState> = {
-    ...(previousState?.sources || {}),
-  };
-  const freshByFeed = new Map<string, CanonicalArticle[]>();
+  const nextSources: Record<string, UpdateSourceState> = Object.fromEntries(
+    Object.entries(previousState?.sources || {}).map(
+      ([feedId, sourceState]) => [
+        feedId,
+        {
+          ...sourceState,
+          provenance: cloneProvenanceEntries(sourceState.provenance || []),
+        },
+      ],
+    ),
+  );
+  const freshByFeed = new Map<
+    string,
+    Array<{ article: CanonicalArticle; provenance: ArticleProvenanceEntry }>
+  >();
 
   for (const article of freshArticles) {
-    const existing = freshByFeed.get(article.feedId) || [];
-    existing.push(article);
-    freshByFeed.set(article.feedId, existing);
+    const provenanceEntries =
+      Array.isArray(article.provenance) && article.provenance.length > 0
+        ? article.provenance
+        : [
+            {
+              feedId: article.feedId,
+              firstSeenAt: article.fetchedAt,
+              lastSeenAt: article.fetchedAt,
+              sourceItemId: article.sourceItemId,
+              matchedBy: 'primary' as const,
+            },
+          ];
+
+    for (const provenance of provenanceEntries) {
+      const existing = freshByFeed.get(provenance.feedId) || [];
+      existing.push({ article, provenance });
+      freshByFeed.set(provenance.feedId, existing);
+    }
   }
 
   for (const [feedId, feedArticles] of freshByFeed.entries()) {
     const latest = [...feedArticles].sort((left, right) => {
       const timeOrder =
-        articleSortTimestamp(right) - articleSortTimestamp(left);
+        articleSortTimestamp(right.article) -
+        articleSortTimestamp(left.article);
       if (timeOrder !== 0) {
         return timeOrder;
       }
-      return right.id.localeCompare(left.id, 'en');
+
+      const seenOrder =
+        new Date(right.provenance.lastSeenAt).getTime() -
+        new Date(left.provenance.lastSeenAt).getTime();
+      if (seenOrder !== 0) {
+        return seenOrder;
+      }
+
+      return right.article.id.localeCompare(left.article.id, 'en');
     })[0];
 
     nextSources[feedId] = {
       feedId,
-      checkpointArticleId: latest?.id || null,
+      checkpointArticleId: latest?.article.id || null,
       checkpointSortAt: latest
-        ? new Date(latest.publishedAt || latest.fetchedAt).toISOString()
+        ? new Date(
+            latest.article.publishedAt || latest.article.fetchedAt,
+          ).toISOString()
         : null,
       lastSuccessfulFetchAt: generatedAt,
+      provenance: latest
+        ? cloneProvenanceEntries(latest.article.provenance)
+        : [],
     };
   }
 

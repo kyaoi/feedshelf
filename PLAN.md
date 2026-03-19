@@ -320,6 +320,15 @@ Phase 6 の進め方:
 - `seenInFeeds[]` は削除せず derived compatibility summary として残し、post-v1 の richer provenance は `feedId` ごとに 1 件の bounded entry を持つ `provenance[]` として先に固定する
 - 各 provenance entry が少なくとも `feedId` / `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` を持ち、timestamp の min/max merge・`sourceItemId` の non-null 優先・`matchedBy=primary|normalizedUrl|feedItem` の境界を docs で固定してから実装へ進める
 
+### Post-v1 richer provenance implementation
+
+- [x] `FS-DATA-05` internal `provenance[]` を canonical article object / managed update state に追加し、`seenInFeeds[]` を derived compatibility summary として併存させる
+
+完了条件:
+- `normalizeFeedDocument()` が feed ごとの primary provenance entry（`feedId` / `firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy=primary`）を canonical article object に付与し、`seenInFeeds[]` をそこから導出できる
+- `dedupeArticles()` が `normalizedUrl` / `feedItem` の merge 理由を provenance entry に反映し、feed ごとに 1 件の bounded entry を保ったまま `firstSeenAt` / `lastSeenAt` / `sourceItemId` を統合できる
+- `buildNextUpdateState()` が dedupe winner の `feedId` だけでなく `provenance[]` に含まれる各 `feedId` を checkpoint 対象にし、cross-feed dedupe 後も source ごとの managed checkpoint を前進させられる
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -329,10 +338,10 @@ Phase 6 の進め方:
 - Phase 6 implementation backlog は完了済みとして維持し、棚 route / tag / search / compatibility verification の evidence を docs・tests・README で崩さない
 - 新しい仕様変更が必要になった場合は、affected task / docs / tests / public JSON 契約への影響を先に分析し、必要なら docs task を挟んでから実装へ戻る
 - `FS-DATA-06` は `b.hatena.ne.jp/entry/...` の allowlisted host rewrite と、その candidate にだけ適用する bounded redirect resolution として実装済みになったため、deferred backlog の次候補は `FS-DATA-05` へ移る
-- `FS-DOCS-23` により、`FS-DATA-05` の first implementation は internal `provenance[]` 追加 + `seenInFeeds[]` 併存 + public JSON 非変更の境界まで docs で固定されたため、次はこの境界を消費する実装タスクへ進める
-- `FS-DATA-05` 実装では feed ごとの provenance entry を `feedId` 単位で 1 件に束ね、`firstSeenAt` / `lastSeenAt` / `sourceItemId` / `matchedBy` を managed checkpoint と dedupe merge に反映するところまでを最小差分の範囲とする
-- public JSON への provenance surfacing や `seenInFeeds[]` の除去はこの次ではなく、internal schema の安定化後に別 docs task を挟んで検討する
-- `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後に最後段で再優先付けする
+- `FS-DATA-05` の first implementation は完了し、canonical article object と `update-state.json` に internal `provenance[]` が入り、`seenInFeeds[]` は compatibility summary として残る構成になった
+- `buildNextUpdateState()` は dedupe winner の `feedId` だけではなく `provenance[]` の各 `feedId` を checkpoint 対象にするため、cross-feed dedupe 後でも source ごとの managed checkpoint を前進させられる
+- public JSON への provenance surfacing や `seenInFeeds[]` の除去はまだ行っていないため、internal schema の安定化を確認した後に別 docs task を挟んで検討する
+- `FS-DATA-07` の fuzzy dedupe は誤爆リスクが最も高いため、canonicalization と provenance の整理後の次候補として docs split から再優先付けする
 
 ## メモ
 

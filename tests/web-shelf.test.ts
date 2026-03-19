@@ -75,6 +75,15 @@ const CANONICAL_ARTICLES = [
     sourceTags: ['Japan'],
     entryTags: ['Cloud'],
     sourceItemId: 'it-1',
+    provenance: [
+      {
+        feedId: 'itmedia-news',
+        firstSeenAt: '2026-03-09T00:05:00Z',
+        lastSeenAt: '2026-03-09T00:05:00Z',
+        sourceItemId: 'it-1',
+        matchedBy: 'primary',
+      },
+    ],
     seenInFeeds: ['itmedia-news'],
   },
   {
@@ -93,6 +102,15 @@ const CANONICAL_ARTICLES = [
     sourceTags: ['Japan'],
     entryTags: ['AI'],
     sourceItemId: 'it-2',
+    provenance: [
+      {
+        feedId: 'itmedia-news',
+        firstSeenAt: '2026-03-08T00:05:00Z',
+        lastSeenAt: '2026-03-08T00:05:00Z',
+        sourceItemId: 'it-2',
+        matchedBy: 'primary',
+      },
+    ],
     seenInFeeds: ['itmedia-news'],
   },
   {
@@ -111,6 +129,15 @@ const CANONICAL_ARTICLES = [
     sourceTags: ['Research'],
     entryTags: ['Physics'],
     sourceItemId: 'science-1',
+    provenance: [
+      {
+        feedId: 'nature-briefing',
+        firstSeenAt: '2026-03-07T00:05:00Z',
+        lastSeenAt: '2026-03-07T00:05:00Z',
+        sourceItemId: 'science-1',
+        matchedBy: 'primary',
+      },
+    ],
     seenInFeeds: ['nature-briefing'],
   },
 ];

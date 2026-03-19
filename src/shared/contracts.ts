@@ -24,6 +24,19 @@ export interface ShelvesDocument {
   shelves: ShelfDefinition[];
 }
 
+export type ArticleProvenanceMatchedBy =
+  | 'primary'
+  | 'normalizedUrl'
+  | 'feedItem';
+
+export interface ArticleProvenanceEntry {
+  feedId: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  sourceItemId: string | null;
+  matchedBy: ArticleProvenanceMatchedBy;
+}
+
 export interface CanonicalArticle {
   id: string;
   feedId: string;
@@ -40,6 +53,7 @@ export interface CanonicalArticle {
   sourceTags: string[];
   entryTags: string[];
   sourceItemId: string | null;
+  provenance: ArticleProvenanceEntry[];
   seenInFeeds: string[];
 }
 
@@ -133,6 +147,7 @@ export interface UpdateSourceState {
   checkpointArticleId: string | null;
   checkpointSortAt: string | null;
   lastSuccessfulFetchAt: string;
+  provenance: ArticleProvenanceEntry[];
 }
 
 export interface UpdateState {

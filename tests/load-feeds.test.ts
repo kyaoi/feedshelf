@@ -433,6 +433,15 @@ test('applyCanonicalUrlPrecisionLayer updates article url and identity after all
     sourceTags: ['RSS Source'],
     entryTags: ['Hatena'],
     sourceItemId: 'hatena-item',
+    provenance: [
+      {
+        feedId: 'rss-feed',
+        firstSeenAt: '2026-03-08T06:00:00.000Z',
+        lastSeenAt: '2026-03-08T06:00:00.000Z',
+        sourceItemId: 'hatena-item',
+        matchedBy: 'primary',
+      },
+    ],
     seenInFeeds: ['rss-feed'],
   };
 
@@ -442,6 +451,8 @@ test('applyCanonicalUrlPrecisionLayer updates article url and identity after all
 
   assert.equal(nextArticle.url, 'https://example.com/articles/hatena?a=1&b=2');
   assert.notEqual(nextArticle.id, article.id);
+  assert.deepEqual(nextArticle.provenance, article.provenance);
+  assert.deepEqual(nextArticle.seenInFeeds, ['rss-feed']);
 });
 
 test('normalizeFeedDocument keeps shelfIds, sourceTags, and entryTags', () => {
@@ -455,6 +466,16 @@ test('normalizeFeedDocument keeps shelfIds, sourceTags, and entryTags', () => {
   assert.deepEqual(articles[0].shelfIds, ['examples']);
   assert.deepEqual(articles[0].sourceTags, ['RSS Source']);
   assert.deepEqual(articles[0].entryTags, ['RSS', 'Cloud']);
+  assert.deepEqual(articles[0].provenance, [
+    {
+      feedId: 'rss-feed',
+      firstSeenAt: '2026-03-08T06:00:00.000Z',
+      lastSeenAt: '2026-03-08T06:00:00.000Z',
+      sourceItemId: 'rss-item-1',
+      matchedBy: 'primary',
+    },
+  ]);
+  assert.deepEqual(articles[0].seenInFeeds, ['rss-feed']);
 });
 
 test('normalizeFeedDocument converts Atom entries into canonical article objects', () => {
@@ -502,6 +523,15 @@ test('dedupeArticles merges shelfIds, sourceTags, and entryTags across duplicate
       sourceTags: ['RSS Source'],
       entryTags: ['rss'],
       sourceItemId: 'rss-shared',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared',
+          matchedBy: 'primary',
+        },
+      ],
       seenInFeeds: ['rss-feed'],
     },
     {
@@ -520,6 +550,15 @@ test('dedupeArticles merges shelfIds, sourceTags, and entryTags across duplicate
       sourceTags: ['Atom Source'],
       entryTags: ['atom'],
       sourceItemId: 'atom-shared',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-08T06:05:00.000Z',
+          lastSeenAt: '2026-03-08T06:05:00.000Z',
+          sourceItemId: 'atom-shared',
+          matchedBy: 'primary',
+        },
+      ],
       seenInFeeds: ['atom-feed'],
     },
   ]);
@@ -528,6 +567,23 @@ test('dedupeArticles merges shelfIds, sourceTags, and entryTags across duplicate
   assert.deepEqual(deduped[0].shelfIds, ['examples', 'research']);
   assert.deepEqual(deduped[0].sourceTags, ['Atom Source', 'RSS Source']);
   assert.deepEqual(deduped[0].entryTags, ['atom', 'rss']);
+  assert.deepEqual(deduped[0].seenInFeeds, ['atom-feed', 'rss-feed']);
+  assert.deepEqual(deduped[0].provenance, [
+    {
+      feedId: 'atom-feed',
+      firstSeenAt: '2026-03-08T06:05:00.000Z',
+      lastSeenAt: '2026-03-08T06:05:00.000Z',
+      sourceItemId: 'atom-shared',
+      matchedBy: 'primary',
+    },
+    {
+      feedId: 'rss-feed',
+      firstSeenAt: '2026-03-08T06:00:00.000Z',
+      lastSeenAt: '2026-03-08T06:00:00.000Z',
+      sourceItemId: 'rss-shared',
+      matchedBy: 'normalizedUrl',
+    },
+  ]);
 });
 
 test('buildPublicExports creates shelf-first public JSON contracts', () => {
@@ -549,6 +605,15 @@ test('buildPublicExports creates shelf-first public JSON contracts', () => {
         sourceTags: ['RSS Source'],
         entryTags: ['Cloud'],
         sourceItemId: 'article-1',
+        provenance: [
+          {
+            feedId: 'rss-feed',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'article-1',
+            matchedBy: 'primary',
+          },
+        ],
         seenInFeeds: ['rss-feed'],
       },
     ],

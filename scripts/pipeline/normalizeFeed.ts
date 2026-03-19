@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
 import type {
+  ArticleProvenanceEntry,
   CanonicalArticle,
   FeedDefinition,
 } from '../../src/shared/contracts.ts';
@@ -334,6 +335,54 @@ function normalizeFetchedAt(value?: string): string {
   }
 
   return parsed.toISOString();
+}
+
+function buildPrimaryProvenanceEntry({
+  feedId,
+  fetchedAt,
+  sourceItemId,
+}: {
+  feedId: string;
+  fetchedAt: string;
+  sourceItemId: string | null;
+}): ArticleProvenanceEntry {
+  return {
+    feedId,
+    firstSeenAt: fetchedAt,
+    lastSeenAt: fetchedAt,
+    sourceItemId,
+    matchedBy: 'primary',
+  };
+}
+
+function deriveSeenInFeeds(
+  provenance: ArticleProvenanceEntry[],
+  fallbackFeedId?: string,
+): string[] {
+  const seen = new Set<string>();
+  const feeds: string[] = [];
+
+  for (const entry of provenance) {
+    if (
+      typeof entry.feedId !== 'string' ||
+      entry.feedId === '' ||
+      seen.has(entry.feedId)
+    ) {
+      continue;
+    }
+    seen.add(entry.feedId);
+    feeds.push(entry.feedId);
+  }
+
+  if (
+    feeds.length === 0 &&
+    typeof fallbackFeedId === 'string' &&
+    fallbackFeedId !== ''
+  ) {
+    return [fallbackFeedId];
+  }
+
+  return feeds;
 }
 
 export function normalizeUrl(
@@ -694,6 +743,15 @@ function createArticle({
     return null;
   }
 
+  const normalizedFetchedAt = normalizeFetchedAt(fetchedAt);
+  const provenance = [
+    buildPrimaryProvenanceEntry({
+      feedId: feed.id,
+      fetchedAt: normalizedFetchedAt,
+      sourceItemId,
+    }),
+  ];
+
   return {
     id: buildArticleId({
       feedId: feed.id,
@@ -710,13 +768,14 @@ function createArticle({
     url,
     summary: toPublicExcerpt(summary),
     publishedAt,
-    fetchedAt: normalizeFetchedAt(fetchedAt),
+    fetchedAt: normalizedFetchedAt,
     author,
     imageUrl,
     sourceTags: uniqueTags(feed.tags || []),
     entryTags: uniqueTags(tags),
     sourceItemId,
-    seenInFeeds: [feed.id],
+    provenance,
+    seenInFeeds: deriveSeenInFeeds(provenance, feed.id),
   };
 }
 

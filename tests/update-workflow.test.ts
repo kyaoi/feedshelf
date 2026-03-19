@@ -13,6 +13,7 @@ const {
   validateFetchedFeedDocuments,
   resolveUpdateStatePath,
   loadUpdateState,
+  buildNextUpdateState,
   runUpdatePipeline,
 } = require('../scripts/pipeline/update.js');
 
@@ -457,6 +458,15 @@ test('runUpdatePipeline writes update-state.json and retains previously publishe
     state?.sources['enabled-feed']?.checkpointSortAt,
     '2026-03-09T09:00:00.000Z',
   );
+  assert.deepEqual(state?.sources['enabled-feed']?.provenance, [
+    {
+      feedId: 'enabled-feed',
+      firstSeenAt: '2026-03-09T09:10:11.000Z',
+      lastSeenAt: '2026-03-09T09:10:11.000Z',
+      sourceItemId: 'workflow-1',
+      matchedBy: 'primary',
+    },
+  ]);
 
   const publishedArticles = JSON.parse(
     await fsp.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
@@ -466,4 +476,77 @@ test('runUpdatePipeline writes update-state.json and retains previously publishe
     ['Workflow article', 'Retained Article'],
   );
   assert.equal(publishedArticles[1].id, 'retained-article');
+});
+
+test('buildNextUpdateState updates source checkpoints for every feed present in provenance', () => {
+  const nextState = buildNextUpdateState({
+    previousState: null,
+    freshArticles: [
+      {
+        id: 'shared-article',
+        feedId: 'atom-feed',
+        sourceName: 'Atom Feed',
+        language: 'en',
+        shelfIds: ['examples'],
+        title: 'Shared article',
+        url: 'https://example.com/shared',
+        summary: 'Shared summary',
+        publishedAt: '2026-03-10T09:00:00.000Z',
+        fetchedAt: '2026-03-10T09:10:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['primary'],
+        entryTags: ['shared'],
+        sourceItemId: 'atom-shared',
+        provenance: [
+          {
+            feedId: 'atom-feed',
+            firstSeenAt: '2026-03-10T09:10:00.000Z',
+            lastSeenAt: '2026-03-10T09:10:00.000Z',
+            sourceItemId: 'atom-shared',
+            matchedBy: 'primary',
+          },
+          {
+            feedId: 'rss-feed',
+            firstSeenAt: '2026-03-10T09:05:00.000Z',
+            lastSeenAt: '2026-03-10T09:05:00.000Z',
+            sourceItemId: 'rss-shared',
+            matchedBy: 'normalizedUrl',
+          },
+        ],
+        seenInFeeds: ['atom-feed', 'rss-feed'],
+      },
+    ],
+    generatedAt: '2026-03-10T09:10:11.000Z',
+    safetyWindowHours: 72,
+  });
+
+  assert.equal(
+    nextState.sources['atom-feed']?.checkpointArticleId,
+    'shared-article',
+  );
+  assert.equal(
+    nextState.sources['rss-feed']?.checkpointArticleId,
+    'shared-article',
+  );
+  assert.equal(
+    nextState.sources['rss-feed']?.checkpointSortAt,
+    '2026-03-10T09:00:00.000Z',
+  );
+  assert.deepEqual(nextState.sources['rss-feed']?.provenance, [
+    {
+      feedId: 'atom-feed',
+      firstSeenAt: '2026-03-10T09:10:00.000Z',
+      lastSeenAt: '2026-03-10T09:10:00.000Z',
+      sourceItemId: 'atom-shared',
+      matchedBy: 'primary',
+    },
+    {
+      feedId: 'rss-feed',
+      firstSeenAt: '2026-03-10T09:05:00.000Z',
+      lastSeenAt: '2026-03-10T09:05:00.000Z',
+      sourceItemId: 'rss-shared',
+      matchedBy: 'normalizedUrl',
+    },
+  ]);
 });
