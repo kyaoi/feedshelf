@@ -1001,6 +1001,12 @@
 - 理由: diagnosis 用 evidence は欲しいが、default logger を per-article 出力で noisy にしたくなく、checked-in output や public JSON 契約も広げたくない。明示的 file path flag なら run ごとの一時 evidence に閉じたまま rollback / inspection へ使いやすいため
 - 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じる。audit record は `winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy='fuzzyTitleDate'` に限定し、retained public article payload、manual review workflow、broader fuzzy matching、cross-source fuzzy は含めない
 
+## D-153: fuzzy dedupe の次差分は internal manual-review handoff artifact に限定する
+
+- 決定: `FS-DATA-12` の次に人手確認向けの evidence を足す場合は、default logger や public JSON ではなく、明示的 flag でだけ生成される internal manual-review handoff artifact として切り出す
+- 理由: 現在の audit export は machine-readable な bounded record として十分だが、人が triage するには title / URL / source name のような読みやすい情報が不足する。一方でそれらを既定ログや public surface に載せると noise と契約変更が大きいため、opt-in artifact に閉じる方が安全なため
+- 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、`winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` のような human-readable evidence を bounded に追加してよい。ただし accept/reject persistence、`update-state.json` override、broader fuzzy heuristic、cross-source fuzzy、manual review UI route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

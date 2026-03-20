@@ -438,6 +438,15 @@ Phase 6 の進め方:
 - `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-audit-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が JSON audit file を書き出す
 - flag 未指定時の default logger / checked-in public JSON / route / article card UI は無変更のままとし、tests で run / update の opt-in export を確認できる
 
+### Post-v1 fuzzy dedupe manual-review handoff docs split
+
+- [x] `FS-DOCS-31` fuzzy dedupe の次差分を internal manual-review handoff artifact に限定し、broader matching / override persistence / public UI から分離する
+
+完了条件:
+- `FS-DATA-13` の first implementation が、既存の opt-in fuzzy audit evidence を人手確認しやすい internal handoff artifact へ整形する task として着手できる
+- handoff artifact に追加してよい field は `winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` のような human-readable な bounded evidence に限定し、default logger・checked-in output・public JSON export は変更しない
+- accept/reject の永続化、`update-state.json` への manual override 記録、broader fuzzy heuristic、cross-source fuzzy、public confidence score、manual review UI route は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -456,10 +465,11 @@ Phase 6 の進め方:
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
 - `FS-DOCS-29` で canonicalization extension の次差分は deterministic allowlisted rule table に限定し、`FS-DATA-11` では `normalizeFeed.ts` と tests に閉じた non-network 差分として first implementation を完了した
 - `FS-DATA-11` は既存の bounded redirect follow を広げず、Reddit の presentation alias（`old/new.reddit.com` → `www.reddit.com`）と comment-thread query cleanup（`context` / `depth` / `sort` / `share_id` / `rdt`）だけを deterministic rule table に追加した
-- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability・explicit fuzzy audit export は `FS-DATA-12` で opt-in internal JSON audit として first implementation まで完了し、今後は broader matching / manual review workflow を別 docs-first task で扱う
+- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability・explicit fuzzy audit export は `FS-DATA-12` で opt-in internal JSON audit として first implementation まで完了し、その先は manual-review handoff や broader matching を別 docs-first task で扱う
 - `FS-DOCS-28` で固定した fuzzy dedupe observability 境界に沿って、`FS-DATA-10` では `PipelineSummary` / `UpdatePipelineSummary` の internal `fuzzyDuplicatesCollapsed`、aggregate logger、`--disable-fuzzy-dedupe` kill switch を `run` / `update` / tests に閉じて実装済みにした
 - `FS-DATA-12` では `--fuzzy-audit-file` 経由の opt-in internal JSON audit export を `run` / `update` / tests に閉じて実装し、fuzzy merge ごとの bounded evidence を public JSON や default logger に広げず確認できるようにした
-- fuzzy dedupe の今後の拡張は、broader matching・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
+- `FS-DOCS-31` では次の fuzzy 拡張を internal manual-review handoff artifact に限定し、人が読むための title / URL / source name を opt-in artifact にだけ足す境界を先に固定した
+- fuzzy dedupe の今後の拡張は、manual-review handoff・broader matching・override persistence・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
 
 ## メモ
 

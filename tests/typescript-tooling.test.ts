@@ -661,6 +661,42 @@ test('FS-DOCS-30 fuzzy dedupe audit docs split stays aligned across PLAN, SPEC, 
   assert.match(traceability, /bounded audit record/);
 });
 
+test('FS-DOCS-31 fuzzy dedupe manual-review handoff docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-31/);
+  assert.match(plan, /internal manual-review handoff artifact/);
+  assert.match(plan, /`winnerTitle` \/ `incomingTitle`/);
+  assert.match(
+    spec,
+    /10\.5\.7 Post-v1 fuzzy dedupe manual-review handoff docs split/,
+  );
+  assert.match(spec, /human-readable だが bounded な evidence/);
+  assert.match(
+    spec,
+    /accept\/reject の永続化、`update-state\.json` への manual override 記録、broader fuzzy matching、cross-source fuzzy、default logger への per-article 出力、public confidence score、manual review UI route/,
+  );
+  assert.match(decisions, /D-153/);
+  assert.match(decisions, /人が triage するには title \/ URL \/ source name/);
+  assert.match(traceability, /FS-167/);
+  assert.match(traceability, /human-readable な bounded evidence/);
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
