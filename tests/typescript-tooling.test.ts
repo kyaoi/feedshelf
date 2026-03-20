@@ -731,6 +731,70 @@ test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across 
   );
 });
 
+test('FS-DATA-12 fuzzy dedupe audit implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const updateSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/update.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-12/);
+  assert.match(plan, /`--fuzzy-audit-file`/);
+  assert.match(spec, /10\.5\.6 Post-v1 fuzzy dedupe audit implementation/);
+  assert.match(spec, /JSON audit file/);
+  assert.match(decisions, /D-152/);
+  assert.match(decisions, /`--fuzzy-audit-file <path>`/);
+  assert.match(traceability, /FS-166/);
+  assert.match(contracts, /export interface FuzzyDedupeAuditRecord/);
+  assert.match(dedupeSource, /fuzzyAuditRecords/);
+  assert.match(runSource, /--fuzzy-audit-file/);
+  assert.match(runSource, /fuzzy audit records=/);
+  assert.match(updateSource, /--fuzzy-audit-file/);
+  assert.match(
+    loadFeedsTest,
+    /runPipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided/,
+  );
+});
+
 test('FS-UX-22 provenance chips stay aligned across PLAN, TRACEABILITY, app, and web tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

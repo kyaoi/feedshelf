@@ -90,7 +90,7 @@ test('resolveUpdateStatePath defaults to outputDir/update-state.json', () => {
   );
 });
 
-test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, and --disable-fuzzy-dedupe', () => {
+test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, and --fuzzy-audit-file', () => {
   const parsed = parseUpdateArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -100,10 +100,13 @@ test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, and -
     'tmp/public-data',
     '--dry-run',
     '--disable-fuzzy-dedupe',
+    '--fuzzy-audit-file',
+    'tmp/fuzzy-audit.json',
   ]);
 
   assert.equal(parsed.dryRun, true);
   assert.equal(parsed.disableFuzzyDedupe, true);
+  assert.match(parsed.fuzzyAuditPath ?? '', /tmp[/]fuzzy-audit\.json$/);
   assert.match(parsed.feedsPath, /fixtures[/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[/]public-data$/);
@@ -290,6 +293,89 @@ test('runUpdatePipeline reports fuzzyDuplicatesCollapsed and supports disableFuz
   assert.equal(disabledSummary.duplicatesCollapsed, 0);
   assert.equal(disabledSummary.fuzzyDuplicatesCollapsed, 0);
   assert.equal(disabledSummary.publicArticles, 2);
+});
+
+test('runUpdatePipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-fuzzy-audit-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+
+  await fsp.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...ENABLED_FEED,
+        id: 'first-feed',
+        name: 'Shared Source',
+        feedUrl: 'https://example.com/first.xml',
+      },
+      {
+        ...ENABLED_FEED,
+        id: 'second-feed',
+        name: 'Shared Source',
+        feedUrl: 'https://example.com/second.xml',
+      },
+    ]),
+  );
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+
+  const firstXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Shared Source</title>
+    <item>
+      <title>Workflow article</title>
+      <link>https://example.com/workflow-article-a</link>
+      <description><![CDATA[<p>First copy.</p>]]></description>
+      <pubDate>Mon, 09 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>workflow-a</guid>
+    </item>
+  </channel>
+</rss>`;
+  const secondXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Shared Source</title>
+    <item>
+      <title> workflow   article </title>
+      <link>https://example.com/workflow-article-b</link>
+      <description><![CDATA[<p>Second copy with more detail.</p>]]></description>
+      <pubDate>Wed, 11 Mar 2026 08:59:59 +0000</pubDate>
+      <guid>workflow-b</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-11T09:10:11Z',
+    fuzzyAuditPath,
+    logger: { log() {} },
+    fetchImpl: async (url: string) => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return String(url).includes('second') ? secondXml : firstXml;
+      },
+    }),
+  });
+
+  const fuzzyAudit = JSON.parse(await fsp.readFile(fuzzyAuditPath, 'utf8'));
+  assert.equal(fuzzyAudit.length, 1);
+  assert.equal(fuzzyAudit[0].winnerFeedId, 'second-feed');
+  assert.equal(fuzzyAudit[0].incomingFeedId, 'second-feed');
+  assert.equal(fuzzyAudit[0].titleCompareKey, 'workflow article');
+  assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
+  assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+  assert.equal(typeof fuzzyAudit[0].winnerArticleId, 'string');
+  assert.equal(typeof fuzzyAudit[0].incomingArticleId, 'string');
 });
 
 test('runUpdatePipeline keeps partial failures and passes shelvesPath through', async () => {

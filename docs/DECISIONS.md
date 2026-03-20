@@ -995,6 +995,12 @@
 - 理由: aggregate counter と kill switch だけでは「どの merge が起きたか」を深掘りできないが、既定ログや public data に per-article 情報を流し始めると noisy かつ契約変更が大きい。opt-in export に閉じれば diagnosis 用 evidence を足しつつ、通常 publish の surface を増やさずに済むため
 - 影響: first implementation は fuzzy merge ごとの bounded record（`winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy`）に限定し、raw summary / body / HTML / public route / article card UI / broader matching / manual review workflow は同じ task に含めない
 
+## D-152: `FS-DATA-12` は `--fuzzy-audit-file` による opt-in JSON export に閉じる
+
+- 決定: `FS-DATA-12` の first implementation では、`dedupeArticlesWithSummary()` が fuzzy merge ごとの bounded audit record を返し、`run.ts` / `update.ts` は `--fuzzy-audit-file <path>` が明示されたときだけ JSON audit file を書き出す
+- 理由: diagnosis 用 evidence は欲しいが、default logger を per-article 出力で noisy にしたくなく、checked-in output や public JSON 契約も広げたくない。明示的 file path flag なら run ごとの一時 evidence に閉じたまま rollback / inspection へ使いやすいため
+- 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じる。audit record は `winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy='fuzzyTitleDate'` に限定し、retained public article payload、manual review workflow、broader fuzzy matching、cross-source fuzzy は含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

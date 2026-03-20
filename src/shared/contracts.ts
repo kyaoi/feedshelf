@@ -218,6 +218,17 @@ export interface PipelineArgs {
   outputDir: string;
   dryRun: boolean;
   disableFuzzyDedupe: boolean;
+  fuzzyAuditPath: string | null;
+}
+
+export interface FuzzyDedupeAuditRecord {
+  winnerArticleId: string;
+  incomingArticleId: string;
+  winnerFeedId: string;
+  incomingFeedId: string;
+  titleCompareKey: string;
+  publishedAtDeltaHours: number;
+  matchedBy: 'fuzzyTitleDate';
 }
 
 export interface PipelineSummary {
@@ -269,4 +280,5 @@ export interface RunPipelineOptions {
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   disableFuzzyDedupe?: boolean;
+  fuzzyAuditPath?: string;
 }

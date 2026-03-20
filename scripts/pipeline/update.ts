@@ -142,11 +142,13 @@ export interface UpdatePipelineArgs {
   outputDir: string;
   dryRun: boolean;
   disableFuzzyDedupe: boolean;
+  fuzzyAuditPath: string | null;
 }
 
 export interface RunUpdatePipelineOptions
-  extends Omit<UpdatePipelineArgs, 'disableFuzzyDedupe'> {
+  extends Omit<UpdatePipelineArgs, 'disableFuzzyDedupe' | 'fuzzyAuditPath'> {
   disableFuzzyDedupe?: boolean;
+  fuzzyAuditPath?: string;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
@@ -166,6 +168,7 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
     outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
     disableFuzzyDedupe: false,
+    fuzzyAuditPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -208,6 +211,16 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
 
     if (arg === '--disable-fuzzy-dedupe') {
       args.disableFuzzyDedupe = true;
+      continue;
+    }
+
+    if (arg === '--fuzzy-audit-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-audit-file requires a path argument.');
+      }
+      args.fuzzyAuditPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
       continue;
     }
 
@@ -680,6 +693,7 @@ export async function runUpdatePipeline(
     retainedArticles,
     logger,
     disableFuzzyDedupe: options.disableFuzzyDedupe,
+    fuzzyAuditPath: options.fuzzyAuditPath,
   });
 
   if (options.disableFuzzyDedupe) {
@@ -711,7 +725,10 @@ export async function main(
   argv: string[] = process.argv.slice(2),
 ): Promise<void> {
   const args = parseUpdateArgs(argv);
-  await runUpdatePipeline(args);
+  await runUpdatePipeline({
+    ...args,
+    fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
+  });
 }
 
 function isDirectExecution(): boolean {

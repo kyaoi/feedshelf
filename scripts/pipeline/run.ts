@@ -1,8 +1,10 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
   CanonicalArticle,
   FeedDefinition,
+  FuzzyDedupeAuditRecord,
   PipelineArgs,
   PipelineLogger,
   PipelineSummary,
@@ -47,6 +49,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
     disableFuzzyDedupe: false,
+    fuzzyAuditPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -92,10 +95,36 @@ export function parseArgs(argv: string[]): PipelineArgs {
       continue;
     }
 
+    if (arg === '--fuzzy-audit-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-audit-file requires a path argument.');
+      }
+      args.fuzzyAuditPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
   return args;
+}
+
+async function writeFuzzyAuditFile({
+  fuzzyAuditPath,
+  logger,
+  records,
+}: {
+  fuzzyAuditPath: string;
+  logger: PipelineLogger;
+  records: FuzzyDedupeAuditRecord[];
+}): Promise<void> {
+  await fs.mkdir(path.dirname(fuzzyAuditPath), { recursive: true });
+  await fs.writeFile(fuzzyAuditPath, `${JSON.stringify(records, null, 2)}\n`);
+  logger.log(
+    `[pipeline] fuzzy audit records=${records.length} path=${path.relative(process.cwd(), fuzzyAuditPath) || fuzzyAuditPath}`,
+  );
 }
 
 async function normalizeFeedDocumentsToArticles({
@@ -159,6 +188,13 @@ export async function runPipeline(
   const dedupeResult = dedupeArticlesWithSummary(normalizedArticles, {
     disableFuzzyDedupe: options.disableFuzzyDedupe,
   });
+  if (typeof options.fuzzyAuditPath === 'string') {
+    await writeFuzzyAuditFile({
+      fuzzyAuditPath: path.resolve(process.cwd(), options.fuzzyAuditPath),
+      logger,
+      records: dedupeResult.fuzzyAuditRecords,
+    });
+  }
   const dedupedArticles = dedupeResult.articles;
   const freshPublicExports = buildPublicExports({
     articles: dedupedArticles,
@@ -241,7 +277,10 @@ export async function main(
   argv: string[] = process.argv.slice(2),
 ): Promise<void> {
   const args = parseArgs(argv);
-  await runPipeline(args);
+  await runPipeline({
+    ...args,
+    fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
+  });
 }
 
 function isDirectExecution(): boolean {

@@ -2,6 +2,7 @@ import type {
   ArticleProvenanceEntry,
   ArticleProvenanceMatchedBy,
   CanonicalArticle,
+  FuzzyDedupeAuditRecord,
 } from '../../src/shared/contracts.ts';
 import { normalizeUrl } from './normalizeFeed.ts';
 
@@ -14,6 +15,7 @@ export interface DedupeArticlesOptions {
 export interface DedupeArticlesResult {
   articles: CanonicalArticle[];
   fuzzyDuplicatesCollapsed: number;
+  fuzzyAuditRecords: FuzzyDedupeAuditRecord[];
 }
 
 interface DedupeMatch {
@@ -316,6 +318,46 @@ function registerFuzzyDedupeKey(
   fuzzyKeyToIndexes.set(key, new Set([index]));
 }
 
+function toPublishedAtDeltaHours(
+  leftPublishedAt: string | null,
+  rightPublishedAt: string | null,
+): number {
+  if (
+    typeof leftPublishedAt !== 'string' ||
+    typeof rightPublishedAt !== 'string'
+  ) {
+    return 0;
+  }
+
+  const leftTime = toComparableTime(leftPublishedAt);
+  const rightTime = toComparableTime(rightPublishedAt);
+  if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) {
+    return 0;
+  }
+
+  return Number((Math.abs(leftTime - rightTime) / (60 * 60 * 1000)).toFixed(3));
+}
+
+function createFuzzyDedupeAuditRecord(
+  existing: CanonicalArticle,
+  incoming: CanonicalArticle,
+): FuzzyDedupeAuditRecord {
+  const winner = pickWinner(existing, incoming);
+
+  return {
+    winnerArticleId: winner.id,
+    incomingArticleId: incoming.id,
+    winnerFeedId: winner.feedId,
+    incomingFeedId: incoming.feedId,
+    titleCompareKey: createTitleCompareKey(incoming.title),
+    publishedAtDeltaHours: toPublishedAtDeltaHours(
+      existing.publishedAt,
+      incoming.publishedAt,
+    ),
+    matchedBy: 'fuzzyTitleDate',
+  };
+}
+
 function findFuzzyDuplicateIndex(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   dedupedArticles: CanonicalArticle[],
@@ -406,6 +448,7 @@ export function dedupeArticlesWithSummary(
   const keyToIndex = new Map<string, number>();
   const fuzzyKeyToIndexes = new Map<string, Set<number>>();
   const disableFuzzyDedupe = options.disableFuzzyDedupe === true;
+  const fuzzyAuditRecords: FuzzyDedupeAuditRecord[] = [];
   let fuzzyDuplicatesCollapsed = 0;
 
   for (const article of articles) {
@@ -439,12 +482,16 @@ export function dedupeArticlesWithSummary(
         article,
       );
       if (fuzzyDuplicateIndex !== null) {
+        const existingArticle = dedupedArticles[fuzzyDuplicateIndex];
         const mergedArticle = mergeDuplicateArticles(
-          dedupedArticles[fuzzyDuplicateIndex],
+          existingArticle,
           article,
           'fuzzyTitleDate',
         );
         dedupedArticles[fuzzyDuplicateIndex] = mergedArticle;
+        fuzzyAuditRecords.push(
+          createFuzzyDedupeAuditRecord(existingArticle, article),
+        );
         fuzzyDuplicatesCollapsed += 1;
         registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
         registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
@@ -468,6 +515,7 @@ export function dedupeArticlesWithSummary(
   return {
     articles: dedupedArticles,
     fuzzyDuplicatesCollapsed,
+    fuzzyAuditRecords,
   };
 }
 

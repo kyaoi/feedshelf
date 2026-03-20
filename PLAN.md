@@ -429,6 +429,15 @@ Phase 6 の進め方:
 - audit record には `winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy` のような bounded field だけを含め、raw summary / body / public JSON export を混ぜない
 - audit export は `run.ts` / `update.ts` の明示的 flag を通したときだけ有効になり、default logger・checked-in output・route・article card UI・broader fuzzy rule は同じ task に含めない
 
+### Post-v1 fuzzy dedupe audit implementation
+
+- [x] `FS-DATA-12` `--fuzzy-audit-file` による opt-in internal JSON audit export を `dedupeArticles()` / `run.ts` / `update.ts` / tests に閉じて実装する
+
+完了条件:
+- `dedupeArticlesWithSummary()` が fuzzy merge ごとの bounded audit record を internal result として返し、record は `winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy` に限定される
+- `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-audit-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が JSON audit file を書き出す
+- flag 未指定時の default logger / checked-in public JSON / route / article card UI は無変更のままとし、tests で run / update の opt-in export を確認できる
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -447,9 +456,9 @@ Phase 6 の進め方:
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
 - `FS-DOCS-29` で canonicalization extension の次差分は deterministic allowlisted rule table に限定し、`FS-DATA-11` では `normalizeFeed.ts` と tests に閉じた non-network 差分として first implementation を完了した
 - `FS-DATA-11` は既存の bounded redirect follow を広げず、Reddit の presentation alias（`old/new.reddit.com` → `www.reddit.com`）と comment-thread query cleanup（`context` / `depth` / `sort` / `share_id` / `rdt`）だけを deterministic rule table に追加した
-- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability・explicit fuzzy audit export を別 docs-first task で扱う
+- deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability・explicit fuzzy audit export は `FS-DATA-12` で opt-in internal JSON audit として first implementation まで完了し、今後は broader matching / manual review workflow を別 docs-first task で扱う
 - `FS-DOCS-28` で固定した fuzzy dedupe observability 境界に沿って、`FS-DATA-10` では `PipelineSummary` / `UpdatePipelineSummary` の internal `fuzzyDuplicatesCollapsed`、aggregate logger、`--disable-fuzzy-dedupe` kill switch を `run` / `update` / tests に閉じて実装済みにした
-- `FS-DOCS-30` では fuzzy dedupe の次差分を opt-in internal audit export に限定し、per-article evidence は explicit flag 経由の bounded record 出力へ閉じ、default logger・public JSON・UI・broader matching とは分離して扱う
+- `FS-DATA-12` では `--fuzzy-audit-file` 経由の opt-in internal JSON audit export を `run` / `update` / tests に閉じて実装し、fuzzy merge ごとの bounded evidence を public JSON や default logger に広げず確認できるようにした
 - fuzzy dedupe の今後の拡張は、broader matching・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
 
 ## メモ
