@@ -586,6 +586,76 @@ test('FS-DOCS-28 fuzzy dedupe observability docs split stays aligned across PLAN
   assert.match(traceability, /kill switch/);
 });
 
+test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const updateSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/update.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-10/);
+  assert.match(plan, /`fuzzyDuplicatesCollapsed` summary/);
+  assert.match(plan, /`--disable-fuzzy-dedupe` kill switch/);
+  assert.match(
+    spec,
+    /10\.5\.4 Post-v1 fuzzy dedupe observability implementation/,
+  );
+  assert.match(spec, /aggregate な `fuzzyDuplicatesCollapsed` count/);
+  assert.match(spec, /CLI は `--disable-fuzzy-dedupe`/);
+  assert.match(decisions, /D-148/);
+  assert.match(decisions, /aggregate `fuzzyDuplicatesCollapsed`/);
+  assert.match(traceability, /FS-162/);
+  assert.match(contracts, /fuzzyDuplicatesCollapsed: number;/);
+  assert.match(dedupeSource, /dedupeArticlesWithSummary/);
+  assert.match(dedupeSource, /disableFuzzyDedupe/);
+  assert.match(runSource, /--disable-fuzzy-dedupe/);
+  assert.match(runSource, /fuzzyDuplicatesCollapsed=/);
+  assert.match(updateSource, /--disable-fuzzy-dedupe/);
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticlesWithSummary reports fuzzy collapse counts/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline reports fuzzyDuplicatesCollapsed and supports disableFuzzyDedupe/,
+  );
+});
+
 test('FS-UX-22 provenance chips stay aligned across PLAN, TRACEABILITY, app, and web tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

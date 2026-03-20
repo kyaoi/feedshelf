@@ -7,6 +7,15 @@ import { normalizeUrl } from './normalizeFeed.ts';
 
 type DedupeMatchedBy = Exclude<ArticleProvenanceMatchedBy, 'primary'>;
 
+export interface DedupeArticlesOptions {
+  disableFuzzyDedupe?: boolean;
+}
+
+export interface DedupeArticlesResult {
+  articles: CanonicalArticle[];
+  fuzzyDuplicatesCollapsed: number;
+}
+
 interface DedupeMatch {
   key: string | null;
   matchedBy: DedupeMatchedBy | null;
@@ -389,12 +398,15 @@ export function mergeDuplicateArticles(
   };
 }
 
-export function dedupeArticles(
+export function dedupeArticlesWithSummary(
   articles: CanonicalArticle[],
-): CanonicalArticle[] {
+  options: DedupeArticlesOptions = {},
+): DedupeArticlesResult {
   const dedupedArticles: CanonicalArticle[] = [];
   const keyToIndex = new Map<string, number>();
   const fuzzyKeyToIndexes = new Map<string, Set<number>>();
+  const disableFuzzyDedupe = options.disableFuzzyDedupe === true;
+  let fuzzyDuplicatesCollapsed = 0;
 
   for (const article of articles) {
     const dedupeMatch = resolveDedupeMatch(article);
@@ -409,38 +421,59 @@ export function dedupeArticles(
         dedupedArticles[existingIndex] = mergedArticle;
         registerExactDedupeKey(keyToIndex, article, existingIndex);
         registerExactDedupeKey(keyToIndex, mergedArticle, existingIndex);
-        registerFuzzyDedupeKey(fuzzyKeyToIndexes, mergedArticle, existingIndex);
+        if (!disableFuzzyDedupe) {
+          registerFuzzyDedupeKey(
+            fuzzyKeyToIndexes,
+            mergedArticle,
+            existingIndex,
+          );
+        }
         continue;
       }
     }
 
-    const fuzzyDuplicateIndex = findFuzzyDuplicateIndex(
-      fuzzyKeyToIndexes,
-      dedupedArticles,
-      article,
-    );
-    if (fuzzyDuplicateIndex !== null) {
-      const mergedArticle = mergeDuplicateArticles(
-        dedupedArticles[fuzzyDuplicateIndex],
-        article,
-        'fuzzyTitleDate',
-      );
-      dedupedArticles[fuzzyDuplicateIndex] = mergedArticle;
-      registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
-      registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
-      registerFuzzyDedupeKey(
+    if (!disableFuzzyDedupe) {
+      const fuzzyDuplicateIndex = findFuzzyDuplicateIndex(
         fuzzyKeyToIndexes,
-        mergedArticle,
-        fuzzyDuplicateIndex,
+        dedupedArticles,
+        article,
       );
-      continue;
+      if (fuzzyDuplicateIndex !== null) {
+        const mergedArticle = mergeDuplicateArticles(
+          dedupedArticles[fuzzyDuplicateIndex],
+          article,
+          'fuzzyTitleDate',
+        );
+        dedupedArticles[fuzzyDuplicateIndex] = mergedArticle;
+        fuzzyDuplicatesCollapsed += 1;
+        registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
+        registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
+        registerFuzzyDedupeKey(
+          fuzzyKeyToIndexes,
+          mergedArticle,
+          fuzzyDuplicateIndex,
+        );
+        continue;
+      }
     }
 
     dedupedArticles.push(article);
     const nextIndex = dedupedArticles.length - 1;
     registerExactDedupeKey(keyToIndex, article, nextIndex);
-    registerFuzzyDedupeKey(fuzzyKeyToIndexes, article, nextIndex);
+    if (!disableFuzzyDedupe) {
+      registerFuzzyDedupeKey(fuzzyKeyToIndexes, article, nextIndex);
+    }
   }
 
-  return dedupedArticles;
+  return {
+    articles: dedupedArticles,
+    fuzzyDuplicatesCollapsed,
+  };
+}
+
+export function dedupeArticles(
+  articles: CanonicalArticle[],
+  options: DedupeArticlesOptions = {},
+): CanonicalArticle[] {
+  return dedupeArticlesWithSummary(articles, options).articles;
 }

@@ -857,6 +857,14 @@ v1 の生成優先順位は以下とする。
 - ただし kill switch は既に publish 済みの fuzzy merge を自動で復元するものではない。過去 output や retained article を持ち越したままでは rollback が不完全になりうるため、完全に戻したい場合は retained public data / `update-state.json` を持ち越さない full rebuild を前提にする
 - `loadUpdateState()` は既存 `matchedBy=fuzzyTitleDate` entry を引き続き読み込めてよく、この task で migration や public provenance surfacing、manual review UI、cross-source fuzzy 拡張を同時に進めない
 
+### 10.5.4 Post-v1 fuzzy dedupe observability implementation (`FS-DATA-10`)
+
+- `scripts/pipeline/dedupeArticles.ts` は既存の exact dedupe と conservative fuzzy fallback を保ったまま、aggregate な `fuzzyDuplicatesCollapsed` count を返せる internal helper を持ってよい。ただし per-article debug export や confidence detail は追加しない
+- `PipelineSummary` / `UpdatePipelineSummary` は `duplicatesCollapsed` に加えて internal-only `fuzzyDuplicatesCollapsed` を返してよく、logger も `dedupedArticles` / `duplicatesCollapsed` / `fuzzyDuplicatesCollapsed` の aggregate line までに留める
+- `run.ts` / `update.ts` の CLI は `--disable-fuzzy-dedupe` を受け付けてよく、この flag が有効な run では exact dedupe を維持しつつ fuzzy fallback だけを無効にする
+- `runUpdatePipeline()` は `update-state.json` へ書き出す fresh article 集合でも同じ kill switch を尊重し、既存 `matchedBy=fuzzyTitleDate` provenance parser 互換を保つ
+- この task でも public JSON shape / route 構造 / checked-in HTML shell / article card UI は変えない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

@@ -14,7 +14,7 @@ import type {
   UpdateSourceState,
   UpdateState,
 } from '../../src/shared/contracts.ts';
-import { dedupeArticles } from './dedupeArticles.ts';
+import { dedupeArticlesWithSummary } from './dedupeArticles.ts';
 import { loadFeeds } from './loadFeeds.ts';
 import {
   applyCanonicalUrlPrecisionLayer,
@@ -141,9 +141,12 @@ export interface UpdatePipelineArgs {
   shelvesPath: string;
   outputDir: string;
   dryRun: boolean;
+  disableFuzzyDedupe: boolean;
 }
 
-export interface RunUpdatePipelineOptions extends UpdatePipelineArgs {
+export interface RunUpdatePipelineOptions
+  extends Omit<UpdatePipelineArgs, 'disableFuzzyDedupe'> {
+  disableFuzzyDedupe?: boolean;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
@@ -162,6 +165,7 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
     shelvesPath: path.resolve(process.cwd(), 'data/shelves.yaml'),
     outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
+    disableFuzzyDedupe: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -199,6 +203,11 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
 
     if (arg === '--dry-run') {
       args.dryRun = true;
+      continue;
+    }
+
+    if (arg === '--disable-fuzzy-dedupe') {
+      args.disableFuzzyDedupe = true;
       continue;
     }
 
@@ -657,17 +666,25 @@ export async function runUpdatePipeline(
     articles: filteredFreshArticles,
     fetchImpl: options.fetchImpl || globalThis.fetch,
   });
-  const dedupedFreshArticles = dedupeArticles(canonicalizedFreshArticles);
+  const dedupeResult = dedupeArticlesWithSummary(canonicalizedFreshArticles, {
+    disableFuzzyDedupe: options.disableFuzzyDedupe,
+  });
+  const dedupedFreshArticles = dedupeResult.articles;
   const summary = await runPipeline({
     feedsPath: options.feedsPath,
     shelvesPath: options.shelvesPath,
     outputDir: options.outputDir,
     dryRun: options.dryRun,
     generatedAt,
-    normalizedArticles: dedupedFreshArticles,
+    normalizedArticles: canonicalizedFreshArticles,
     retainedArticles,
     logger,
+    disableFuzzyDedupe: options.disableFuzzyDedupe,
   });
+
+  if (options.disableFuzzyDedupe) {
+    logger.log('[update] fuzzy dedupe disabled; exact dedupe only.');
+  }
 
   if (!options.dryRun) {
     await writeUpdateState({

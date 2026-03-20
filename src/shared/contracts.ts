@@ -217,6 +217,7 @@ export interface PipelineArgs {
   shelvesPath: string;
   outputDir: string;
   dryRun: boolean;
+  disableFuzzyDedupe: boolean;
 }
 
 export interface PipelineSummary {
@@ -229,6 +230,7 @@ export interface PipelineSummary {
   normalizedArticles: number;
   dedupedArticles: number;
   duplicatesCollapsed: number;
+  fuzzyDuplicatesCollapsed: number;
   publicArticles: number;
   publicShelves: number;
   publicCategories: number;
@@ -266,4 +268,5 @@ export interface RunPipelineOptions {
   retainedArticles?: PublicArticleSummary[];
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
+  disableFuzzyDedupe?: boolean;
 }

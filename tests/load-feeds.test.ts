@@ -15,7 +15,10 @@ const {
   normalizeUrl,
   normalizeUrlWithPrecision,
 } = require('../scripts/pipeline/normalizeFeed');
-const { dedupeArticles } = require('../scripts/pipeline/dedupeArticles');
+const {
+  dedupeArticles,
+  dedupeArticlesWithSummary,
+} = require('../scripts/pipeline/dedupeArticles');
 const {
   buildPublicExports,
   slugifyCategoryLabel,
@@ -335,7 +338,7 @@ test('runPipeline rejects feeds whose shelfIds are missing from shelves.yaml', a
   );
 });
 
-test('parseArgs accepts --feeds, --shelves, --output-dir, and --dry-run', () => {
+test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, and --disable-fuzzy-dedupe', () => {
   const parsed = parseArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -344,8 +347,10 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, and --dry-run', () => 
     '--output-dir',
     'tmp/public-data',
     '--dry-run',
+    '--disable-fuzzy-dedupe',
   ]);
   assert.equal(parsed.dryRun, true);
+  assert.equal(parsed.disableFuzzyDedupe, true);
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[\\/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
@@ -667,6 +672,75 @@ test('dedupeArticles applies conservative fuzzy fallback for same-source title m
   ]);
 });
 
+test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disableFuzzyDedupe', () => {
+  const articles = [
+    {
+      id: 'article-fuzzy-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared Title',
+      url: 'https://example.com/posts/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: '  shared   title  ',
+      url: 'https://example.com/posts/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ];
+
+  const enabled = dedupeArticlesWithSummary(articles);
+  assert.equal(enabled.articles.length, 1);
+  assert.equal(enabled.fuzzyDuplicatesCollapsed, 1);
+
+  const disabled = dedupeArticlesWithSummary(articles, {
+    disableFuzzyDedupe: true,
+  });
+  assert.equal(disabled.articles.length, 2);
+  assert.equal(disabled.fuzzyDuplicatesCollapsed, 0);
+});
+
 test('dedupeArticles does not fuzzy-merge same-source title matches outside the 72 hour window', () => {
   const deduped = dedupeArticles([
     {
@@ -852,6 +926,129 @@ test('buildPublicExports derives alsoSeenInSourceIds from secondary provenance',
 test('slugifyCategoryLabel keeps compatibility export stable', () => {
   assert.equal(slugifyCategoryLabel('C++'), 'c');
   assert.equal(slugifyCategoryLabel('C#'), 'c');
+});
+
+test('runPipeline reports fuzzyDuplicatesCollapsed and supports disableFuzzyDedupe', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-summary-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'rss-feed',
+        name: 'Example Source',
+      },
+      {
+        ...RSS_FEED,
+        id: 'atom-feed',
+        name: 'Example Source',
+        feedUrl: 'https://example.com/atom.xml',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  const normalizedArticles = [
+    {
+      id: 'article-fuzzy-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared Title',
+      url: 'https://example.com/posts/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: 'shared title',
+      url: 'https://example.com/posts/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ];
+
+  const loggerMessages: unknown[] = [];
+  const enabledSummary = await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'enabled-public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    normalizedArticles,
+    logger: {
+      log(message: unknown) {
+        loggerMessages.push(message);
+      },
+    },
+  });
+
+  assert.equal(enabledSummary.normalizedArticles, 2);
+  assert.equal(enabledSummary.dedupedArticles, 1);
+  assert.equal(enabledSummary.duplicatesCollapsed, 1);
+  assert.equal(enabledSummary.fuzzyDuplicatesCollapsed, 1);
+  assert.ok(
+    loggerMessages.some((message) =>
+      String(message).includes('fuzzyDuplicatesCollapsed=1'),
+    ),
+  );
+
+  const disabledSummary = await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'disabled-public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    normalizedArticles,
+    disableFuzzyDedupe: true,
+    logger: { log() {} },
+  });
+
+  assert.equal(disabledSummary.dedupedArticles, 2);
+  assert.equal(disabledSummary.duplicatesCollapsed, 0);
+  assert.equal(disabledSummary.fuzzyDuplicatesCollapsed, 0);
 });
 
 test('runPipeline writes shelves.json, shelf route shells, and reports shelf/category counts', async () => {

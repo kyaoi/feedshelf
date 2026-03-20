@@ -970,6 +970,12 @@
 - 理由: fuzzy dedupe は conservative に入っているが、問題が起きた際に「今回の run で何件 collapse したか」と「次の publish で新しい fuzzy merge を止められるか」がすぐ分からないと運用が重い。一方で per-article audit export や broader matching まで同時に入れると public contract や UI へ波及しやすいため、まずは internal summary と明示的 off switch に閉じる方が安全だから
 - 影響: 将来の実装対象は `src/shared/contracts.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / `scripts/pipeline/dedupeArticles.ts` と tests に留め、public JSON / route / checked-in HTML shell は変えない。kill switch は新しい fuzzy merge を止めるためのもので、既に retained output に入った fuzzy merge を自動で元に戻すものではないため、完全 rollback には clean な full rebuild を前提とする
 
+## D-148: fuzzy dedupe observability 実装は aggregate summary と kill switch に閉じる
+
+- 決定: `FS-DATA-10` では `scripts/pipeline/dedupeArticles.ts` に aggregate `fuzzyDuplicatesCollapsed` を返す internal helper を追加し、`PipelineSummary` / `UpdatePipelineSummary` へ同名 count を載せる。`run.ts` / `update.ts` は `--disable-fuzzy-dedupe` を parse して fuzzy fallback だけを無効化する
+- 理由: `FS-DOCS-28` で固定した observability / rollback 境界を最小差分で消費するには、dedupe アルゴリズム自体を広げずに aggregate count と explicit off switch を配線するのが最も安全だから。`runUpdatePipeline()` でも同じ switch を尊重すれば、publish 前 diagnosis と clean rebuild 前提の rollback がしやすくなる
+- 影響: 変更対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / internal tests に留まり、public JSON / route / checked-in HTML shell / UI には波及しない。logger は aggregate count のみを出し、per-article debug surface は今後も別 task に分離する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

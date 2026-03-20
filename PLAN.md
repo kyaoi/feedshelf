@@ -393,6 +393,15 @@ Phase 6 の進め方:
 - この task は public JSON / route / checked-in HTML shell / article card UI を変えず、aggregate log / summary までに限定する
 - 既存 `matchedBy=fuzzyTitleDate` を読む update state 互換は維持しつつ、過去 publish 済み merge を完全に戻すには retained public data / update state を持ち越さない full rebuild が必要であることを docs で明示できる
 
+### Post-v1 fuzzy dedupe observability implementation
+
+- [x] `FS-DATA-10` `fuzzyDuplicatesCollapsed` summary と `--disable-fuzzy-dedupe` kill switch を pipeline / update 実装へ追加する
+
+完了条件:
+- `PipelineSummary` / `UpdatePipelineSummary` が internal-only `fuzzyDuplicatesCollapsed` を返し、aggregate logger も同じ count までに閉じた出力を行う
+- `parseArgs()` / `parseUpdateArgs()` が `--disable-fuzzy-dedupe` を受け付け、`runPipeline()` / `runUpdatePipeline()` が exact dedupe を維持したまま fuzzy merge だけを無効化できる
+- `dedupeArticlesWithSummary()` のような internal helper と tests により、fuzzy collapse count の集計と kill switch の効き方を run / update の両方で確認できる
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -410,7 +419,8 @@ Phase 6 の進め方:
 - `FS-UX-22` で `alsoSeenInSourceIds` を shared article card の secondary-source chip へ変換し、最大 2 件 + `+N` overflow、unknown source id 無視、home / nested page ごとの source href 解決を実装済みにした
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
 - deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability を別 docs-first task で扱う
-- `FS-DOCS-28` で fuzzy dedupe の次差分は internal `fuzzyDuplicatesCollapsed` counter と `--disable-fuzzy-dedupe` kill switch に限定したため、実装へ進む場合も `PipelineSummary` / `UpdatePipelineSummary` / CLI args / tests に閉じた最小差分で扱う
+- `FS-DOCS-28` で固定した fuzzy dedupe observability 境界に沿って、`FS-DATA-10` では `PipelineSummary` / `UpdatePipelineSummary` の internal `fuzzyDuplicatesCollapsed`、aggregate logger、`--disable-fuzzy-dedupe` kill switch を `run` / `update` / tests に閉じて実装済みにした
+- fuzzy dedupe の今後の拡張は、per-article audit surfacing・broader matching・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
 
 ## メモ
 

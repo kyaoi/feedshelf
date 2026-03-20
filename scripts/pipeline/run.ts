@@ -15,7 +15,7 @@ import {
   mergePublicArticleSummaries,
   writePublicExports,
 } from './buildPublicExports.ts';
-import { dedupeArticles } from './dedupeArticles.ts';
+import { dedupeArticlesWithSummary } from './dedupeArticles.ts';
 import { loadFeeds } from './loadFeeds.ts';
 import { loadShelves } from './loadShelves.ts';
 import {
@@ -46,6 +46,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     shelvesPath: path.resolve(process.cwd(), 'data/shelves.yaml'),
     outputDir: path.resolve(process.cwd(), 'public/data'),
     dryRun: false,
+    disableFuzzyDedupe: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -83,6 +84,11 @@ export function parseArgs(argv: string[]): PipelineArgs {
 
     if (arg === '--dry-run') {
       args.dryRun = true;
+      continue;
+    }
+
+    if (arg === '--disable-fuzzy-dedupe') {
+      args.disableFuzzyDedupe = true;
       continue;
     }
 
@@ -150,7 +156,10 @@ export async function runPipeline(
         feeds,
         fetchImpl: options.fetchImpl,
       });
-  const dedupedArticles = dedupeArticles(normalizedArticles);
+  const dedupeResult = dedupeArticlesWithSummary(normalizedArticles, {
+    disableFuzzyDedupe: options.disableFuzzyDedupe,
+  });
+  const dedupedArticles = dedupeResult.articles;
   const freshPublicExports = buildPublicExports({
     articles: dedupedArticles,
     feeds,
@@ -189,6 +198,7 @@ export async function runPipeline(
     normalizedArticles: normalizedArticles.length,
     dedupedArticles: dedupedArticles.length,
     duplicatesCollapsed: normalizedArticles.length - dedupedArticles.length,
+    fuzzyDuplicatesCollapsed: dedupeResult.fuzzyDuplicatesCollapsed,
     publicArticles: publicExports.meta.articleCount,
     publicShelves: publicExports.meta.shelfCount,
     publicCategories: publicExports.meta.categoryCount,
@@ -204,8 +214,12 @@ export async function runPipeline(
   if (normalizedArticles.length > 0) {
     logger.log(`[pipeline] normalizedArticles=${normalizedArticles.length}`);
     logger.log(
-      `[pipeline] dedupedArticles=${dedupedArticles.length} duplicatesCollapsed=${summary.duplicatesCollapsed}`,
+      `[pipeline] dedupedArticles=${dedupedArticles.length} duplicatesCollapsed=${summary.duplicatesCollapsed} fuzzyDuplicatesCollapsed=${summary.fuzzyDuplicatesCollapsed}`,
     );
+  }
+
+  if (options.disableFuzzyDedupe) {
+    logger.log('[pipeline] fuzzy dedupe disabled; exact dedupe only.');
   }
 
   logger.log(
