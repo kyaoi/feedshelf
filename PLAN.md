@@ -402,6 +402,15 @@ Phase 6 の進め方:
 - `parseArgs()` / `parseUpdateArgs()` が `--disable-fuzzy-dedupe` を受け付け、`runPipeline()` / `runUpdatePipeline()` が exact dedupe を維持したまま fuzzy merge だけを無効化できる
 - `dedupeArticlesWithSummary()` のような internal helper と tests により、fuzzy collapse count の集計と kill switch の効き方を run / update の両方で確認できる
 
+### Post-v1 canonicalization deterministic rule-table docs split
+
+- [x] `FS-DOCS-29` canonicalization の次差分を deterministic allowlisted rewrite/query rule table に限定し、network I/O 拡大・generic rule 化・public contract 変更と分離する
+
+完了条件:
+- 既存 `FS-DATA-06` の redirect-aware precision layer の上に、repo 内の allowlisted host / path pattern / query key に対する deterministic rewrite rule だけを追加できる境界が docs で追跡できる
+- 新しい rule は `scripts/pipeline/normalizeFeed.ts` と tests に閉じ、追加 network fetch・bounded redirect follow の適用対象拡大・public JSON / route / checked-in HTML shell の変更を同じ task に含めない
+- generic query parameter の一律除去拡大、HTML canonical parse、本文 fetch、`data/feeds.json` への manual canonical override、runtime-configurable rule download を非目標として明示できる
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -418,6 +427,8 @@ Phase 6 の進め方:
 - `FS-DOCS-27` で public provenance の最初の UI surfacing は shared article card 上の bounded secondary-source chip に限定し、label 解決・表示上限・unknown source fallback・non-goals を docs で先に固定した
 - `FS-UX-22` で `alsoSeenInSourceIds` を shared article card の secondary-source chip へ変換し、最大 2 件 + `+N` overflow、unknown source id 無視、home / nested page ごとの source href 解決を実装済みにした
 - `FS-DATA-07` の first implementation も完了し、exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking が pipeline / update state まで入った
+- `FS-DOCS-29` で canonicalization extension の次差分は deterministic allowlisted rule table に限定したため、次の実装候補は `FS-DATA-11` として `normalizeFeed.ts` と tests に閉じた non-network 差分で扱う
+- `FS-DATA-11` では既存の bounded redirect follow を広げず、known host の presentation URL unwrap や host-specific query cleanup のような deterministic rewrite だけを追加候補とする
 - deferred data backlog（`FS-DATA-05` 〜 `FS-DATA-07`）は first implementation まで完了し、public provenance export は `FS-DOCS-26` で export-only 境界を固定したため、今後の拡張は bounded article-card chip・追加 canonicalization rule・stricter rollback / observability を別 docs-first task で扱う
 - `FS-DOCS-28` で固定した fuzzy dedupe observability 境界に沿って、`FS-DATA-10` では `PipelineSummary` / `UpdatePipelineSummary` の internal `fuzzyDuplicatesCollapsed`、aggregate logger、`--disable-fuzzy-dedupe` kill switch を `run` / `update` / tests に閉じて実装済みにした
 - fuzzy dedupe の今後の拡張は、per-article audit surfacing・broader matching・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す

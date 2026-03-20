@@ -783,6 +783,14 @@ shelves:
 - precision layer の適用により変わってよいのは internal normalization と、その rebuild 後に変わりうる article `url` / `id` / dedupe winner に限る
 - public JSON の shape、route 構造、checked-in HTML shell はこの task でも変えない
 
+### 10.2.3 Post-v1 canonicalization deterministic rule-table docs split (`FS-DOCS-29`)
+
+- `FS-DATA-06` 後の次の canonicalization 差分は、既存の redirect-aware precision layer の上に deterministic allowlisted rewrite/query rule table を足す docs-first task として扱い、追加 network I/O を増やす task と混ぜない
+- 追加してよい rule は、repo 内で version 管理する明示的 allowlist host / path pattern / query key に対して、現在の URL だけから landing URL を決定できるものに限る。known presentation URL の unwrap や host-specific query cleanup は含めてよいが、generic query stripping へ一般化してはならない
+- 既存の bounded redirect resolution は `FS-DATA-06` で有効化した候補の範囲から広げない。この task で全 article URL への fetch、追加 retry policy、host discoverability のための probe は入れない
+- precision rule の主戦場は `scripts/pipeline/normalizeFeed.ts` と tests に限定し、public JSON shape / route 構造 / checked-in HTML shell / article card UI は変えない。`data/feeds.json` へ canonical override field を足したり、runtime-configurable rule を外部から取得したりしない
+- HTML canonical parse、本文 fetch、manual review UI、source ごとの bespoke migration script は別 task とし、この docs split では deterministic normalization layer の境界だけを先に固定する
+
 ### 10.3 記事 ID 生成
 
 `id` は内部安定キーであり、UI 表示用文字列ではない。
@@ -1443,7 +1451,7 @@ first implementation までで確定した状態:
    - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
    - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）をそれぞれ別の docs-first task として扱う。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule（`FS-DOCS-29` で deterministic allowlisted rule table の境界を固定）、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 

@@ -586,6 +586,48 @@ test('FS-DOCS-28 fuzzy dedupe observability docs split stays aligned across PLAN
   assert.match(traceability, /kill switch/);
 });
 
+test('FS-DOCS-29 canonicalization deterministic rule-table docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-29/);
+  assert.match(plan, /deterministic allowlisted rewrite\/query rule table/);
+  assert.match(
+    plan,
+    /network I\/O 拡大・generic rule 化・public contract 変更/,
+  );
+  assert.match(
+    spec,
+    /10\.2\.3 Post-v1 canonicalization deterministic rule-table docs split/,
+  );
+  assert.match(spec, /repo 内で version 管理する明示的 allowlist host/);
+  assert.match(
+    spec,
+    /`data\/feeds\.json` へ canonical override field を足したり/,
+  );
+  assert.match(decisions, /D-149/);
+  assert.match(
+    decisions,
+    /追加 network I\/O や source registry への manual canonical override を含めない/,
+  );
+  assert.match(traceability, /FS-163/);
+  assert.match(traceability, /generic query stripping/);
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

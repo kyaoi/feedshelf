@@ -976,6 +976,12 @@
 - 理由: `FS-DOCS-28` で固定した observability / rollback 境界を最小差分で消費するには、dedupe アルゴリズム自体を広げずに aggregate count と explicit off switch を配線するのが最も安全だから。`runUpdatePipeline()` でも同じ switch を尊重すれば、publish 前 diagnosis と clean rebuild 前提の rollback がしやすくなる
 - 影響: 変更対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / internal tests に留まり、public JSON / route / checked-in HTML shell / UI には波及しない。logger は aggregate count のみを出し、per-article debug surface は今後も別 task に分離する
 
+## D-149: canonicalization の次差分は deterministic allowlisted rule table に限定する
+
+- 決定: `FS-DATA-06` 後の次差分は、既存 precision layer の上に repo 内で version 管理する allowlisted host / path / query rewrite rule table を足す docs-first task とし、追加 network I/O や source registry への manual canonical override を含めない
+- 理由: canonicalization の精度は上げたいが、bounded redirect follow まである現状に新しい fetch や host-agnostic stripping を混ぜると failure surface が増える。deterministic rule table なら normalize stage と tests に閉じたまま public contract を触らず改善余地を残せるため
+- 影響: 後続実装は `scripts/pipeline/normalizeFeed.ts` と tests を主戦場にし、`data/feeds.json` / public JSON / route / checked-in HTML shell は変更対象外とする。generic query stripping の拡大、HTML canonical parse、本文 fetch、runtime-configurable rule download は別 task に分離する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
