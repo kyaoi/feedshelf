@@ -880,6 +880,13 @@ v1 の生成優先順位は以下とする。
 - `runUpdatePipeline()` は `update-state.json` へ書き出す fresh article 集合でも同じ kill switch を尊重し、既存 `matchedBy=fuzzyTitleDate` provenance parser 互換を保つ
 - この task でも public JSON shape / route 構造 / checked-in HTML shell / article card UI は変えない
 
+### 10.5.5 Post-v1 fuzzy dedupe audit docs split (`FS-DOCS-30`)
+
+- `FS-DATA-10` の後に per-article evidence を追加で surfacing したい場合は、default logger や public JSON へ広げず、明示的 opt-in の internal audit export task として切り出す
+- first implementation は fuzzy merge が発生した record だけを対象にし、`winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy` のような bounded field を JSON あるいは NDJSON として出力してよい。raw summary / body / HTML / embedding score / retained public article payload を複製してはならない
+- audit export は `run.ts` / `update.ts` の明示的 flag を通したときだけ生成してよく、flag 未指定時の logger / checked-in output / route / public JSON / article card UI は無変更のままとする
+- audit record はその run で新しく発生した fuzzy merge の evidence に限定し、過去に publish 済みの全 fuzzy history 復元や manual review workflow、broader matching、cross-source fuzzy、confidence score 公開を同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する
@@ -1458,7 +1465,7 @@ first implementation までで確定した状態:
    - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
    - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule（`FS-DOCS-29` で deterministic allowlisted rule table の境界を固定）、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）をそれぞれ別の docs-first task として扱う。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule（`FS-DOCS-29` で deterministic allowlisted rule table の境界を固定）、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）、explicit fuzzy audit export（`FS-DOCS-30` で opt-in internal audit の境界を固定）をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 

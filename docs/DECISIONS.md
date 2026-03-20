@@ -989,6 +989,12 @@
 - 理由: repository に既に Reddit feed 群があり、presentation alias や thread-view 用 query を deterministic に落とす価値が高い一方、redirect follow の対象を新しい host へ広げる必要がない。smallest useful rule として採ることで `FS-DOCS-29` の non-network 境界をそのまま消費できる
 - 影響: 実装対象は `scripts/pipeline/normalizeFeed.ts` と tests に閉じ、`run.ts` / `update.ts` / source registry / public JSON / route / checked-in HTML shell は変更しない。rule は redirect-aware precision layer の後段で適用し、Reddit cleanup のために追加 fetch を行わない
 
+## D-151: fuzzy dedupe の次差分は explicit opt-in internal audit export に限定する
+
+- 決定: `FS-DATA-10` の次に per-article fuzzy evidence を扱う場合は、default logger や public JSON ではなく、`run.ts` / `update.ts` の明示的 flag からだけ有効になる internal audit export task として切り出す
+- 理由: aggregate counter と kill switch だけでは「どの merge が起きたか」を深掘りできないが、既定ログや public data に per-article 情報を流し始めると noisy かつ契約変更が大きい。opt-in export に閉じれば diagnosis 用 evidence を足しつつ、通常 publish の surface を増やさずに済むため
+- 影響: first implementation は fuzzy merge ごとの bounded record（`winnerArticleId` / `incomingArticleId` / `winnerFeedId` / `incomingFeedId` / `titleCompareKey` / `publishedAtDeltaHours` / `matchedBy`）に限定し、raw summary / body / HTML / public route / article card UI / broader matching / manual review workflow は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

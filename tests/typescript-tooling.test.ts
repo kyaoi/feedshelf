@@ -628,6 +628,39 @@ test('FS-DOCS-29 canonicalization deterministic rule-table docs split stays alig
   assert.match(traceability, /generic query stripping/);
 });
 
+test('FS-DOCS-30 fuzzy dedupe audit docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-30/);
+  assert.match(plan, /opt-in の internal audit export/);
+  assert.match(plan, /`winnerArticleId` \/ `incomingArticleId`/);
+  assert.match(spec, /10\.5\.5 Post-v1 fuzzy dedupe audit docs split/);
+  assert.match(spec, /明示的 opt-in の internal audit export task/);
+  assert.match(
+    spec,
+    /過去に publish 済みの全 fuzzy history 復元や manual review workflow、broader matching、cross-source fuzzy、confidence score 公開/,
+  );
+  assert.match(decisions, /D-151/);
+  assert.match(decisions, /default logger や public JSON ではなく/);
+  assert.match(traceability, /FS-165/);
+  assert.match(traceability, /bounded audit record/);
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
