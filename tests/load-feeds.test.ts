@@ -421,6 +421,25 @@ test('normalizeUrlWithPrecision falls back to allowlisted host rewrite when redi
   assert.equal(url, 'https://example.com/articles/loop?a=1&b=2');
 });
 
+test('normalizeUrlWithPrecision applies deterministic Reddit presentation cleanup without extra redirect fetches', async () => {
+  let fetchCalls = 0;
+  const url = await normalizeUrlWithPrecision(
+    'https://old.reddit.com/r/programming/comments/abc123/example_post/?context=3&sort=top&depth=5&share_id=demo&rdt=123&utm_source=rss',
+    {
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        throw new Error('deterministic rule table should not fetch');
+      },
+    },
+  );
+
+  assert.equal(
+    url,
+    'https://www.reddit.com/r/programming/comments/abc123/example_post',
+  );
+  assert.equal(fetchCalls, 0);
+});
+
 test('applyCanonicalUrlPrecisionLayer updates article url and identity after allowlisted rewrite', async () => {
   const article = {
     id: 'before',
@@ -481,6 +500,50 @@ test('normalizeFeedDocument keeps shelfIds, sourceTags, and entryTags', () => {
     },
   ]);
   assert.deepEqual(articles[0].seenInFeeds, ['rss-feed']);
+});
+
+test('applyCanonicalUrlPrecisionLayer updates article url and identity after deterministic Reddit cleanup', async () => {
+  const article = {
+    id: 'before-reddit',
+    feedId: 'reddit-programming',
+    sourceName: 'Reddit /r/programming',
+    language: 'en',
+    shelfIds: ['it'],
+    title: 'Reddit thread article',
+    url: 'https://old.reddit.com/r/programming/comments/abc123/example_post/?context=3&sort=top&share_id=demo',
+    summary: null,
+    publishedAt: null,
+    fetchedAt: '2026-03-08T06:00:00.000Z',
+    author: null,
+    imageUrl: null,
+    sourceTags: ['Reddit'],
+    entryTags: ['Community'],
+    sourceItemId: 'reddit-thread-1',
+    provenance: [
+      {
+        feedId: 'reddit-programming',
+        firstSeenAt: '2026-03-08T06:00:00.000Z',
+        lastSeenAt: '2026-03-08T06:00:00.000Z',
+        sourceItemId: 'reddit-thread-1',
+        matchedBy: 'primary',
+      },
+    ],
+    seenInFeeds: ['reddit-programming'],
+  };
+
+  const [updated] = await applyCanonicalUrlPrecisionLayer({
+    articles: [article],
+    fetchImpl: async () => {
+      throw new Error('deterministic rule table should not fetch');
+    },
+  });
+
+  assert.equal(
+    updated.url,
+    'https://www.reddit.com/r/programming/comments/abc123/example_post',
+  );
+  assert.notEqual(updated.id, article.id);
+  assert.equal(updated.sourceItemId, article.sourceItemId);
 });
 
 test('normalizeFeedDocument converts Atom entries into canonical article objects', () => {
@@ -1114,6 +1177,67 @@ test('runPipeline writes shelves.json, shelf route shells, and reports shelf/cat
   assert.match(shelfRouteHtml, /data-feedshelf-page="shelf"/);
   assert.match(shelfRouteHtml, /data-shelf-id="examples"/);
   assert.match(shelfRouteHtml, /related-sources-title/);
+});
+
+test('runPipeline applies deterministic Reddit cleanup before writing public articles', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-reddit-canonicalization-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const redditXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Reddit RSS</title>
+    <item>
+      <title>Reddit deterministic cleanup article</title>
+      <link>https://old.reddit.com/r/programming/comments/abc123/example_post/?context=3&amp;sort=top&amp;share_id=demo&amp;utm_source=rss</link>
+      <description><![CDATA[<p>Deterministic cleanup integration.</p>]]></description>
+      <pubDate>Fri, 07 Mar 2026 09:00:00 +0900</pubDate>
+      <guid>reddit-cleanup-1</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'reddit-programming',
+        name: 'Reddit /r/programming',
+        siteUrl: 'https://www.reddit.com/r/programming/',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    generatedAt: '2026-03-08T06:00:00Z',
+    logger: { log() {} },
+    fetchImpl: async () => {
+      throw new Error('deterministic rule table should not fetch');
+    },
+    feedDocuments: [
+      {
+        feedId: 'reddit-programming',
+        xml: redditXml,
+        fetchedAt: '2026-03-08T06:00:00Z',
+      },
+    ],
+  });
+
+  const articlesJson = JSON.parse(
+    await fs.readFile(path.join(outputDir, 'articles.json'), 'utf8'),
+  );
+  assert.equal(
+    articlesJson[0].url,
+    'https://www.reddit.com/r/programming/comments/abc123/example_post',
+  );
 });
 
 test('runPipeline applies canonicalization precision layer before writing public articles', async () => {

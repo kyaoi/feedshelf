@@ -982,6 +982,13 @@
 - 理由: canonicalization の精度は上げたいが、bounded redirect follow まである現状に新しい fetch や host-agnostic stripping を混ぜると failure surface が増える。deterministic rule table なら normalize stage と tests に閉じたまま public contract を触らず改善余地を残せるため
 - 影響: 後続実装は `scripts/pipeline/normalizeFeed.ts` と tests を主戦場にし、`data/feeds.json` / public JSON / route / checked-in HTML shell は変更対象外とする。generic query stripping の拡大、HTML canonical parse、本文 fetch、runtime-configurable rule download は別 task に分離する
 
+
+## D-150: canonicalization deterministic rule-table の first implementation は Reddit presentation cleanup に閉じる
+
+- 決定: `FS-DATA-11` の first implementation では、deterministic rule table に Reddit 用の host alias rewrite と comment-thread query cleanup だけを追加する。対象は `old.reddit.com` / `new.reddit.com` / `www.reddit.com` で、query cleanup は `context` / `depth` / `sort` / `share_id` / `rdt` に限定する
+- 理由: repository に既に Reddit feed 群があり、presentation alias や thread-view 用 query を deterministic に落とす価値が高い一方、redirect follow の対象を新しい host へ広げる必要がない。smallest useful rule として採ることで `FS-DOCS-29` の non-network 境界をそのまま消費できる
+- 影響: 実装対象は `scripts/pipeline/normalizeFeed.ts` と tests に閉じ、`run.ts` / `update.ts` / source registry / public JSON / route / checked-in HTML shell は変更しない。rule は redirect-aware precision layer の後段で適用し、Reddit cleanup のために追加 fetch を行わない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

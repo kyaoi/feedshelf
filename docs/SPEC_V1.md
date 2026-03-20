@@ -791,6 +791,13 @@ shelves:
 - precision rule の主戦場は `scripts/pipeline/normalizeFeed.ts` と tests に限定し、public JSON shape / route 構造 / checked-in HTML shell / article card UI は変えない。`data/feeds.json` へ canonical override field を足したり、runtime-configurable rule を外部から取得したりしない
 - HTML canonical parse、本文 fetch、manual review UI、source ごとの bespoke migration script は別 task とし、この docs split では deterministic normalization layer の境界だけを先に固定する
 
+### 10.2.4 Post-v1 canonicalization deterministic rule-table implementation (`FS-DATA-11`)
+
+- first implementation では deterministic rule table を `normalizeUrlWithPrecision()` の末尾へ追加し、既存の Hatena rewrite + bounded redirect follow の結果に対して non-network の host-specific rewrite/query cleanup を適用する
+- 初回の allowlisted rule は Reddit に限定し、`old.reddit.com` / `new.reddit.com` を `www.reddit.com` へ正規化する。comment thread URL（`/r/<subreddit>/comments/<id>/...`）では presentation 用 query key `context` / `depth` / `sort` / `share_id` / `rdt` を除去してよい
+- この rule table は redirect follow の対象を増やさず、Reddit alias rewrite や query cleanup のために追加 fetch を行わない。`applyCanonicalUrlPrecisionLayer()` / `runPipeline()` から見える article `url` / `id` の再計算だけで十分とする
+- public JSON shape / route 構造 / checked-in HTML shell / source registry は変更しない
+
 ### 10.3 記事 ID 生成
 
 `id` は内部安定キーであり、UI 表示用文字列ではない。

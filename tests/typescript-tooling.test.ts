@@ -980,3 +980,59 @@ test('biome baseline config scopes generated files out of formatting and linting
   assert.equal(biomeConfig.javascript?.formatter?.semicolons, 'always');
   assert.equal(biomeConfig.javascript?.formatter?.trailingCommas, 'all');
 });
+
+test('FS-DATA-11 canonicalization deterministic rule-table implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, normalizeFeed, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const normalizeFeedSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/normalizeFeed.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-11/);
+  assert.match(
+    plan,
+    /Reddit presentation alias rewrite と comment-thread query cleanup/,
+  );
+  assert.match(
+    spec,
+    /10\.2\.4 Post-v1 canonicalization deterministic rule-table implementation/,
+  );
+  assert.match(spec, /old\.reddit\.com/);
+  assert.match(spec, /context` \/ `depth` \/ `sort` \/ `share_id` \/ `rdt`/);
+  assert.match(decisions, /D-150/);
+  assert.match(
+    decisions,
+    /Reddit 用の host alias rewrite と comment-thread query cleanup/,
+  );
+  assert.match(traceability, /FS-164/);
+  assert.match(normalizeFeedSource, /applyDeterministicCanonicalRuleTable/);
+  assert.match(normalizeFeedSource, /applyRedditPresentationRule/);
+  assert.match(normalizeFeedSource, /old\.reddit\.com/);
+  assert.match(
+    loadFeedsTest,
+    /normalizeUrlWithPrecision applies deterministic Reddit presentation cleanup without extra redirect fetches/,
+  );
+  assert.match(
+    loadFeedsTest,
+    /runPipeline applies deterministic Reddit cleanup before writing public articles/,
+  );
+});

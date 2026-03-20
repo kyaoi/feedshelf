@@ -493,6 +493,72 @@ function applyAllowlistedHostRule(urlValue: string): string {
   return hatenaCandidate || baseline;
 }
 
+const REDDIT_PRESENTATION_QUERY_KEYS = new Set([
+  'context',
+  'depth',
+  'sort',
+  'share_id',
+  'rdt',
+]);
+const REDDIT_PRESENTATION_HOSTS = new Set([
+  'old.reddit.com',
+  'new.reddit.com',
+  'www.reddit.com',
+]);
+const REDDIT_COMMENT_PATH_PATTERN =
+  /^\/r\/[^/]+\/comments\/[^/]+(?:\/[^/]+)?\/?$/i;
+
+function applyRedditPresentationRule(parsed: URL): string | null {
+  if (!REDDIT_PRESENTATION_HOSTS.has(parsed.hostname)) {
+    return null;
+  }
+
+  const next = new URL(parsed.toString());
+  let changed = false;
+
+  if (next.hostname !== 'www.reddit.com') {
+    next.hostname = 'www.reddit.com';
+    changed = true;
+  }
+
+  if (REDDIT_COMMENT_PATH_PATTERN.test(next.pathname)) {
+    for (const key of [...next.searchParams.keys()]) {
+      if (!REDDIT_PRESENTATION_QUERY_KEYS.has(key.toLowerCase())) {
+        continue;
+      }
+      next.searchParams.delete(key);
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    return null;
+  }
+
+  return normalizeUrl(next.toString());
+}
+
+function applyDeterministicCanonicalRuleTable(urlValue: string): string {
+  const baseline = normalizeUrl(urlValue);
+  if (baseline === null) {
+    return urlValue;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(baseline);
+  } catch {
+    return baseline;
+  }
+
+  if (!isHttpProtocol(parsed.protocol)) {
+    return baseline;
+  }
+
+  const rewritten = applyRedditPresentationRule(parsed);
+  return rewritten || baseline;
+}
+
 function createTimeoutSignal(timeoutMs: number): {
   signal: AbortSignal;
   cancel(): void;
@@ -645,10 +711,14 @@ export async function normalizeUrlWithPrecision(
 
   const rewritten = applyAllowlistedHostRule(baseline);
   if (rewritten === baseline) {
-    return baseline;
+    return applyDeterministicCanonicalRuleTable(baseline);
   }
 
-  return followRedirectsFromCanonicalCandidate(rewritten, options);
+  const resolved = await followRedirectsFromCanonicalCandidate(
+    rewritten,
+    options,
+  );
+  return applyDeterministicCanonicalRuleTable(resolved);
 }
 
 function rebuildArticleIdentity(
