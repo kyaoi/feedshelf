@@ -1021,6 +1021,12 @@
 - 理由: handoff artifact があれば known false positive の pair を人が特定できるが、次に必要なのはその pair だけを保守的に止める最小 control であって、accept persistence・broader matching・UI まで同時に入れることではない。reject list を bounded key + opt-in path に閉じれば、既存 publish surface や managed state を広げずに誤マージ抑止だけ追加できるため
 - 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を key にした reject entry を読んで current run の fuzzy merge を suppress してよい。ただし `update-state.json` への自動書き戻し、checked-in artifact、retroactive unmerge、accept persistence、broader fuzzy heuristic、cross-source fuzzy、manual review UI route は同じ task に含めない
 
+## D-156: `FS-DATA-14` は `--fuzzy-reject-file` による explicit false-positive reject list 読み込みに閉じる
+
+- 決定: `FS-DATA-14` の first implementation では、`run.ts` / `update.ts` が `--fuzzy-reject-file <path>` を受け付け、operator-authored な JSON reject list を明示的 flag 指定時だけ読み込む。`dedupeArticlesWithSummary()` は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` に一致する candidate だけを fuzzy merge せず残す
+- 理由: handoff artifact から known false positive の pair は特定できるので、次に必要なのは exact dedupe や public surface を崩さず、その pair だけ future run で抑止する最小 control であるため。bounded reject key に閉じれば manual review state machine や broader heuristic を導入せずに保守的な suppression を追加できる
+- 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じる。reject entry は `articleIdPair` / `matchedBy` を必須とし、`winnerTitle` / `incomingTitle` / `note` は human-readable echo field として許容する一方、`update-state.json` 自動書き戻し / checked-in artifact / retroactive unmerge / accept persistence / broader matching / manual review UI は含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

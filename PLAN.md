@@ -465,6 +465,15 @@ Phase 6 の進め方:
 - reject entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を中心にした bounded key に限定し、必要なら human-readable な `winnerTitle` / `incomingTitle` / `note` を添えてよいが、raw body・retained public article payload・broad pattern rule は含めない
 - reject list は current run / update で新しく遭遇した candidate の merge を止めるためだけに使い、既に publish 済みの merge を後から自動で split しない。`update-state.json` への自動書き戻し、checked-in artifact、public JSON、manual review UI route は同じ task に含めない
 
+### Post-v1 fuzzy dedupe false-positive reject implementation
+
+- [x] `FS-DATA-14` `--fuzzy-reject-file` による explicit false-positive reject list 読み込みを `dedupeArticles()` / `run.ts` / `update.ts` / tests に閉じて実装する
+
+完了条件:
+- `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-reject-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が operator-authored な JSON reject list を読み込んで future run の `matchedBy='fuzzyTitleDate'` fuzzy merge だけを suppress する
+- reject entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を必須 key にした bounded shape に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を無視せず通してよい
+- reject list は current run / update で新しく遭遇した candidate の merge 抑止にだけ使い、`update-state.json` 自動書き戻し / checked-in artifact / public JSON / route / article card UI / retroactive unmerge / broader matching は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -489,6 +498,7 @@ Phase 6 の進め方:
 - `FS-DOCS-31` では次の fuzzy 拡張を internal manual-review handoff artifact に限定し、人が読むための title / URL / source name を opt-in artifact にだけ足す境界を先に固定した
 - `FS-DATA-13` では `--fuzzy-handoff-file` 経由の opt-in internal JSON handoff export を `run` / `update` / tests に閉じて実装し、既存 audit record に human-readable な title / URL / source name を足した bounded evidence を人手確認向け artifact として出力できるようにした
 - `FS-DOCS-32` では次の fuzzy 拡張を explicit false-positive reject list に限定し、既知の誤マージを future run で止める最小 control を handoff artifact の次段として docs で先に固定した
+- `FS-DATA-14` では `--fuzzy-reject-file` 経由の explicit false-positive reject list を `run` / `update` / tests に閉じて実装し、operator-authored な order-insensitive `articleIdPair` key に一致する `matchedBy='fuzzyTitleDate'` candidate だけを future run で suppress できるようにした
 - fuzzy dedupe の今後の拡張は、accept persistence・broader matching・manual review UI・retroactive unmerge を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
 
 ## メモ

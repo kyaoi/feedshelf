@@ -4,6 +4,7 @@ import type {
   CanonicalArticle,
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
+  FuzzyDedupeRejectEntry,
 } from '../../src/shared/contracts.ts';
 import { normalizeUrl } from './normalizeFeed.ts';
 
@@ -11,6 +12,7 @@ type DedupeMatchedBy = Exclude<ArticleProvenanceMatchedBy, 'primary'>;
 
 export interface DedupeArticlesOptions {
   disableFuzzyDedupe?: boolean;
+  fuzzyRejectEntries?: FuzzyDedupeRejectEntry[];
 }
 
 export interface DedupeArticlesResult {
@@ -377,6 +379,57 @@ function createFuzzyDedupeHandoffRecord(
   };
 }
 
+function createFuzzyRejectPairKey(
+  leftArticleId: string,
+  rightArticleId: string,
+): string {
+  return [leftArticleId, rightArticleId].sort().join('\u0000');
+}
+
+function createFuzzyRejectEntryKey(entry: FuzzyDedupeRejectEntry): string {
+  return `${entry.matchedBy}\u0000${createFuzzyRejectPairKey(
+    entry.articleIdPair[0],
+    entry.articleIdPair[1],
+  )}`;
+}
+
+function createFuzzyRejectCandidateKey(
+  existing: CanonicalArticle,
+  incoming: CanonicalArticle,
+): string {
+  return `fuzzyTitleDate\u0000${createFuzzyRejectPairKey(existing.id, incoming.id)}`;
+}
+
+function buildFuzzyRejectEntrySet(
+  entries: FuzzyDedupeRejectEntry[] | undefined,
+): Set<string> {
+  const keys = new Set<string>();
+
+  if (!Array.isArray(entries)) {
+    return keys;
+  }
+
+  for (const entry of entries) {
+    keys.add(createFuzzyRejectEntryKey(entry));
+  }
+
+  return keys;
+}
+
+function isFuzzyMergeRejected(
+  fuzzyRejectEntryKeys: Set<string>,
+  existing: CanonicalArticle,
+  incoming: CanonicalArticle,
+): boolean {
+  if (fuzzyRejectEntryKeys.size === 0) {
+    return false;
+  }
+
+  return fuzzyRejectEntryKeys.has(
+    createFuzzyRejectCandidateKey(existing, incoming),
+  );
+}
+
 function findFuzzyDuplicateIndex(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   dedupedArticles: CanonicalArticle[],
@@ -467,6 +520,9 @@ export function dedupeArticlesWithSummary(
   const keyToIndex = new Map<string, number>();
   const fuzzyKeyToIndexes = new Map<string, Set<number>>();
   const disableFuzzyDedupe = options.disableFuzzyDedupe === true;
+  const fuzzyRejectEntryKeys = buildFuzzyRejectEntrySet(
+    options.fuzzyRejectEntries,
+  );
   const fuzzyAuditRecords: FuzzyDedupeAuditRecord[] = [];
   const fuzzyHandoffRecords: FuzzyDedupeHandoffRecord[] = [];
   let fuzzyDuplicatesCollapsed = 0;
@@ -503,6 +559,15 @@ export function dedupeArticlesWithSummary(
       );
       if (fuzzyDuplicateIndex !== null) {
         const existingArticle = dedupedArticles[fuzzyDuplicateIndex];
+        if (
+          isFuzzyMergeRejected(fuzzyRejectEntryKeys, existingArticle, article)
+        ) {
+          dedupedArticles.push(article);
+          const rejectedIndex = dedupedArticles.length - 1;
+          registerExactDedupeKey(keyToIndex, article, rejectedIndex);
+          registerFuzzyDedupeKey(fuzzyKeyToIndexes, article, rejectedIndex);
+          continue;
+        }
         const mergedArticle = mergeDuplicateArticles(
           existingArticle,
           article,

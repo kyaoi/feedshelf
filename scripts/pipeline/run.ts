@@ -6,6 +6,7 @@ import type {
   FeedDefinition,
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
+  FuzzyDedupeRejectEntry,
   PipelineArgs,
   PipelineLogger,
   PipelineSummary,
@@ -52,6 +53,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     disableFuzzyDedupe: false,
     fuzzyAuditPath: null,
     fuzzyHandoffPath: null,
+    fuzzyRejectPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -117,6 +119,16 @@ export function parseArgs(argv: string[]): PipelineArgs {
       continue;
     }
 
+    if (arg === '--fuzzy-reject-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-reject-file requires a path argument.');
+      }
+      args.fuzzyRejectPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -175,6 +187,73 @@ async function writeFuzzyHandoffFile({
   });
 }
 
+function normalizeFuzzyRejectEntry(
+  value: unknown,
+): FuzzyDedupeRejectEntry | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = value as {
+    articleIdPair?: unknown;
+    matchedBy?: unknown;
+    winnerTitle?: unknown;
+    incomingTitle?: unknown;
+    note?: unknown;
+  };
+
+  if (candidate.matchedBy !== 'fuzzyTitleDate') {
+    return null;
+  }
+
+  if (
+    !Array.isArray(candidate.articleIdPair) ||
+    candidate.articleIdPair.length !== 2
+  ) {
+    return null;
+  }
+
+  const left = candidate.articleIdPair[0];
+  const right = candidate.articleIdPair[1];
+  if (
+    typeof left !== 'string' ||
+    left === '' ||
+    typeof right !== 'string' ||
+    right === ''
+  ) {
+    return null;
+  }
+
+  return {
+    articleIdPair: [left, right],
+    matchedBy: 'fuzzyTitleDate',
+    ...(typeof candidate.winnerTitle === 'string'
+      ? { winnerTitle: candidate.winnerTitle }
+      : {}),
+    ...(typeof candidate.incomingTitle === 'string'
+      ? { incomingTitle: candidate.incomingTitle }
+      : {}),
+    ...(typeof candidate.note === 'string' ? { note: candidate.note } : {}),
+  };
+}
+
+export async function loadFuzzyRejectEntries(
+  fuzzyRejectPath?: string,
+): Promise<FuzzyDedupeRejectEntry[]> {
+  if (typeof fuzzyRejectPath !== 'string') {
+    return [];
+  }
+
+  const raw = JSON.parse(await fs.readFile(fuzzyRejectPath, 'utf8')) as unknown;
+  if (!Array.isArray(raw)) {
+    throw new Error('--fuzzy-reject-file must point to a JSON array.');
+  }
+
+  return raw
+    .map((entry) => normalizeFuzzyRejectEntry(entry))
+    .filter((entry): entry is FuzzyDedupeRejectEntry => entry !== null);
+}
+
 async function normalizeFeedDocumentsToArticles({
   feedDocuments,
   feeds,
@@ -221,6 +300,10 @@ export async function runPipeline(
   const outputDir =
     options.outputDir || path.resolve(process.cwd(), 'public/data');
   const logger: PipelineLogger = options.logger || console;
+  const generatedAt = new Date(options.generatedAt || Date.now()).toISOString();
+  const fuzzyRejectEntries = Array.isArray(options.fuzzyRejectEntries)
+    ? options.fuzzyRejectEntries
+    : await loadFuzzyRejectEntries(options.fuzzyRejectPath);
   const feeds = await loadFeeds(feedsPath);
   const shelves = await loadShelves(shelvesPath);
   validateFeedShelfReferences(feeds, shelves);
@@ -235,6 +318,7 @@ export async function runPipeline(
       });
   const dedupeResult = dedupeArticlesWithSummary(normalizedArticles, {
     disableFuzzyDedupe: options.disableFuzzyDedupe,
+    fuzzyRejectEntries,
   });
   if (typeof options.fuzzyAuditPath === 'string') {
     await writeFuzzyAuditFile({
@@ -255,7 +339,7 @@ export async function runPipeline(
     articles: dedupedArticles,
     feeds,
     shelves,
-    generatedAt: options.generatedAt || new Date().toISOString(),
+    generatedAt,
   });
   const retainedArticles = Array.isArray(options.retainedArticles)
     ? options.retainedArticles
@@ -268,7 +352,7 @@ export async function runPipeline(
     articles: mergedArticles,
     feeds,
     shelves,
-    generatedAt: freshPublicExports.meta.generatedAt,
+    generatedAt: generatedAt,
   });
 
   if (!options.dryRun) {
@@ -336,6 +420,7 @@ export async function main(
     ...args,
     fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
     fuzzyHandoffPath: args.fuzzyHandoffPath ?? undefined,
+    fuzzyRejectPath: args.fuzzyRejectPath ?? undefined,
   });
 }
 

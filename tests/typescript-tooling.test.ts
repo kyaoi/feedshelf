@@ -937,6 +937,75 @@ test('FS-DATA-13 fuzzy dedupe manual-review handoff implementation stays aligned
   );
 });
 
+test('FS-DATA-14 fuzzy dedupe false-positive reject implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const updateSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/update.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-14/);
+  assert.match(plan, /`--fuzzy-reject-file`/);
+  assert.match(
+    spec,
+    /10\.5\.10 Post-v1 fuzzy dedupe false-positive reject implementation/,
+  );
+  assert.match(spec, /operator-authored な JSON reject list/);
+  assert.match(decisions, /D-156/);
+  assert.match(decisions, /`--fuzzy-reject-file <path>`/);
+  assert.match(traceability, /FS-170/);
+  assert.match(contracts, /export interface FuzzyDedupeRejectEntry/);
+  assert.match(dedupeSource, /fuzzyRejectEntries/);
+  assert.match(dedupeSource, /isFuzzyMergeRejected/);
+  assert.match(runSource, /--fuzzy-reject-file/);
+  assert.match(runSource, /loadFuzzyRejectEntries/);
+  assert.match(updateSource, /--fuzzy-reject-file/);
+  assert.match(updateSource, /loadFuzzyRejectEntries/);
+  assert.match(
+    loadFeedsTest,
+    /runPipeline suppresses fuzzy merges when --fuzzy-reject-file is provided/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline suppresses fuzzy merges when --fuzzy-reject-file is provided/,
+  );
+});
+
 test('FS-UX-22 provenance chips stay aligned across PLAN, TRACEABILITY, app, and web tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

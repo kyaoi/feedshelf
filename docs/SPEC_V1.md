@@ -914,6 +914,13 @@ v1 の生成優先順位は以下とする。
 - reject list は `run.ts` / `update.ts` の明示的 flag を通したときだけ有効にしてよく、flag 未指定時の fuzzy merge behavior / logger / checked-in output / public JSON / route / article card UI は無変更のままとする
 - reject list は current run / update で遭遇した candidate の fuzzy merge を suppress するためだけに使い、既に publish 済みの merge を自動で split したり、`update-state.json` へ自動書き戻ししたり、manual review UI route、accept persistence、broader fuzzy matching、cross-source fuzzy を同じ task に含めない
 
+### 10.5.10 Post-v1 fuzzy dedupe false-positive reject implementation (`FS-DATA-14`)
+
+- first implementation では `run.ts` / `update.ts` が `--fuzzy-reject-file <path>` を受け付け、flag 指定時のみ operator-authored な JSON reject list を読み込んで `matchedBy='fuzzyTitleDate'` の future fuzzy merge だけを suppress してよい。flag 未指定時は fuzzy merge behavior / logger / checked-in output / public JSON / route / article card UI を変えない
+- reject entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を必須 key にした bounded shape に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を保持してよい
+- `dedupeArticlesWithSummary()` は reject entry に一致した fuzzy candidate を merge せず別 article として残し、fuzzy audit / handoff record も新しく生成しない。exact dedupe と既存 winner/merge rule は維持する
+- `runUpdatePipeline()` でも同じ reject list を fresh article の dedupe と publish 用 `runPipeline()` の両方に適用し、`update-state.json` 自動書き戻し / checked-in artifact / retroactive unmerge / accept persistence / broader matching / manual review UI route は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する
