@@ -1033,6 +1033,12 @@
 - 理由: 現状でも reject list は future fuzzy merge を止められ、fresh rebuild を行えば same pair を再マージしない状態で全体出力を作り直せる。ここで別の persistence や partial rollback mechanism を入れると scope が急に広がるため
 - 影響: 今回の差分は `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` / `tests/typescript-tooling.test.ts` の docs sync に閉じ、runtime code / public JSON / route / checked-in output contract は変えない。fresh output directory の使用または retained public data / `update-state.json` の明示削除を operator 手順として説明し、accept persistence / broader matching / manual review UI は引き続き別 task に分離する
 
+## D-158: fuzzy dedupe の次差分は explicit accept list による review churn 抑制に限定する
+
+- 決定: `FS-DOCS-33` 後に review 済み true positive pair の再確認 churn を減らしたい場合は、default logger / public JSON / manual review UI ではなく、operator-authored な explicit accept list を明示的 flag で読み込む internal-only task として切り出す
+- 理由: reject list と rebuild-only recovery path で false positive 側の制御は揃ったが、同じ true positive pair を full rebuild や recurring run のたびに handoff で見直す運用はまだ重い。一方で broader matching や UI を同時に入れると scope が一気に広がるため、既存 heuristic の candidate を pre-reviewed 扱いに閉じる方が安全だから
+- 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を key にした accept entry を opt-in で読んで repeat fuzzy audit / handoff の再掲を抑止してよい。ただし non-candidate の force merge、`update-state.json` への自動書き戻し、自動 accept 生成、checked-in artifact、retroactive unmerge、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない。accept list と reject list が競合する場合は reject list が優先する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

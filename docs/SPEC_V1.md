@@ -928,6 +928,13 @@ v1 の生成優先順位は以下とする。
 - retroactive unmerge は自動 rollback ではなく operator が明示的に行う rebuild に限り、既存 output を部分的に書き換えたり `update-state.json` を自動修正したり、過去の fuzzy history を別 artifact へ保存したりしない
 - 次の拡張で runtime surface を増やす場合も、accept persistence / broader fuzzy matching / cross-source fuzzy / manual review UI は別 docs-first task として分離する
 
+### 10.5.12 Post-v1 fuzzy dedupe accept persistence docs split (`FS-DOCS-34`)
+
+- `FS-DATA-14` の reject list と `FS-DOCS-33` の rebuild-only recovery path が揃った後、review 済み true positive pair の再確認 churn を減らしたい場合の次差分は、default logger や public JSON ではなく、operator-authored な explicit accept list を明示的 flag で読み込む internal-only task として切り出す
+- accept entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を中心にした bounded key に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を添えてよい。generic pattern rule、source-wide blanket accept、retained public article payload、reviewer identity は扱わない
+- accept list は既存 heuristic に一致した `matchedBy='fuzzyTitleDate'` candidate だけを pre-reviewed として扱ってよく、non-candidate を force merge したり exact dedupe precedence を飛び越えたりしてはならない。first implementation では repeat fuzzy audit / handoff artifact への再掲抑止に閉じてよく、public confidence score や broader heuristic enable には使わない
+- accept list は `run.ts` / `update.ts` の明示的 flag を通したときだけ有効にしてよく、`update-state.json` への自動書き戻し、checked-in artifact、自動 accept 生成、retroactive unmerge、manual review UI route、broader fuzzy matching、cross-source fuzzy を同じ task に含めない。accept list と reject list が競合する場合は reject を優先する
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

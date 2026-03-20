@@ -778,6 +778,41 @@ test('FS-DOCS-33 rebuild-only retroactive unmerge docs sync stays aligned across
   );
 });
 
+test('FS-DOCS-34 fuzzy dedupe accept persistence docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-34/);
+  assert.match(plan, /explicit accept list/);
+  assert.match(plan, /review 済み true positive pair の再確認 churn/);
+  assert.match(
+    spec,
+    /10\.5\.12 Post-v1 fuzzy dedupe accept persistence docs split/,
+  );
+  assert.match(
+    spec,
+    /既存 heuristic に一致した `matchedBy='fuzzyTitleDate'` candidate だけを pre-reviewed として扱ってよく、non-candidate を force merge したり/,
+  );
+  assert.match(decisions, /D-158/);
+  assert.match(decisions, /reject list が優先/);
+  assert.match(traceability, /FS-172/);
+  assert.match(traceability, /repeat fuzzy audit \/ handoff の再掲抑止/);
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

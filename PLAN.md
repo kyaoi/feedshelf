@@ -483,6 +483,15 @@ Phase 6 の進め方:
 - retroactive unmerge は new checked-in artifact / 自動 state 書き戻し / accept persistence / broader matching / manual review UI route を増やさず、既存 runtime semantics と矛盾しない
 - current run の reject suppression (`FS-DATA-14`) と rebuild-only recovery path の責務分離が `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` / alignment test で同期している
 
+### Post-v1 fuzzy dedupe accept persistence docs split
+
+- [x] `FS-DOCS-34` fuzzy dedupe の次差分を explicit accept list に限定し、broader matching / reject 自動生成 / manual review UI / state writeback と分離する
+
+完了条件:
+- `FS-DATA-15` の first implementation が、既存 `--fuzzy-handoff-file` artifact を人手確認したあとに、operator-authored な accept list を明示的 flag 経由で読み込み、review 済み true positive pair の再確認 churn を減らす internal-only task として着手できる
+- accept entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を中心にした bounded key に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を添えてよい
+- accept list は既存 heuristic に一致した candidate だけを pre-reviewed として扱い、non-candidate を force merge したり `update-state.json` へ自動書き戻ししたりしない。reject list と競合する場合は reject を優先し、checked-in artifact / public JSON / manual review UI route / broader matching は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -509,7 +518,8 @@ Phase 6 の進め方:
 - `FS-DOCS-32` では次の fuzzy 拡張を explicit false-positive reject list に限定し、既知の誤マージを future run で止める最小 control を handoff artifact の次段として docs で先に固定した
 - `FS-DATA-14` では `--fuzzy-reject-file` 経由の explicit false-positive reject list を `run` / `update` / tests に閉じて実装し、operator-authored な order-insensitive `articleIdPair` key に一致する `matchedBy='fuzzyTitleDate'` candidate だけを future run で suppress できるようにした
 - `FS-DOCS-33` では retroactive unmerge を新しい runtime feature ではなく、retained public data / `update-state.json` を持ち越さない clean full rebuild と既存 `--fuzzy-reject-file` を組み合わせる operator-run workflow として固定した
-- fuzzy dedupe の次に runtime surface を本当に広げるなら、accept persistence・broader matching・manual review UI のどれか 1 つを別 docs-first task として切り出す
+- `FS-DOCS-34` では review 済み true positive pair の再確認 churn を減らす次差分を explicit accept list に限定し、non-candidate force merge / reject 自動生成 / `update-state.json` 書き戻し / manual review UI / broader matching から分離した
+- 次に runtime まで進めるなら `FS-DATA-15` として explicit accept list の opt-in 読み込みを `run` / `update` / tests に閉じて実装し、その先の broader matching や manual review UI はさらに別 docs-first task として扱う
 
 ## メモ
 
