@@ -1027,6 +1027,12 @@
 - 理由: handoff artifact から known false positive の pair は特定できるので、次に必要なのは exact dedupe や public surface を崩さず、その pair だけ future run で抑止する最小 control であるため。bounded reject key に閉じれば manual review state machine や broader heuristic を導入せずに保守的な suppression を追加できる
 - 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じる。reject entry は `articleIdPair` / `matchedBy` を必須とし、`winnerTitle` / `incomingTitle` / `note` は human-readable echo field として許容する一方、`update-state.json` 自動書き戻し / checked-in artifact / retroactive unmerge / accept persistence / broader matching / manual review UI は含めない
 
+## D-157: retroactive unmerge は既存 reject list を使った clean full rebuild procedure に限定する
+
+- 決定: `FS-DATA-14` 後に既に publish 済みの known false positive を split し直したい場合は、新しい rebuild 専用 state machine / checked-in artifact / CLI flag を足さず、retained public data / `update-state.json` を持ち越さない clean full rebuild と既存 `--fuzzy-reject-file` を併用する docs-only workflow として扱う
+- 理由: 現状でも reject list は future fuzzy merge を止められ、fresh rebuild を行えば same pair を再マージしない状態で全体出力を作り直せる。ここで別の persistence や partial rollback mechanism を入れると scope が急に広がるため
+- 影響: 今回の差分は `PLAN.md` / `docs/SPEC_V1.md` / `docs/DECISIONS.md` / `docs/TRACEABILITY.md` / `tests/typescript-tooling.test.ts` の docs sync に閉じ、runtime code / public JSON / route / checked-in output contract は変えない。fresh output directory の使用または retained public data / `update-state.json` の明示削除を operator 手順として説明し、accept persistence / broader matching / manual review UI は引き続き別 task に分離する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

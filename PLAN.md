@@ -474,6 +474,15 @@ Phase 6 の進め方:
 - reject entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を必須 key にした bounded shape に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を無視せず通してよい
 - reject list は current run / update で新しく遭遇した candidate の merge 抑止にだけ使い、`update-state.json` 自動書き戻し / checked-in artifact / public JSON / route / article card UI / retroactive unmerge / broader matching は同じ task に含めない
 
+### Post-v1 fuzzy dedupe rebuild-only retroactive unmerge docs sync
+
+- [x] `FS-DOCS-33` known false positive を既存 `--fuzzy-reject-file` と clean full rebuild の組み合わせで split し直す運用境界を docs に固定し、新しい state machine / CLI / UI と分離する
+
+完了条件:
+- 既に publish 済みの false positive merge を戻したい場合は、retained public data / `update-state.json` を持ち越さない clean full rebuild に既存 `--fuzzy-reject-file` を併用する operator-run workflow で扱うことが docs で読める
+- retroactive unmerge は new checked-in artifact / 自動 state 書き戻し / accept persistence / broader matching / manual review UI route を増やさず、既存 runtime semantics と矛盾しない
+- current run の reject suppression (`FS-DATA-14`) と rebuild-only recovery path の責務分離が `PLAN` / `SPEC_V1` / `DECISIONS` / `TRACEABILITY` / alignment test で同期している
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -499,7 +508,8 @@ Phase 6 の進め方:
 - `FS-DATA-13` では `--fuzzy-handoff-file` 経由の opt-in internal JSON handoff export を `run` / `update` / tests に閉じて実装し、既存 audit record に human-readable な title / URL / source name を足した bounded evidence を人手確認向け artifact として出力できるようにした
 - `FS-DOCS-32` では次の fuzzy 拡張を explicit false-positive reject list に限定し、既知の誤マージを future run で止める最小 control を handoff artifact の次段として docs で先に固定した
 - `FS-DATA-14` では `--fuzzy-reject-file` 経由の explicit false-positive reject list を `run` / `update` / tests に閉じて実装し、operator-authored な order-insensitive `articleIdPair` key に一致する `matchedBy='fuzzyTitleDate'` candidate だけを future run で suppress できるようにした
-- fuzzy dedupe の今後の拡張は、accept persistence・broader matching・manual review UI・retroactive unmerge を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
+- `FS-DOCS-33` では retroactive unmerge を新しい runtime feature ではなく、retained public data / `update-state.json` を持ち越さない clean full rebuild と既存 `--fuzzy-reject-file` を組み合わせる operator-run workflow として固定した
+- fuzzy dedupe の次に runtime surface を本当に広げるなら、accept persistence・broader matching・manual review UI のどれか 1 つを別 docs-first task として切り出す
 
 ## メモ
 

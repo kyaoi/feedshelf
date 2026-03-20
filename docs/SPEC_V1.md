@@ -921,6 +921,13 @@ v1 の生成優先順位は以下とする。
 - `dedupeArticlesWithSummary()` は reject entry に一致した fuzzy candidate を merge せず別 article として残し、fuzzy audit / handoff record も新しく生成しない。exact dedupe と既存 winner/merge rule は維持する
 - `runUpdatePipeline()` でも同じ reject list を fresh article の dedupe と publish 用 `runPipeline()` の両方に適用し、`update-state.json` 自動書き戻し / checked-in artifact / retroactive unmerge / accept persistence / broader matching / manual review UI route は同じ task に含めない
 
+### 10.5.11 Post-v1 fuzzy dedupe rebuild-only retroactive unmerge docs sync (`FS-DOCS-33`)
+
+- `FS-DATA-14` の reject list は future candidate suppression に限定されるが、既に publish 済みの known false positive を split し直したい場合は、新しい state machine や checked-in artifact を足さず、retained public data / `update-state.json` を持ち越さない clean full rebuild と既存 `--fuzzy-reject-file` の併用を operator-run workflow として扱ってよい
+- この workflow では fresh output directory を使うか、publish 済み output と `update-state.json` を明示的に取り除いてから pipeline を再実行する。reject list 自体は `FS-DATA-14` と同じ bounded shape を使い、新しい accept list / rebuild 専用 flag / manual review UI route を追加しない
+- retroactive unmerge は自動 rollback ではなく operator が明示的に行う rebuild に限り、既存 output を部分的に書き換えたり `update-state.json` を自動修正したり、過去の fuzzy history を別 artifact へ保存したりしない
+- 次の拡張で runtime surface を増やす場合も、accept persistence / broader fuzzy matching / cross-source fuzzy / manual review UI は別 docs-first task として分離する
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する
@@ -1499,7 +1506,7 @@ first implementation までで確定した状態:
    - exact dedupe miss 後の same-source/title/date fallback と `matchedBy=fuzzyTitleDate` の internal tracking を実装済みとする
    - public JSON surfacing / manual review UI / cross-source clustering / stricter observability は別 docs-first task に分離する
 
-今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule（`FS-DOCS-29` で deterministic allowlisted rule table の境界を固定）、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）、explicit fuzzy audit export（`FS-DOCS-30` で境界を固定し、`FS-DATA-12` で `--fuzzy-audit-file` による opt-in internal JSON audit の first implementation を完了）、manual-review handoff（`FS-DOCS-31` で human-readable な bounded evidence を internal artifact に閉じる境界を固定）をそれぞれ別の docs-first task として扱う。
+今後の拡張は、deferred backlog をそのまま再オープンするのではなく、public provenance export（`FS-DOCS-26` で export-only 境界を固定）、bounded article-card provenance chip（`FS-DOCS-27` で UI surfacing 境界を固定）、canonicalization の追加 precision rule（`FS-DOCS-29` で deterministic allowlisted rule table の境界を固定）、fuzzy dedupe の stricter observability / rollback（`FS-DOCS-28` で internal counter / kill switch の境界を先に固定）、explicit fuzzy audit export（`FS-DOCS-30` で境界を固定し、`FS-DATA-12` で `--fuzzy-audit-file` による opt-in internal JSON audit の first implementation を完了）、manual-review handoff（`FS-DOCS-31` で human-readable な bounded evidence を internal artifact に閉じる境界を固定）、rebuild-only retroactive unmerge（`FS-DOCS-33` で既存 `--fuzzy-reject-file` と clean full rebuild の operator workflow に限定）をそれぞれ別の docs-first task として扱う。
 
 ## 15.1 Post-v1 architecture / performance planning
 

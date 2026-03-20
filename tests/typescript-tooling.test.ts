@@ -736,6 +736,48 @@ test('FS-DOCS-32 fuzzy dedupe false-positive reject docs split stays aligned acr
   assert.match(traceability, /bounded reject entry/);
 });
 
+test('FS-DOCS-33 rebuild-only retroactive unmerge docs sync stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-33/);
+  assert.match(plan, /clean full rebuild/);
+  assert.match(plan, /既存 `--fuzzy-reject-file`/);
+  assert.match(
+    spec,
+    /10\.5\.11 Post-v1 fuzzy dedupe rebuild-only retroactive unmerge docs sync/,
+  );
+  assert.match(
+    spec,
+    /retained public data \/ `update-state\.json` を持ち越さない clean full rebuild/,
+  );
+  assert.match(spec, /fresh output directory を使うか/);
+  assert.match(decisions, /D-157/);
+  assert.match(
+    decisions,
+    /same pair を再マージしない状態で全体出力を作り直せる/,
+  );
+  assert.match(traceability, /FS-171/);
+  assert.match(
+    traceability,
+    /new CLI flag \/ checked-in artifact \/ accept persistence/,
+  );
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
