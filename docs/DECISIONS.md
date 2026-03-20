@@ -1014,6 +1014,13 @@
 - 理由: 人手確認に必要な読みやすい evidence は欲しいが、default logger や public JSON 契約は広げたくない。既存の audit export と同じ opt-in file path で閉じれば、bounded evidence を確認しやすい一時 artifact に留められるため
 - 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じる。handoff record は既存 audit field を保ったまま title / URL / source name を追加するだけに限定し、accept/reject persistence、`update-state.json` override、manual review UI、broader fuzzy matching、cross-source fuzzy は含めない
 
+
+## D-155: fuzzy dedupe の次差分は explicit false-positive reject list に限定する
+
+- 決定: `FS-DATA-13` の次に人手確認結果を future run へ反映したい場合は、default logger / public JSON / manual review UI ではなく、operator-authored な explicit false-positive reject list を明示的 flag で読み込む internal-only task として切り出す
+- 理由: handoff artifact があれば known false positive の pair を人が特定できるが、次に必要なのはその pair だけを保守的に止める最小 control であって、accept persistence・broader matching・UI まで同時に入れることではない。reject list を bounded key + opt-in path に閉じれば、既存 publish surface や managed state を広げずに誤マージ抑止だけ追加できるため
+- 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を key にした reject entry を読んで current run の fuzzy merge を suppress してよい。ただし `update-state.json` への自動書き戻し、checked-in artifact、retroactive unmerge、accept persistence、broader fuzzy heuristic、cross-source fuzzy、manual review UI route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

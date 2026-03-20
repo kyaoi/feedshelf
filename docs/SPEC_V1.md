@@ -907,6 +907,13 @@ v1 の生成優先順位は以下とする。
 - handoff file はその run で新しく発生した fuzzy merge の record だけを含み、accept/reject persistence、`update-state.json` override、manual review UI route、broader fuzzy matching、cross-source fuzzy を同じ task に含めない
 - first implementation は `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じ、public JSON shape / checked-in HTML shell / source registry は変更しない
 
+### 10.5.9 Post-v1 fuzzy dedupe false-positive reject docs split (`FS-DOCS-32`)
+
+- `FS-DATA-13` の handoff artifact で known false positive を人手確認できるようになった後の最小 control は、default logger や public JSON ではなく、operator-authored な explicit reject list を読み込む internal-only task として切り出す
+- first implementation は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を中心にした bounded reject entry だけを対象にしてよく、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を添えてよい。raw body、retained public article payload、generic pattern rule、source-wide blanket suppression は扱わない
+- reject list は `run.ts` / `update.ts` の明示的 flag を通したときだけ有効にしてよく、flag 未指定時の fuzzy merge behavior / logger / checked-in output / public JSON / route / article card UI は無変更のままとする
+- reject list は current run / update で遭遇した candidate の fuzzy merge を suppress するためだけに使い、既に publish 済みの merge を自動で split したり、`update-state.json` へ自動書き戻ししたり、manual review UI route、accept persistence、broader fuzzy matching、cross-source fuzzy を同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

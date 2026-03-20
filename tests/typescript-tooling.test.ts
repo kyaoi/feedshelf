@@ -697,6 +697,45 @@ test('FS-DOCS-31 fuzzy dedupe manual-review handoff docs split stays aligned acr
   assert.match(traceability, /human-readable な bounded evidence/);
 });
 
+test('FS-DOCS-32 fuzzy dedupe false-positive reject docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-32/);
+  assert.match(plan, /explicit false-positive reject list/);
+  assert.match(
+    plan,
+    /order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'`/,
+  );
+  assert.match(
+    spec,
+    /10\.5\.9 Post-v1 fuzzy dedupe false-positive reject docs split/,
+  );
+  assert.match(spec, /operator-authored な explicit reject list/);
+  assert.match(
+    spec,
+    /既に publish 済みの merge を自動で split したり、`update-state\.json` へ自動書き戻ししたり、manual review UI route、accept persistence、broader fuzzy matching、cross-source fuzzy/,
+  );
+  assert.match(decisions, /D-155/);
+  assert.match(decisions, /known false positive の pair を人が特定できる/);
+  assert.match(traceability, /FS-169/);
+  assert.match(traceability, /bounded reject entry/);
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

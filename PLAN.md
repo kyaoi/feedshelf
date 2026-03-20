@@ -456,6 +456,15 @@ Phase 6 の進め方:
 - `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-handoff-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が human-readable な JSON handoff file を書き出す
 - flag 未指定時の default logger / checked-in public JSON / route / article card UI は無変更のままとし、accept/reject persistence や manual review UI は同じ task に含めない
 
+### Post-v1 fuzzy dedupe false-positive reject docs split
+
+- [x] `FS-DOCS-32` fuzzy dedupe の次差分を explicit false-positive reject list に限定し、accept persistence / broader matching / manual review UI / retroactive unmerge と分離する
+
+完了条件:
+- `FS-DATA-14` の first implementation が、既存の `--fuzzy-handoff-file` artifact を人手確認したあとに、operator-authored な reject list を明示的 flag 経由で読み込み、future run の fuzzy merge を抑止する internal-only task として着手できる
+- reject entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を中心にした bounded key に限定し、必要なら human-readable な `winnerTitle` / `incomingTitle` / `note` を添えてよいが、raw body・retained public article payload・broad pattern rule は含めない
+- reject list は current run / update で新しく遭遇した candidate の merge を止めるためだけに使い、既に publish 済みの merge を後から自動で split しない。`update-state.json` への自動書き戻し、checked-in artifact、public JSON、manual review UI route は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -479,7 +488,8 @@ Phase 6 の進め方:
 - `FS-DATA-12` では `--fuzzy-audit-file` 経由の opt-in internal JSON audit export を `run` / `update` / tests に閉じて実装し、fuzzy merge ごとの bounded evidence を public JSON や default logger に広げず確認できるようにした
 - `FS-DOCS-31` では次の fuzzy 拡張を internal manual-review handoff artifact に限定し、人が読むための title / URL / source name を opt-in artifact にだけ足す境界を先に固定した
 - `FS-DATA-13` では `--fuzzy-handoff-file` 経由の opt-in internal JSON handoff export を `run` / `update` / tests に閉じて実装し、既存 audit record に human-readable な title / URL / source name を足した bounded evidence を人手確認向け artifact として出力できるようにした
-- fuzzy dedupe の今後の拡張は、broader matching・override persistence・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
+- `FS-DOCS-32` では次の fuzzy 拡張を explicit false-positive reject list に限定し、既知の誤マージを future run で止める最小 control を handoff artifact の次段として docs で先に固定した
+- fuzzy dedupe の今後の拡張は、accept persistence・broader matching・manual review UI・retroactive unmerge を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
 
 ## メモ
 
