@@ -3,6 +3,7 @@ import type {
   ArticleProvenanceMatchedBy,
   CanonicalArticle,
   FuzzyDedupeAuditRecord,
+  FuzzyDedupeHandoffRecord,
 } from '../../src/shared/contracts.ts';
 import { normalizeUrl } from './normalizeFeed.ts';
 
@@ -16,6 +17,7 @@ export interface DedupeArticlesResult {
   articles: CanonicalArticle[];
   fuzzyDuplicatesCollapsed: number;
   fuzzyAuditRecords: FuzzyDedupeAuditRecord[];
+  fuzzyHandoffRecords: FuzzyDedupeHandoffRecord[];
 }
 
 interface DedupeMatch {
@@ -358,6 +360,23 @@ function createFuzzyDedupeAuditRecord(
   };
 }
 
+function createFuzzyDedupeHandoffRecord(
+  existing: CanonicalArticle,
+  incoming: CanonicalArticle,
+): FuzzyDedupeHandoffRecord {
+  const winner = pickWinner(existing, incoming);
+
+  return {
+    ...createFuzzyDedupeAuditRecord(existing, incoming),
+    winnerTitle: winner.title,
+    incomingTitle: incoming.title,
+    winnerUrl: winner.url,
+    incomingUrl: incoming.url,
+    winnerSourceName: winner.sourceName,
+    incomingSourceName: incoming.sourceName,
+  };
+}
+
 function findFuzzyDuplicateIndex(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   dedupedArticles: CanonicalArticle[],
@@ -449,6 +468,7 @@ export function dedupeArticlesWithSummary(
   const fuzzyKeyToIndexes = new Map<string, Set<number>>();
   const disableFuzzyDedupe = options.disableFuzzyDedupe === true;
   const fuzzyAuditRecords: FuzzyDedupeAuditRecord[] = [];
+  const fuzzyHandoffRecords: FuzzyDedupeHandoffRecord[] = [];
   let fuzzyDuplicatesCollapsed = 0;
 
   for (const article of articles) {
@@ -492,6 +512,9 @@ export function dedupeArticlesWithSummary(
         fuzzyAuditRecords.push(
           createFuzzyDedupeAuditRecord(existingArticle, article),
         );
+        fuzzyHandoffRecords.push(
+          createFuzzyDedupeHandoffRecord(existingArticle, article),
+        );
         fuzzyDuplicatesCollapsed += 1;
         registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
         registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
@@ -516,6 +539,7 @@ export function dedupeArticlesWithSummary(
     articles: dedupedArticles,
     fuzzyDuplicatesCollapsed,
     fuzzyAuditRecords,
+    fuzzyHandoffRecords,
   };
 }
 

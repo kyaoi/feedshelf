@@ -1007,6 +1007,13 @@
 - 理由: 現在の audit export は machine-readable な bounded record として十分だが、人が triage するには title / URL / source name のような読みやすい情報が不足する。一方でそれらを既定ログや public surface に載せると noise と契約変更が大きいため、opt-in artifact に閉じる方が安全なため
 - 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、`winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` のような human-readable evidence を bounded に追加してよい。ただし accept/reject persistence、`update-state.json` override、broader fuzzy heuristic、cross-source fuzzy、manual review UI route は同じ task に含めない
 
+
+## D-154: `FS-DATA-13` は `--fuzzy-handoff-file` による opt-in JSON handoff export に閉じる
+
+- 決定: `FS-DATA-13` の first implementation では、`dedupeArticlesWithSummary()` が既存 audit record に `winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` を足した bounded handoff record を返し、`run.ts` / `update.ts` は `--fuzzy-handoff-file <path>` が明示されたときだけ JSON handoff file を書き出す
+- 理由: 人手確認に必要な読みやすい evidence は欲しいが、default logger や public JSON 契約は広げたくない。既存の audit export と同じ opt-in file path で閉じれば、bounded evidence を確認しやすい一時 artifact に留められるため
+- 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じる。handoff record は既存 audit field を保ったまま title / URL / source name を追加するだけに限定し、accept/reject persistence、`update-state.json` override、manual review UI、broader fuzzy matching、cross-source fuzzy は含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

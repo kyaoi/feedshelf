@@ -219,6 +219,7 @@ export interface PipelineArgs {
   dryRun: boolean;
   disableFuzzyDedupe: boolean;
   fuzzyAuditPath: string | null;
+  fuzzyHandoffPath: string | null;
 }
 
 export interface FuzzyDedupeAuditRecord {
@@ -229,6 +230,15 @@ export interface FuzzyDedupeAuditRecord {
   titleCompareKey: string;
   publishedAtDeltaHours: number;
   matchedBy: 'fuzzyTitleDate';
+}
+
+export interface FuzzyDedupeHandoffRecord extends FuzzyDedupeAuditRecord {
+  winnerTitle: string;
+  incomingTitle: string;
+  winnerUrl: string;
+  incomingUrl: string;
+  winnerSourceName: string;
+  incomingSourceName: string;
 }
 
 export interface PipelineSummary {
@@ -281,4 +291,5 @@ export interface RunPipelineOptions {
   fetchImpl?: typeof fetch;
   disableFuzzyDedupe?: boolean;
   fuzzyAuditPath?: string;
+  fuzzyHandoffPath?: string;
 }

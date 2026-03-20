@@ -819,7 +819,7 @@ test('FS-DATA-12 fuzzy dedupe audit implementation stays aligned across PLAN, SP
   assert.match(contracts, /export interface FuzzyDedupeAuditRecord/);
   assert.match(dedupeSource, /fuzzyAuditRecords/);
   assert.match(runSource, /--fuzzy-audit-file/);
-  assert.match(runSource, /fuzzy audit records=/);
+  assert.match(runSource, /fuzzy audit records/);
   assert.match(updateSource, /--fuzzy-audit-file/);
   assert.match(
     loadFeedsTest,
@@ -828,6 +828,73 @@ test('FS-DATA-12 fuzzy dedupe audit implementation stays aligned across PLAN, SP
   assert.match(
     updateWorkflowTest,
     /runUpdatePipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided/,
+  );
+});
+
+test('FS-DATA-13 fuzzy dedupe manual-review handoff implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const updateSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/update.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-13/);
+  assert.match(plan, /`--fuzzy-handoff-file`/);
+  assert.match(
+    spec,
+    /10\.5\.8 Post-v1 fuzzy dedupe manual-review handoff implementation/,
+  );
+  assert.match(spec, /human-readable な JSON handoff file/);
+  assert.match(decisions, /D-154/);
+  assert.match(decisions, /`--fuzzy-handoff-file <path>`/);
+  assert.match(traceability, /FS-168/);
+  assert.match(contracts, /export interface FuzzyDedupeHandoffRecord/);
+  assert.match(dedupeSource, /fuzzyHandoffRecords/);
+  assert.match(runSource, /--fuzzy-handoff-file/);
+  assert.match(runSource, /fuzzy handoff records/);
+  assert.match(updateSource, /--fuzzy-handoff-file/);
+  assert.match(
+    loadFeedsTest,
+    /runPipeline writes fuzzy handoff JSON when --fuzzy-handoff-file is provided/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline writes fuzzy handoff JSON when --fuzzy-handoff-file is provided/,
   );
 });
 

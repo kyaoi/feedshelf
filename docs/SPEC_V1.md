@@ -900,6 +900,13 @@ v1 の生成優先順位は以下とする。
 - handoff artifact に追加してよいのは `winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` のような human-readable だが bounded な evidence に限り、生成は `run.ts` / `update.ts` の明示的 flag を通したときだけ有効にする
 - accept/reject の永続化、`update-state.json` への manual override 記録、broader fuzzy matching、cross-source fuzzy、default logger への per-article 出力、public confidence score、manual review UI route は同じ task に含めない
 
+### 10.5.8 Post-v1 fuzzy dedupe manual-review handoff implementation (`FS-DATA-13`)
+
+- first implementation では `dedupeArticlesWithSummary()` が既存の `FuzzyDedupeAuditRecord` を保ったまま、`winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` を足した bounded handoff record を internal result として返してよい
+- CLI は `--fuzzy-handoff-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が human-readable な JSON handoff file を書き出してよい。flag 未指定時は default logger / checked-in output / public JSON / route / article card UI を変えない
+- handoff file はその run で新しく発生した fuzzy merge の record だけを含み、accept/reject persistence、`update-state.json` override、manual review UI route、broader fuzzy matching、cross-source fuzzy を同じ task に含めない
+- first implementation は `scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests に閉じ、public JSON shape / checked-in HTML shell / source registry は変更しない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

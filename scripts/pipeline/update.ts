@@ -143,12 +143,17 @@ export interface UpdatePipelineArgs {
   dryRun: boolean;
   disableFuzzyDedupe: boolean;
   fuzzyAuditPath: string | null;
+  fuzzyHandoffPath: string | null;
 }
 
 export interface RunUpdatePipelineOptions
-  extends Omit<UpdatePipelineArgs, 'disableFuzzyDedupe' | 'fuzzyAuditPath'> {
+  extends Omit<
+    UpdatePipelineArgs,
+    'disableFuzzyDedupe' | 'fuzzyAuditPath' | 'fuzzyHandoffPath'
+  > {
   disableFuzzyDedupe?: boolean;
   fuzzyAuditPath?: string;
+  fuzzyHandoffPath?: string;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
@@ -169,6 +174,7 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
     dryRun: false,
     disableFuzzyDedupe: false,
     fuzzyAuditPath: null,
+    fuzzyHandoffPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -220,6 +226,16 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
         throw new Error('--fuzzy-audit-file requires a path argument.');
       }
       args.fuzzyAuditPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--fuzzy-handoff-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-handoff-file requires a path argument.');
+      }
+      args.fuzzyHandoffPath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -694,6 +710,7 @@ export async function runUpdatePipeline(
     logger,
     disableFuzzyDedupe: options.disableFuzzyDedupe,
     fuzzyAuditPath: options.fuzzyAuditPath,
+    fuzzyHandoffPath: options.fuzzyHandoffPath,
   });
 
   if (options.disableFuzzyDedupe) {
@@ -728,6 +745,7 @@ export async function main(
   await runUpdatePipeline({
     ...args,
     fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
+    fuzzyHandoffPath: args.fuzzyHandoffPath ?? undefined,
   });
 }
 

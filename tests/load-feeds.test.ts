@@ -338,7 +338,7 @@ test('runPipeline rejects feeds whose shelfIds are missing from shelves.yaml', a
   );
 });
 
-test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, and --fuzzy-audit-file', () => {
+test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, and --fuzzy-handoff-file', () => {
   const parsed = parseArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -350,10 +350,13 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-f
     '--disable-fuzzy-dedupe',
     '--fuzzy-audit-file',
     'tmp/fuzzy-audit.json',
+    '--fuzzy-handoff-file',
+    'tmp/fuzzy-handoff.json',
   ]);
   assert.equal(parsed.dryRun, true);
   assert.equal(parsed.disableFuzzyDedupe, true);
   assert.match(parsed.fuzzyAuditPath ?? '', /tmp[/]fuzzy-audit\.json$/);
+  assert.match(parsed.fuzzyHandoffPath ?? '', /tmp[/]fuzzy-handoff\.json$/);
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[\\/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
@@ -809,6 +812,22 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
     publishedAtDeltaHours: 72,
     matchedBy: 'fuzzyTitleDate',
   });
+  assert.equal(enabled.fuzzyHandoffRecords.length, 1);
+  assert.deepEqual(enabled.fuzzyHandoffRecords[0], {
+    winnerArticleId: 'article-fuzzy-b',
+    incomingArticleId: 'article-fuzzy-b',
+    winnerFeedId: 'atom-feed',
+    incomingFeedId: 'atom-feed',
+    titleCompareKey: 'shared title',
+    publishedAtDeltaHours: 72,
+    matchedBy: 'fuzzyTitleDate',
+    winnerTitle: '  shared   title  ',
+    incomingTitle: '  shared   title  ',
+    winnerUrl: 'https://example.com/posts/shared-b',
+    incomingUrl: 'https://example.com/posts/shared-b',
+    winnerSourceName: 'Example Source',
+    incomingSourceName: 'Example Source',
+  });
 
   const disabled = dedupeArticlesWithSummary(articles, {
     disableFuzzyDedupe: true,
@@ -816,6 +835,7 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
   assert.equal(disabled.articles.length, 2);
   assert.equal(disabled.fuzzyDuplicatesCollapsed, 0);
   assert.deepEqual(disabled.fuzzyAuditRecords, []);
+  assert.deepEqual(disabled.fuzzyHandoffRecords, []);
 });
 
 test('dedupeArticles does not fuzzy-merge same-source title matches outside the 72 hour window', () => {
@@ -1230,6 +1250,118 @@ test('runPipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided', 
       titleCompareKey: 'shared title',
       publishedAtDeltaHours: 72,
       matchedBy: 'fuzzyTitleDate',
+    },
+  ]);
+});
+
+test('runPipeline writes fuzzy handoff JSON when --fuzzy-handoff-file is provided', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-handoff-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyHandoffPath = path.join(tempDir, 'reports', 'fuzzy-handoff.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'rss-feed',
+        name: 'Example Source',
+      },
+      {
+        ...RSS_FEED,
+        id: 'atom-feed',
+        name: 'Example Source',
+        feedUrl: 'https://example.com/atom.xml',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    fuzzyHandoffPath,
+    normalizedArticles: [
+      {
+        id: 'article-fuzzy-a',
+        feedId: 'rss-feed',
+        sourceName: 'Example Source',
+        language: 'en',
+        shelfIds: ['examples'],
+        title: 'Shared Title',
+        url: 'https://example.com/posts/shared-a',
+        summary: 'Short summary.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['RSS Source'],
+        entryTags: ['rss'],
+        sourceItemId: 'rss-shared-a',
+        provenance: [
+          {
+            feedId: 'rss-feed',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'rss-shared-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['rss-feed'],
+      },
+      {
+        id: 'article-fuzzy-b',
+        feedId: 'atom-feed',
+        sourceName: 'Example Source',
+        language: 'en',
+        shelfIds: ['examples', 'research'],
+        title: 'shared title',
+        url: 'https://example.com/posts/shared-b',
+        summary: 'Longer summary with more useful detail.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: 'Atom Author',
+        imageUrl: 'https://example.com/shared.jpg',
+        sourceTags: ['Atom Source'],
+        entryTags: ['atom'],
+        sourceItemId: 'atom-shared-b',
+        provenance: [
+          {
+            feedId: 'atom-feed',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'atom-shared-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['atom-feed'],
+      },
+    ],
+    logger: { log() {} },
+  });
+
+  const fuzzyHandoff = JSON.parse(await fs.readFile(fuzzyHandoffPath, 'utf8'));
+  assert.deepEqual(fuzzyHandoff, [
+    {
+      winnerArticleId: 'article-fuzzy-b',
+      incomingArticleId: 'article-fuzzy-b',
+      winnerFeedId: 'atom-feed',
+      incomingFeedId: 'atom-feed',
+      titleCompareKey: 'shared title',
+      publishedAtDeltaHours: 72,
+      matchedBy: 'fuzzyTitleDate',
+      winnerTitle: 'shared title',
+      incomingTitle: 'shared title',
+      winnerUrl: 'https://example.com/posts/shared-b',
+      incomingUrl: 'https://example.com/posts/shared-b',
+      winnerSourceName: 'Example Source',
+      incomingSourceName: 'Example Source',
     },
   ]);
 });

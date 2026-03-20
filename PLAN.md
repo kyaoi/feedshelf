@@ -447,6 +447,15 @@ Phase 6 の進め方:
 - handoff artifact に追加してよい field は `winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` のような human-readable な bounded evidence に限定し、default logger・checked-in output・public JSON export は変更しない
 - accept/reject の永続化、`update-state.json` への manual override 記録、broader fuzzy heuristic、cross-source fuzzy、public confidence score、manual review UI route は同じ task に含めない
 
+### Post-v1 fuzzy dedupe manual-review handoff implementation
+
+- [x] `FS-DATA-13` `--fuzzy-handoff-file` による opt-in internal manual-review handoff JSON export を `dedupeArticles()` / `run.ts` / `update.ts` / tests に閉じて実装する
+
+完了条件:
+- `dedupeArticlesWithSummary()` が既存の fuzzy audit evidence に `winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` を足した bounded handoff record を internal result として返す
+- `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-handoff-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が human-readable な JSON handoff file を書き出す
+- flag 未指定時の default logger / checked-in public JSON / route / article card UI は無変更のままとし、accept/reject persistence や manual review UI は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -469,7 +478,8 @@ Phase 6 の進め方:
 - `FS-DOCS-28` で固定した fuzzy dedupe observability 境界に沿って、`FS-DATA-10` では `PipelineSummary` / `UpdatePipelineSummary` の internal `fuzzyDuplicatesCollapsed`、aggregate logger、`--disable-fuzzy-dedupe` kill switch を `run` / `update` / tests に閉じて実装済みにした
 - `FS-DATA-12` では `--fuzzy-audit-file` 経由の opt-in internal JSON audit export を `run` / `update` / tests に閉じて実装し、fuzzy merge ごとの bounded evidence を public JSON や default logger に広げず確認できるようにした
 - `FS-DOCS-31` では次の fuzzy 拡張を internal manual-review handoff artifact に限定し、人が読むための title / URL / source name を opt-in artifact にだけ足す境界を先に固定した
-- fuzzy dedupe の今後の拡張は、manual-review handoff・broader matching・override persistence・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
+- `FS-DATA-13` では `--fuzzy-handoff-file` 経由の opt-in internal JSON handoff export を `run` / `update` / tests に閉じて実装し、既存 audit record に human-readable な title / URL / source name を足した bounded evidence を人手確認向け artifact として出力できるようにした
+- fuzzy dedupe の今後の拡張は、broader matching・override persistence・manual review UI を同じ差分へ混ぜず、必要になった時点で再び docs-first task から切り出す
 
 ## メモ
 

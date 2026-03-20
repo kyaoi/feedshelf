@@ -5,6 +5,7 @@ import type {
   CanonicalArticle,
   FeedDefinition,
   FuzzyDedupeAuditRecord,
+  FuzzyDedupeHandoffRecord,
   PipelineArgs,
   PipelineLogger,
   PipelineSummary,
@@ -50,6 +51,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     dryRun: false,
     disableFuzzyDedupe: false,
     fuzzyAuditPath: null,
+    fuzzyHandoffPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -105,10 +107,38 @@ export function parseArgs(argv: string[]): PipelineArgs {
       continue;
     }
 
+    if (arg === '--fuzzy-handoff-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-handoff-file requires a path argument.');
+      }
+      args.fuzzyHandoffPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
   return args;
+}
+
+async function writeJsonArtifact({
+  artifactPath,
+  logger,
+  records,
+  label,
+}: {
+  artifactPath: string;
+  logger: PipelineLogger;
+  records: readonly unknown[];
+  label: string;
+}): Promise<void> {
+  await fs.mkdir(path.dirname(artifactPath), { recursive: true });
+  await fs.writeFile(artifactPath, `${JSON.stringify(records, null, 2)}\n`);
+  logger.log(
+    `[pipeline] ${label}=${records.length} path=${path.relative(process.cwd(), artifactPath) || artifactPath}`,
+  );
 }
 
 async function writeFuzzyAuditFile({
@@ -120,11 +150,29 @@ async function writeFuzzyAuditFile({
   logger: PipelineLogger;
   records: FuzzyDedupeAuditRecord[];
 }): Promise<void> {
-  await fs.mkdir(path.dirname(fuzzyAuditPath), { recursive: true });
-  await fs.writeFile(fuzzyAuditPath, `${JSON.stringify(records, null, 2)}\n`);
-  logger.log(
-    `[pipeline] fuzzy audit records=${records.length} path=${path.relative(process.cwd(), fuzzyAuditPath) || fuzzyAuditPath}`,
-  );
+  await writeJsonArtifact({
+    artifactPath: fuzzyAuditPath,
+    logger,
+    records,
+    label: 'fuzzy audit records',
+  });
+}
+
+async function writeFuzzyHandoffFile({
+  fuzzyHandoffPath,
+  logger,
+  records,
+}: {
+  fuzzyHandoffPath: string;
+  logger: PipelineLogger;
+  records: FuzzyDedupeHandoffRecord[];
+}): Promise<void> {
+  await writeJsonArtifact({
+    artifactPath: fuzzyHandoffPath,
+    logger,
+    records,
+    label: 'fuzzy handoff records',
+  });
 }
 
 async function normalizeFeedDocumentsToArticles({
@@ -193,6 +241,13 @@ export async function runPipeline(
       fuzzyAuditPath: path.resolve(process.cwd(), options.fuzzyAuditPath),
       logger,
       records: dedupeResult.fuzzyAuditRecords,
+    });
+  }
+  if (typeof options.fuzzyHandoffPath === 'string') {
+    await writeFuzzyHandoffFile({
+      fuzzyHandoffPath: path.resolve(process.cwd(), options.fuzzyHandoffPath),
+      logger,
+      records: dedupeResult.fuzzyHandoffRecords,
     });
   }
   const dedupedArticles = dedupeResult.articles;
@@ -280,6 +335,7 @@ export async function main(
   await runPipeline({
     ...args,
     fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
+    fuzzyHandoffPath: args.fuzzyHandoffPath ?? undefined,
   });
 }
 
