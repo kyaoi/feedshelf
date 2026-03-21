@@ -963,6 +963,12 @@ v1 の生成優先順位は以下とする。
 - manual-review HTML は `winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` / `matchedBy` / `publishedAtDeltaHours` のような bounded evidence surfacing に限定し、checked-in artifact、public JSON / route / article card UI、broader fuzzy matching、cross-source fuzzy、confidence score 公開は同じ task に含めない
 - HTML artifact は operator-managed な local file path にだけ出力し、localStorage、form submit、API call、`update-state.json` mutation、自動 accept/reject 書き戻しのような stateful interaction は持たない read-only UI とする
 
+### 10.5.17 Post-v1 fuzzy dedupe manual-review HTML implementation (`FS-DATA-17`)
+
+- `run.ts` / `update.ts` は `--fuzzy-review-html-file <path>` を受け取り、明示されたときだけ single-file の self-contained HTML artifact を local path へ書き出してよい。default logger、checked-in route、public JSON は無変更のままとする
+- HTML artifact は current run の `fuzzyHandoffRecords[]` を main evidence とし、同じ run で既に読み込まれた explicit review state（canonicalized `{ accepted, rejected }`）を併せて表示してよい。current-run candidate には必要に応じて accepted / rejected / unreviewed status badge を付けてよいが、writeback や pending queue 自動生成は行わない
+- review-state section は order-insensitive pair 正規化・dedupe・reject 優先後の canonical state を使ってよく、`winnerTitle` / `incomingTitle` / `note` のような human-readable echo field をそのまま表示してよい。ただし localStorage、form submit、API call、`update-state.json` mutation、自動 accept/reject 書き戻し、checked-in artifact、public route、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

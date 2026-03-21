@@ -338,7 +338,7 @@ test('runPipeline rejects feeds whose shelfIds are missing from shelves.yaml', a
   );
 });
 
-test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, --fuzzy-accept-file, and --fuzzy-review-state-file', () => {
+test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, --fuzzy-accept-file, --fuzzy-review-state-file, and --fuzzy-review-html-file', () => {
   const parsed = parseArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -358,6 +358,8 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-f
     'tmp/fuzzy-accept.json',
     '--fuzzy-review-state-file',
     'tmp/fuzzy-review-state.json',
+    '--fuzzy-review-html-file',
+    'tmp/fuzzy-review.html',
   ]);
   assert.equal(parsed.dryRun, true);
   assert.equal(parsed.disableFuzzyDedupe, true);
@@ -369,6 +371,7 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-f
     parsed.fuzzyReviewStatePath ?? '',
     /tmp[/]fuzzy-review-state\.json$/,
   );
+  assert.match(parsed.fuzzyReviewHtmlPath ?? '', /tmp[/]fuzzy-review\.html$/);
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[\\/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
@@ -1742,6 +1745,146 @@ test('runPipeline writes canonical fuzzy review-state JSON when --fuzzy-review-s
       ],
     },
   );
+});
+
+test('runPipeline writes fuzzy review HTML when --fuzzy-review-html-file is provided', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-review-html-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyRejectPath = path.join(tempDir, 'reports', 'fuzzy-reject.json');
+  const fuzzyAcceptPath = path.join(tempDir, 'reports', 'fuzzy-accept.json');
+  const fuzzyReviewHtmlPath = path.join(
+    tempDir,
+    'reports',
+    'fuzzy-review.html',
+  );
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'rss-feed',
+        name: 'Example Source',
+      },
+      {
+        ...RSS_FEED,
+        id: 'atom-feed',
+        name: 'Example Source',
+        feedUrl: 'https://example.com/atom.xml',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+  await fs.mkdir(path.dirname(fuzzyRejectPath), { recursive: true });
+  await fs.writeFile(
+    fuzzyRejectPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-d', 'article-fuzzy-c'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'known false positive',
+      },
+    ]),
+  );
+  await fs.writeFile(
+    fuzzyAcceptPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-f', 'article-fuzzy-e'],
+        matchedBy: 'fuzzyTitleDate',
+        winnerTitle: 'Winner Title',
+        note: 'reviewed true positive',
+      },
+    ]),
+  );
+
+  await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-12T00:00:00Z',
+    fuzzyRejectPath,
+    fuzzyAcceptPath,
+    fuzzyReviewHtmlPath,
+    normalizedArticles: [
+      {
+        id: 'article-fuzzy-a',
+        feedId: 'rss-feed',
+        sourceName: 'Example Source',
+        language: 'en',
+        shelfIds: ['examples'],
+        title: 'Shared Title',
+        url: 'https://example.com/posts/shared-a',
+        summary: 'Short summary.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['RSS Source'],
+        entryTags: ['rss'],
+        sourceItemId: 'rss-shared-a',
+        provenance: [
+          {
+            feedId: 'rss-feed',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'rss-shared-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['rss-feed'],
+      },
+      {
+        id: 'article-fuzzy-b',
+        feedId: 'atom-feed',
+        sourceName: 'Example Source',
+        language: 'en',
+        shelfIds: ['examples', 'research'],
+        title: 'shared title',
+        url: 'https://example.com/posts/shared-b',
+        summary: 'Longer summary with more useful detail.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: 'Atom Author',
+        imageUrl: 'https://example.com/shared.jpg',
+        sourceTags: ['Atom Source'],
+        entryTags: ['atom'],
+        sourceItemId: 'atom-shared-b',
+        provenance: [
+          {
+            feedId: 'atom-feed',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'atom-shared-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['atom-feed'],
+      },
+    ],
+    logger: { log() {} },
+  });
+
+  const html = await fs.readFile(fuzzyReviewHtmlPath, 'utf8');
+
+  assert.match(html, /<!doctype html>/i);
+  assert.match(html, /<title>FeedShelf fuzzy review<\/title>/);
+  assert.match(html, /Current-run fuzzy candidates/);
+  assert.match(html, /Accepted review-state entries/);
+  assert.match(html, /Rejected review-state entries/);
+  assert.match(html, /https:\/\/example\.com\/posts\/shared-b/);
+  assert.match(html, /article-fuzzy-b/);
+  assert.match(html, /status-badge--unreviewed/);
+  assert.match(html, /status-badge--accepted/);
+  assert.match(html, /status-badge--rejected/);
+  assert.match(html, /reviewed true positive/);
+  assert.match(html, /known false positive/);
+  assert.doesNotMatch(html, /localStorage/);
+  assert.doesNotMatch(html, /<form/i);
 });
 
 test('runPipeline suppresses repeat fuzzy audit and handoff records when --fuzzy-accept-file is provided', async () => {

@@ -90,7 +90,7 @@ test('resolveUpdateStatePath defaults to outputDir/update-state.json', () => {
   );
 });
 
-test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, --fuzzy-accept-file, and --fuzzy-review-state-file', () => {
+test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, --fuzzy-accept-file, --fuzzy-review-state-file, and --fuzzy-review-html-file', () => {
   const parsed = parseUpdateArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -110,6 +110,8 @@ test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --dis
     'tmp/fuzzy-accept.json',
     '--fuzzy-review-state-file',
     'tmp/fuzzy-review-state.json',
+    '--fuzzy-review-html-file',
+    'tmp/fuzzy-review.html',
   ]);
 
   assert.equal(parsed.dryRun, true);
@@ -122,6 +124,7 @@ test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --dis
     parsed.fuzzyReviewStatePath ?? '',
     /tmp[/]fuzzy-review-state\.json$/,
   );
+  assert.match(parsed.fuzzyReviewHtmlPath ?? '', /tmp[/]fuzzy-review\.html$/);
   assert.match(parsed.feedsPath, /fixtures[/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[/]public-data$/);
@@ -695,6 +698,126 @@ test('runUpdatePipeline writes canonical fuzzy review-state JSON when --fuzzy-re
       ],
     },
   );
+});
+
+test('runUpdatePipeline writes fuzzy review HTML when --fuzzy-review-html-file is provided', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-fuzzy-review-html-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const fuzzyRejectPath = path.join(tempDir, 'reports', 'fuzzy-reject.json');
+  const fuzzyAcceptPath = path.join(tempDir, 'reports', 'fuzzy-accept.json');
+  const fuzzyReviewHtmlPath = path.join(
+    tempDir,
+    'reports',
+    'fuzzy-review.html',
+  );
+
+  await fsp.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...ENABLED_FEED,
+        id: 'first-feed',
+        name: 'Shared Source',
+        feedUrl: 'https://example.com/first.xml',
+      },
+      {
+        ...ENABLED_FEED,
+        id: 'second-feed',
+        name: 'Shared Source',
+        feedUrl: 'https://example.com/second.xml',
+      },
+    ]),
+  );
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+  await fsp.mkdir(path.dirname(fuzzyRejectPath), { recursive: true });
+  await fsp.writeFile(
+    fuzzyRejectPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-b', 'article-fuzzy-a'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'known false positive',
+      },
+    ]),
+  );
+  await fsp.writeFile(
+    fuzzyAcceptPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-d', 'article-fuzzy-c'],
+        matchedBy: 'fuzzyTitleDate',
+        incomingTitle: 'Incoming Title',
+        note: 'reviewed true positive',
+      },
+    ]),
+  );
+
+  const firstXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Shared Source</title>
+    <item>
+      <title>Workflow article</title>
+      <link>https://example.com/workflow-article-a</link>
+      <description><![CDATA[<p>First copy with richer detail that should stay primary.</p>]]></description>
+      <pubDate>Mon, 09 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>workflow-a</guid>
+    </item>
+  </channel>
+</rss>`;
+  const secondXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Shared Source</title>
+    <item>
+      <title> workflow   article </title>
+      <link>https://example.com/workflow-article-b</link>
+      <description><![CDATA[<p>Second copy.</p>]]></description>
+      <pubDate>Wed, 11 Mar 2026 08:59:59 +0000</pubDate>
+      <guid>workflow-b</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: true,
+    generatedAt: '2026-03-11T09:10:11Z',
+    fuzzyRejectPath,
+    fuzzyAcceptPath,
+    fuzzyReviewHtmlPath,
+    logger: { log() {} },
+    fetchImpl: async (url: string) => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return String(url).includes('second') ? secondXml : firstXml;
+      },
+    }),
+  });
+
+  const html = await fsp.readFile(fuzzyReviewHtmlPath, 'utf8');
+
+  assert.match(html, /<!doctype html>/i);
+  assert.match(html, /<title>FeedShelf fuzzy review<\/title>/);
+  assert.match(html, /Workflow article/);
+  assert.match(html, /workflow article/);
+  assert.match(html, /https:\/\/example\.com\/workflow-article-a/);
+  assert.match(html, /https:\/\/example\.com\/workflow-article-b/);
+  assert.match(html, /Shared Source/);
+  assert.match(html, /status-badge--unreviewed/);
+  assert.match(html, /status-badge--accepted/);
+  assert.match(html, /status-badge--rejected/);
+  assert.match(html, /reviewed true positive/);
+  assert.match(html, /known false positive/);
+  assert.doesNotMatch(html, /localStorage/);
+  assert.doesNotMatch(html, /<form/i);
 });
 
 test('runUpdatePipeline suppresses repeat fuzzy audit and handoff records when --fuzzy-accept-file is provided', async () => {

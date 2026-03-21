@@ -1304,6 +1304,72 @@ test('FS-DATA-16 fuzzy dedupe review-state writeback implementation stays aligne
   );
 });
 
+test('FS-DATA-17 fuzzy dedupe manual-review HTML implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const updateSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/update.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-17/);
+  assert.match(plan, /`--fuzzy-review-html-file`/);
+  assert.match(
+    spec,
+    /10\.5\.17 Post-v1 fuzzy dedupe manual-review HTML implementation/,
+  );
+  assert.match(spec, /single-file の self-contained HTML artifact/);
+  assert.match(decisions, /D-163/);
+  assert.match(decisions, /`--fuzzy-review-html-file <path>`/);
+  assert.match(traceability, /FS-177/);
+  assert.match(contracts, /fuzzyReviewHtmlPath: string \| null;/);
+  assert.match(runSource, /--fuzzy-review-html-file/);
+  assert.match(runSource, /buildFuzzyReviewHtml/);
+  assert.match(updateSource, /--fuzzy-review-html-file/);
+  assert.match(
+    updateSource,
+    /fuzzyReviewHtmlPath: options\.fuzzyReviewHtmlPath/,
+  );
+  assert.match(
+    loadFeedsTest,
+    /runPipeline writes fuzzy review HTML when --fuzzy-review-html-file is provided/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline writes fuzzy review HTML when --fuzzy-review-html-file is provided/,
+  );
+});
+
 test('FS-UX-22 provenance chips stay aligned across PLAN, TRACEABILITY, app, and web tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

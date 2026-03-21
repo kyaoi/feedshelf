@@ -151,6 +151,7 @@ export interface UpdatePipelineArgs {
   fuzzyRejectPath: string | null;
   fuzzyAcceptPath: string | null;
   fuzzyReviewStatePath: string | null;
+  fuzzyReviewHtmlPath: string | null;
 }
 
 export interface RunUpdatePipelineOptions
@@ -162,6 +163,7 @@ export interface RunUpdatePipelineOptions
     | 'fuzzyRejectPath'
     | 'fuzzyAcceptPath'
     | 'fuzzyReviewStatePath'
+    | 'fuzzyReviewHtmlPath'
   > {
   disableFuzzyDedupe?: boolean;
   fuzzyAuditPath?: string;
@@ -169,6 +171,7 @@ export interface RunUpdatePipelineOptions
   fuzzyRejectPath?: string;
   fuzzyAcceptPath?: string;
   fuzzyReviewStatePath?: string;
+  fuzzyReviewHtmlPath?: string;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
@@ -193,6 +196,7 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
     fuzzyRejectPath: null,
     fuzzyAcceptPath: null,
     fuzzyReviewStatePath: null,
+    fuzzyReviewHtmlPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -284,6 +288,16 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
         throw new Error('--fuzzy-review-state-file requires a path argument.');
       }
       args.fuzzyReviewStatePath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--fuzzy-review-html-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-review-html-file requires a path argument.');
+      }
+      args.fuzzyReviewHtmlPath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -770,6 +784,7 @@ export async function runUpdatePipeline(
     fuzzyRejectEntries,
     fuzzyAcceptEntries,
     fuzzyReviewStatePath: options.fuzzyReviewStatePath,
+    fuzzyReviewHtmlPath: options.fuzzyReviewHtmlPath,
   });
 
   if (options.disableFuzzyDedupe) {
@@ -808,6 +823,7 @@ export async function main(
     fuzzyRejectPath: args.fuzzyRejectPath ?? undefined,
     fuzzyAcceptPath: args.fuzzyAcceptPath ?? undefined,
     fuzzyReviewStatePath: args.fuzzyReviewStatePath ?? undefined,
+    fuzzyReviewHtmlPath: args.fuzzyReviewHtmlPath ?? undefined,
   });
 }
 

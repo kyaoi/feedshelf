@@ -58,6 +58,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     fuzzyRejectPath: null,
     fuzzyAcceptPath: null,
     fuzzyReviewStatePath: null,
+    fuzzyReviewHtmlPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -153,6 +154,16 @@ export function parseArgs(argv: string[]): PipelineArgs {
       continue;
     }
 
+    if (arg === '--fuzzy-review-html-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-review-html-file requires a path argument.');
+      }
+      args.fuzzyReviewHtmlPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -209,6 +220,391 @@ async function writeFuzzyHandoffFile({
     records,
     label: 'fuzzy handoff records',
   });
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+type FuzzyReviewStatus = 'accepted' | 'rejected' | 'unreviewed';
+
+function renderFuzzyReviewStatusBadge(status: FuzzyReviewStatus): string {
+  return `<span class="status-badge status-badge--${status}">${escapeHtml(status)}</span>`;
+}
+
+function renderOptionalText(value: string | undefined): string {
+  return typeof value === 'string' && value !== ''
+    ? escapeHtml(value)
+    : '<span class="muted">(none)</span>';
+}
+
+function renderOptionalLink(url: string, label: string): string {
+  return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+}
+
+function renderArticleIdPair(articleIdPair: [string, string]): string {
+  return `${escapeHtml(articleIdPair[0])} ↔ ${escapeHtml(articleIdPair[1])}`;
+}
+
+function buildFuzzyReviewStatusLookup(
+  entries: { articleIdPair: [string, string]; matchedBy: 'fuzzyTitleDate' }[],
+): Set<string> {
+  return new Set(
+    entries.map((entry) =>
+      createFuzzyEntryMapKey({
+        articleIdPair: canonicalizeArticleIdPair(entry.articleIdPair),
+        matchedBy: entry.matchedBy,
+      }),
+    ),
+  );
+}
+
+function resolveFuzzyReviewStatus({
+  record,
+  acceptedKeys,
+  rejectedKeys,
+}: {
+  record: FuzzyDedupeHandoffRecord;
+  acceptedKeys: Set<string>;
+  rejectedKeys: Set<string>;
+}): FuzzyReviewStatus {
+  const key = createFuzzyEntryMapKey({
+    articleIdPair: canonicalizeArticleIdPair([
+      record.winnerArticleId,
+      record.incomingArticleId,
+    ]),
+    matchedBy: record.matchedBy,
+  });
+
+  if (rejectedKeys.has(key)) {
+    return 'rejected';
+  }
+  if (acceptedKeys.has(key)) {
+    return 'accepted';
+  }
+  return 'unreviewed';
+}
+
+function renderFuzzyReviewCurrentRunSection({
+  handoffRecords,
+  acceptedKeys,
+  rejectedKeys,
+}: {
+  handoffRecords: FuzzyDedupeHandoffRecord[];
+  acceptedKeys: Set<string>;
+  rejectedKeys: Set<string>;
+}): string {
+  if (handoffRecords.length === 0) {
+    return `
+      <section>
+        <h2>Current-run fuzzy candidates</h2>
+        <p class="empty-state">No current-run fuzzy handoff records.</p>
+      </section>`;
+  }
+
+  return `
+    <section>
+      <h2>Current-run fuzzy candidates</h2>
+      <div class="card-grid">
+        ${handoffRecords
+          .map((record) => {
+            const status = resolveFuzzyReviewStatus({
+              record,
+              acceptedKeys,
+              rejectedKeys,
+            });
+            return `
+              <article class="review-card">
+                <div class="review-card__header">
+                  <div>
+                    <h3>${renderFuzzyReviewStatusBadge(status)} ${escapeHtml(record.winnerTitle)} ↔ ${escapeHtml(record.incomingTitle)}</h3>
+                    <p class="muted">${renderArticleIdPair([record.winnerArticleId, record.incomingArticleId])}</p>
+                  </div>
+                  <div class="meta-pills">
+                    <span class="meta-pill">matchedBy=${escapeHtml(record.matchedBy)}</span>
+                    <span class="meta-pill">Δ=${escapeHtml(record.publishedAtDeltaHours)}h</span>
+                  </div>
+                </div>
+                <dl class="detail-list">
+                  <div>
+                    <dt>Winner</dt>
+                    <dd>${renderOptionalLink(record.winnerUrl, record.winnerTitle)}</dd>
+                  </div>
+                  <div>
+                    <dt>Incoming</dt>
+                    <dd>${renderOptionalLink(record.incomingUrl, record.incomingTitle)}</dd>
+                  </div>
+                  <div>
+                    <dt>Winner source</dt>
+                    <dd>${escapeHtml(record.winnerSourceName)}</dd>
+                  </div>
+                  <div>
+                    <dt>Incoming source</dt>
+                    <dd>${escapeHtml(record.incomingSourceName)}</dd>
+                  </div>
+                </dl>
+              </article>`;
+          })
+          .join('')}
+      </div>
+    </section>`;
+}
+
+function renderFuzzyReviewStateSection({
+  title,
+  status,
+  entries,
+}: {
+  title: string;
+  status: Exclude<FuzzyReviewStatus, 'unreviewed'>;
+  entries: FuzzyDedupeAcceptEntry[] | FuzzyDedupeRejectEntry[];
+}): string {
+  if (entries.length === 0) {
+    return `
+      <section>
+        <h2>${escapeHtml(title)}</h2>
+        <p class="empty-state">No ${escapeHtml(status)} review-state entries.</p>
+      </section>`;
+  }
+
+  return `
+    <section>
+      <h2>${escapeHtml(title)}</h2>
+      <div class="card-grid">
+        ${entries
+          .map(
+            (entry) => `
+              <article class="review-card review-card--compact">
+                <div class="review-card__header">
+                  <div>
+                    <h3>${renderFuzzyReviewStatusBadge(status)} ${renderArticleIdPair(entry.articleIdPair)}</h3>
+                    <p class="muted">matchedBy=${escapeHtml(entry.matchedBy)}</p>
+                  </div>
+                </div>
+                <dl class="detail-list">
+                  <div>
+                    <dt>Winner title</dt>
+                    <dd>${renderOptionalText(entry.winnerTitle)}</dd>
+                  </div>
+                  <div>
+                    <dt>Incoming title</dt>
+                    <dd>${renderOptionalText(entry.incomingTitle)}</dd>
+                  </div>
+                  <div>
+                    <dt>Note</dt>
+                    <dd>${renderOptionalText(entry.note)}</dd>
+                  </div>
+                </dl>
+              </article>`,
+          )
+          .join('')}
+      </div>
+    </section>`;
+}
+
+function buildFuzzyReviewHtml({
+  generatedAt,
+  handoffRecords,
+  reviewState,
+}: {
+  generatedAt: string;
+  handoffRecords: FuzzyDedupeHandoffRecord[];
+  reviewState: FuzzyDedupeReviewState;
+}): string {
+  const acceptedKeys = buildFuzzyReviewStatusLookup(reviewState.accepted);
+  const rejectedKeys = buildFuzzyReviewStatusLookup(reviewState.rejected);
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FeedShelf fuzzy review</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+      body {
+        margin: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+      a {
+        color: inherit;
+      }
+      h1, h2, h3, p {
+        margin-top: 0;
+      }
+      .lead {
+        color: #cbd5e1;
+        margin-bottom: 24px;
+      }
+      .summary-grid,
+      .card-grid {
+        display: grid;
+        gap: 16px;
+      }
+      .summary-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        margin-bottom: 24px;
+      }
+      .summary-card,
+      .review-card {
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.78);
+        padding: 16px;
+      }
+      .summary-card strong {
+        display: block;
+        font-size: 1.35rem;
+        margin-bottom: 4px;
+      }
+      .review-card__header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .meta-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .meta-pill,
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 0.8rem;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+      }
+      .status-badge--accepted {
+        background: rgba(34, 197, 94, 0.16);
+      }
+      .status-badge--rejected {
+        background: rgba(248, 113, 113, 0.16);
+      }
+      .status-badge--unreviewed {
+        background: rgba(250, 204, 21, 0.16);
+      }
+      .detail-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin: 0;
+      }
+      .detail-list div {
+        min-width: 0;
+      }
+      .detail-list dt {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+      }
+      .detail-list dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .muted,
+      .empty-state {
+        color: #94a3b8;
+      }
+      section + section {
+        margin-top: 28px;
+      }
+      @media (max-width: 640px) {
+        main {
+          padding-inline: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>FeedShelf fuzzy review</h1>
+        <p class="lead">Read-only internal artifact for reviewing current-run fuzzy handoff evidence and explicit review state.</p>
+      </header>
+      <section>
+        <div class="summary-grid">
+          <article class="summary-card">
+            <strong>${escapeHtml(generatedAt)}</strong>
+            <span>Generated at</span>
+          </article>
+          <article class="summary-card">
+            <strong>${escapeHtml(handoffRecords.length)}</strong>
+            <span>Current-run candidates</span>
+          </article>
+          <article class="summary-card">
+            <strong>${escapeHtml(reviewState.accepted.length)}</strong>
+            <span>Accepted review-state entries</span>
+          </article>
+          <article class="summary-card">
+            <strong>${escapeHtml(reviewState.rejected.length)}</strong>
+            <span>Rejected review-state entries</span>
+          </article>
+        </div>
+      </section>
+      ${renderFuzzyReviewCurrentRunSection({
+        handoffRecords,
+        acceptedKeys,
+        rejectedKeys,
+      })}
+      ${renderFuzzyReviewStateSection({
+        title: 'Accepted review-state entries',
+        status: 'accepted',
+        entries: reviewState.accepted,
+      })}
+      ${renderFuzzyReviewStateSection({
+        title: 'Rejected review-state entries',
+        status: 'rejected',
+        entries: reviewState.rejected,
+      })}
+    </main>
+  </body>
+</html>
+`;
+}
+
+async function writeFuzzyReviewHtmlFile({
+  fuzzyReviewHtmlPath,
+  generatedAt,
+  logger,
+  handoffRecords,
+  reviewState,
+}: {
+  fuzzyReviewHtmlPath: string;
+  generatedAt: string;
+  logger: PipelineLogger;
+  handoffRecords: FuzzyDedupeHandoffRecord[];
+  reviewState: FuzzyDedupeReviewState;
+}): Promise<void> {
+  await fs.mkdir(path.dirname(fuzzyReviewHtmlPath), { recursive: true });
+  await fs.writeFile(
+    fuzzyReviewHtmlPath,
+    buildFuzzyReviewHtml({
+      generatedAt,
+      handoffRecords,
+      reviewState,
+    }),
+  );
+  logger.log(
+    `[pipeline] fuzzy review html currentRun=${handoffRecords.length} accepted=${reviewState.accepted.length} rejected=${reviewState.rejected.length} path=${path.relative(process.cwd(), fuzzyReviewHtmlPath) || fuzzyReviewHtmlPath}`,
+  );
 }
 
 function normalizeFuzzyRejectEntry(
@@ -602,6 +998,18 @@ export async function runPipeline(
       state: fuzzyReviewState,
     });
   }
+  if (typeof options.fuzzyReviewHtmlPath === 'string') {
+    await writeFuzzyReviewHtmlFile({
+      fuzzyReviewHtmlPath: path.resolve(
+        process.cwd(),
+        options.fuzzyReviewHtmlPath,
+      ),
+      generatedAt,
+      logger,
+      handoffRecords: dedupeResult.fuzzyHandoffRecords,
+      reviewState: fuzzyReviewState,
+    });
+  }
   const dedupedArticles = dedupeResult.articles;
   const freshPublicExports = buildPublicExports({
     articles: dedupedArticles,
@@ -691,6 +1099,7 @@ export async function main(
     fuzzyRejectPath: args.fuzzyRejectPath ?? undefined,
     fuzzyAcceptPath: args.fuzzyAcceptPath ?? undefined,
     fuzzyReviewStatePath: args.fuzzyReviewStatePath ?? undefined,
+    fuzzyReviewHtmlPath: args.fuzzyReviewHtmlPath ?? undefined,
   });
 }
 

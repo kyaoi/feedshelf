@@ -560,7 +560,8 @@ Phase 6 の進め方:
 - `FS-DOCS-35` では explicit accept/reject input を dedicated review-state JSON へ canonical writeback する次差分を docs で先に固定し、`update-state.json` mutation / pending 自動生成 / broader matching / manual review UI から分離した
 - `FS-DATA-16` では `--fuzzy-review-state-file` 経由の dedicated review-state JSON writeback を `run` / `update` / tests に閉じて実装し、order-insensitive pair 正規化・dedupe・reject 優先 conflict resolution を internal artifact として出力できるようにした
 - `FS-DOCS-36` では manual review UI の次差分を checked-in route ではなく `--fuzzy-review-html-file` 経由の opt-in internal HTML artifact に限定し、read-only evidence surfacing と broader matching / state mutation を分離した
-- 次に runtime を広げるなら `FS-DATA-17` として self-contained な manual-review HTML artifact 実装に進み、broader matching は引き続き別 docs-first task として扱う
+- `FS-DATA-17` では `--fuzzy-review-html-file` 経由の self-contained manual-review HTML artifact を `run` / `update` / tests に閉じて実装し、current-run fuzzy handoff evidence と explicit review state を read-only の local HTML としてまとめて確認できるようにした
+- 次の runtime widening は broader matching のような matching semantics 変更ではなく、必要ならまず docs-first で境界を固定してから別 task として進める
 
 ## メモ
 

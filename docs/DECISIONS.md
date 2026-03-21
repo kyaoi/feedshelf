@@ -1063,6 +1063,12 @@
 - 理由: handoff JSON と dedicated review-state JSON は既に揃っているため、次の最小価値は matching semantics を広げることではなく、既存 evidence を人が読みやすい形で束ねることだから。read-only local HTML に閉じれば state machine や public deploy surface を増やさず review 体験だけを改善できるため
 - 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、current run の fuzzy handoff evidence と explicit review state を単一 HTML artifact へ束ねてよい。ただし accept/reject の書き戻し、pending queue、自動 accept/reject 生成、localStorage や form submit を使う stateful UI、checked-in artifact、public JSON / route / article card UI、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
 
+## D-163: `FS-DATA-17` は `--fuzzy-review-html-file` による read-only internal HTML artifact に閉じる
+
+- 決定: `FS-DATA-17` は `run.ts` / `update.ts` に `--fuzzy-review-html-file <path>` を追加し、明示されたときだけ current run の fuzzy handoff evidence と canonical review state を単一 HTML file へ束ねる internal-only 実装に閉じる
+- 理由: `FS-DATA-16` までで accept / reject の canonical state は JSON として書き出せるため、次に必要なのは matching を広げることではなく、operator が JSON を手で辿らずに current run の evidence と既存 review state を同時に眺められる read-only artifact だから
+- 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests に閉じる。HTML artifact は self-contained / local-only / read-only とし、current-run candidate には accepted / rejected / unreviewed status badge を付けてよい。一方で accept/reject の書き戻し、pending queue、自動 accept/reject 生成、localStorage / form submit / API call、`update-state.json` mutation、checked-in artifact、public route、broader fuzzy matching、cross-source fuzzy は含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
