@@ -520,6 +520,15 @@ Phase 6 の進め方:
 - writeback は order-insensitive な `articleIdPair` の pair order 正規化、同一 key の dedupe、reject 優先の conflict resolution に限定し、未レビュー handoff 候補の自動 accept/reject 生成、pending queue、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI は同じ task に含めない
 - review-state JSON は既存 `FuzzyDedupeAcceptEntry` / `FuzzyDedupeRejectEntry` shape を再利用し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を保持してよい
 
+### Post-v1 fuzzy dedupe manual-review HTML docs split
+
+- [x] `FS-DOCS-36` fuzzy dedupe の次差分を opt-in internal manual-review HTML artifact に限定し、broader matching / checked-in review route / state mutation と分離する
+
+完了条件:
+- `FS-DATA-17` の first implementation が、`--fuzzy-review-html-file <path>` を明示したときだけ、current run の fuzzy handoff evidence とその run で既に読み込まれた explicit review state を使って self-contained な manual-review HTML artifact を operator-managed path へ書き出す internal-only task として着手できる
+- manual-review artifact は read-only に限定し、`winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` / `matchedBy` / `publishedAtDeltaHours` のような bounded evidence と、必要なら accepted / rejected / unreviewed の status badge を表示してよい
+- HTML artifact は local file として明示的 path へ出力するだけに留め、accept/reject の書き戻し、localStorage や form submit を使った state mutation、checked-in artifact、public JSON / route / article card UI、broader matching / cross-source fuzzy は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -550,7 +559,8 @@ Phase 6 の進め方:
 - `FS-DATA-15` では `--fuzzy-accept-file` 経由の explicit accept list を `run` / `update` / tests に閉じて実装し、review 済み true positive pair の fuzzy merge は維持したまま repeat fuzzy audit / handoff の再掲だけを suppress できるようにした
 - `FS-DOCS-35` では explicit accept/reject input を dedicated review-state JSON へ canonical writeback する次差分を docs で先に固定し、`update-state.json` mutation / pending 自動生成 / broader matching / manual review UI から分離した
 - `FS-DATA-16` では `--fuzzy-review-state-file` 経由の dedicated review-state JSON writeback を `run` / `update` / tests に閉じて実装し、order-insensitive pair 正規化・dedupe・reject 優先 conflict resolution を internal artifact として出力できるようにした
-- 次に runtime を広げるなら broader matching / manual review UI のどれか 1 つだけを docs-first task として切り出す
+- `FS-DOCS-36` では manual review UI の次差分を checked-in route ではなく `--fuzzy-review-html-file` 経由の opt-in internal HTML artifact に限定し、read-only evidence surfacing と broader matching / state mutation を分離した
+- 次に runtime を広げるなら `FS-DATA-17` として self-contained な manual-review HTML artifact 実装に進み、broader matching は引き続き別 docs-first task として扱う
 
 ## メモ
 

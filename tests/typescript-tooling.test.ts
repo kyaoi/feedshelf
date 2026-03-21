@@ -851,6 +851,41 @@ test('FS-DOCS-35 fuzzy dedupe review-state writeback docs split stays aligned ac
   );
 });
 
+test('FS-DOCS-36 fuzzy dedupe manual-review HTML docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-36/);
+  assert.match(plan, /opt-in internal manual-review HTML artifact/);
+  assert.match(plan, /`--fuzzy-review-html-file <path>`/);
+  assert.match(
+    spec,
+    /10\.5\.16 Post-v1 fuzzy dedupe manual-review HTML docs split/,
+  );
+  assert.match(spec, /self-contained な internal manual-review HTML artifact/);
+  assert.match(decisions, /D-162/);
+  assert.match(decisions, /read-only local HTML/);
+  assert.match(traceability, /FS-176/);
+  assert.match(
+    traceability,
+    /localStorage \/ form submit \/ `update-state\.json` mutation \/ checked-in artifact \/ public route \/ broader matching 非採用/,
+  );
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

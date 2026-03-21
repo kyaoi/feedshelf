@@ -1057,6 +1057,12 @@
 - 理由: 次の最小価値は runtime heuristic や UI を広げることではなく、operator-authored な review state を canonical pair order・dedupe・reject 優先の競合解決つきで再利用しやすい internal artifact に揃えることだから。これなら既存 accept/reject semantics を変えずに手作業 churn だけ減らせる
 - 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests に閉じる。review-state JSON は bounded `{ accepted, rejected }` shape とし、既存 entry shape を再利用してよいが、未レビュー handoff 候補の自動 accept/reject 生成、pending queue、`update-state.json` mutation、checked-in artifact、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない
 
+## D-162: fuzzy dedupe の次差分は opt-in internal manual-review HTML artifact に限定する
+
+- 決定: `FS-DATA-16` 後に human review のしやすさを改善したい場合は、broader fuzzy matching や checked-in public route ではなく、明示的 flag でだけ生成される self-contained な manual-review HTML artifact として切り出す
+- 理由: handoff JSON と dedicated review-state JSON は既に揃っているため、次の最小価値は matching semantics を広げることではなく、既存 evidence を人が読みやすい形で束ねることだから。read-only local HTML に閉じれば state machine や public deploy surface を増やさず review 体験だけを改善できるため
+- 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、current run の fuzzy handoff evidence と explicit review state を単一 HTML artifact へ束ねてよい。ただし accept/reject の書き戻し、pending queue、自動 accept/reject 生成、localStorage や form submit を使う stateful UI、checked-in artifact、public JSON / route / article card UI、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
