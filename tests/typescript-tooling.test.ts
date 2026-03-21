@@ -1440,6 +1440,66 @@ test('FS-DATA-17 fuzzy dedupe manual-review HTML implementation stays aligned ac
   );
 });
 
+test('FS-DATA-19 fuzzy dedupe source-family implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-19/);
+  assert.match(plan, /allowlisted source-family key/);
+  assert.match(
+    spec,
+    /10\.5\.21 Post-v1 fuzzy dedupe source-family implementation/,
+  );
+  assert.match(spec, /Qiita \/ Zenn \/ ITmedia/);
+  assert.match(decisions, /D-167/);
+  assert.match(
+    decisions,
+    /same-source 優先の allowlisted source-family fallback/,
+  );
+  assert.match(traceability, /FS-181/);
+  assert.match(dedupeSource, /ALLOWLISTED_SOURCE_FAMILIES/);
+  assert.match(dedupeSource, /resolveAllowlistedSourceFamilyKey/);
+  assert.match(dedupeSource, /source-family:/);
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticles applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours/,
+  );
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticles does not fuzzy-merge non-allowlisted cross-source title matches within 72 hours/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours/,
+  );
+});
+
 test('FS-DATA-18 fuzzy dedupe broader title-key implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

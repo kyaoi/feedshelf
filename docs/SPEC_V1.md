@@ -988,6 +988,12 @@ v1 の生成優先順位は以下とする。
 - 次差分は same `language` と既存 72 時間 window を維持したまま、allowlisted source-family key に一致する sibling feed 間だけを fuzzy candidate widening の対象にし、same `sourceName` fuzzy lookup を優先した後段に限定する
 - source-family fallback は deterministic な repo-managed table に閉じ、generic hostname grouping、site-wide blanket rule、cross-language merge、edit distance、token reorder、stemming、body fetch、HTML canonical parse、embedding / LLM、confidence score 公開、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
 
+### 10.5.21 Post-v1 fuzzy dedupe source-family implementation (`FS-DATA-19`)
+
+- `FS-DATA-19` では `scripts/pipeline/dedupeArticles.ts` に deterministic な repo-managed source-family table を置き、same `sourceName` fuzzy lookup が未一致のときだけ、same `language` と既存 72 時間 window を維持した allowlisted sibling feed fallback を試してよい
+- first implementation の source-family table は Qiita / Zenn / ITmedia に限定し、family key に一致する sibling feed 間だけを existing title compare key sequence（exact title key → punctuation-folded fallback）で検索してよい。generic hostname grouping、site-wide blanket rule、cross-language merge は含めない
+- source-family fallback で candidate になった場合も `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject list、review-state writeback、audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよい。`titleCompareKey` は実際に candidate 判定に使われた compare key を記録してよい
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

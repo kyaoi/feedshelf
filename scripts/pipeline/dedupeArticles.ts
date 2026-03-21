@@ -42,6 +42,44 @@ interface FuzzyDuplicateMatch {
 const FUZZY_DEDUPE_WINDOW_MS = 72 * 60 * 60 * 1000;
 const FUZZY_TITLE_PUNCTUATION_PATTERN =
   /[\(\)\[\]\{\}<>"'`“”‘’«»‹›「」『』【】〔〕（）〈〉《》｢｣:：;；,，.。!！?？\/／\\|｜·•・･_—–-]+/gu;
+const ALLOWLISTED_SOURCE_FAMILIES = [
+  {
+    familyKey: 'qiita',
+    sourceNames: [
+      'Qiita Popular',
+      'Qiita Python Tag',
+      'Qiita Rust Tag',
+      'Qiita AI Tag',
+      'Qiita Linux Tag',
+      'Qiita neovim',
+      'Qiita archlinux',
+      'Qiita LLM',
+    ],
+  },
+  {
+    familyKey: 'zenn',
+    sourceNames: [
+      'Zenn Feed',
+      'Zenn Python Topic',
+      'Zenn Rust Topic',
+      'Zenn AI Topic',
+      'Zenn Productivity Weekly Topic',
+      'Zenn Neovim',
+      'Zenn Linux',
+      'Zenn Arch Linux',
+      'Zenn LLM',
+    ],
+  },
+  {
+    familyKey: 'itmedia',
+    sourceNames: ['ITmedia NEWS 新着', 'ITmedia AI+ 新着'],
+  },
+] as const;
+const ALLOWLISTED_SOURCE_FAMILY_BY_SOURCE_NAME = new Map<string, string>(
+  ALLOWLISTED_SOURCE_FAMILIES.flatMap(({ familyKey, sourceNames }) =>
+    sourceNames.map((sourceName) => [sourceName, familyKey] as const),
+  ),
+);
 
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
@@ -176,11 +214,49 @@ function createPunctuationFoldedTitleCompareKey(title: string): string {
     .trim();
 }
 
+function resolveAllowlistedSourceFamilyKey(sourceName: string): string | null {
+  return ALLOWLISTED_SOURCE_FAMILY_BY_SOURCE_NAME.get(sourceName) ?? null;
+}
+
+function resolveTitleCompareKeys(title: string): string[] {
+  const titleCompareKey = createTitleCompareKey(title);
+  if (titleCompareKey === '') {
+    return [];
+  }
+
+  const titleCompareKeys = [titleCompareKey];
+  const punctuationFoldedTitleCompareKey =
+    createPunctuationFoldedTitleCompareKey(title);
+  if (
+    punctuationFoldedTitleCompareKey !== '' &&
+    punctuationFoldedTitleCompareKey !== titleCompareKey
+  ) {
+    titleCompareKeys.push(punctuationFoldedTitleCompareKey);
+  }
+
+  return titleCompareKeys;
+}
+
 function buildFuzzyLookupKey(
-  article: CanonicalArticle,
+  scopeKey: string,
+  language: string,
   titleCompareKey: string,
 ): string {
-  return [article.sourceName, article.language, titleCompareKey].join('\u0000');
+  return [scopeKey, language, titleCompareKey].join('\u0000');
+}
+
+function appendFuzzyLookupKeys(
+  lookupKeys: FuzzyDedupeLookupKey[],
+  scopeKey: string,
+  language: string,
+  titleCompareKeys: string[],
+): void {
+  for (const titleCompareKey of titleCompareKeys) {
+    lookupKeys.push({
+      key: buildFuzzyLookupKey(scopeKey, language, titleCompareKey),
+      titleCompareKey,
+    });
+  }
 }
 
 function resolveFuzzyDedupeLookupKeys(
@@ -195,28 +271,27 @@ function resolveFuzzyDedupeLookupKeys(
     return [];
   }
 
-  const titleCompareKey = createTitleCompareKey(article.title);
-  if (titleCompareKey === '') {
+  const titleCompareKeys = resolveTitleCompareKeys(article.title);
+  if (titleCompareKeys.length === 0) {
     return [];
   }
 
-  const lookupKeys: FuzzyDedupeLookupKey[] = [
-    {
-      key: buildFuzzyLookupKey(article, titleCompareKey),
-      titleCompareKey,
-    },
-  ];
+  const lookupKeys: FuzzyDedupeLookupKey[] = [];
+  appendFuzzyLookupKeys(
+    lookupKeys,
+    `source:${article.sourceName}`,
+    article.language,
+    titleCompareKeys,
+  );
 
-  const punctuationFoldedTitleCompareKey =
-    createPunctuationFoldedTitleCompareKey(article.title);
-  if (
-    punctuationFoldedTitleCompareKey !== '' &&
-    punctuationFoldedTitleCompareKey !== titleCompareKey
-  ) {
-    lookupKeys.push({
-      key: buildFuzzyLookupKey(article, punctuationFoldedTitleCompareKey),
-      titleCompareKey: punctuationFoldedTitleCompareKey,
-    });
+  const sourceFamilyKey = resolveAllowlistedSourceFamilyKey(article.sourceName);
+  if (sourceFamilyKey !== null) {
+    appendFuzzyLookupKeys(
+      lookupKeys,
+      `source-family:${sourceFamilyKey}`,
+      article.language,
+      titleCompareKeys,
+    );
   }
 
   return lookupKeys;

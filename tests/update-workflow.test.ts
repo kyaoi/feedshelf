@@ -313,6 +313,91 @@ test('runUpdatePipeline reports fuzzyDuplicatesCollapsed and supports disableFuz
   assert.equal(disabledSummary.publicArticles, 2);
 });
 
+test('runUpdatePipeline applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-fuzzy-family-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+
+  await fsp.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...ENABLED_FEED,
+        id: 'qiita-popular',
+        name: 'Qiita Popular',
+        feedUrl: 'https://example.com/qiita-popular.xml',
+      },
+      {
+        ...ENABLED_FEED,
+        id: 'qiita-rust',
+        name: 'Qiita Rust Tag',
+        feedUrl: 'https://example.com/qiita-rust.xml',
+      },
+    ]),
+  );
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+
+  const firstXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Qiita Popular</title>
+    <item>
+      <title>Qiita shared article</title>
+      <link>https://qiita.com/example/items/shared-a</link>
+      <description><![CDATA[<p>First copy.</p>]]></description>
+      <pubDate>Mon, 09 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>qiita-a</guid>
+    </item>
+  </channel>
+</rss>`;
+  const secondXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Qiita Rust Tag</title>
+    <item>
+      <title> qiita shared article </title>
+      <link>https://qiita.com/example/items/shared-b</link>
+      <description><![CDATA[<p>Second copy with more detail.</p>]]></description>
+      <pubDate>Wed, 11 Mar 2026 08:59:59 +0000</pubDate>
+      <guid>qiita-b</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  const summary = await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-11T09:10:11Z',
+    fuzzyAuditPath,
+    logger: { log() {} },
+    fetchImpl: async (url: string) => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return String(url).includes('qiita-rust') ? secondXml : firstXml;
+      },
+    }),
+  });
+
+  assert.equal(summary.duplicatesCollapsed, 1);
+  assert.equal(summary.fuzzyDuplicatesCollapsed, 1);
+  assert.equal(summary.publicArticles, 1);
+
+  const fuzzyAudit = JSON.parse(await fsp.readFile(fuzzyAuditPath, 'utf8'));
+  assert.equal(fuzzyAudit.length, 1);
+  assert.equal(fuzzyAudit[0].winnerFeedId, 'qiita-rust');
+  assert.equal(fuzzyAudit[0].incomingFeedId, 'qiita-rust');
+  assert.equal(fuzzyAudit[0].titleCompareKey, 'qiita shared article');
+  assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
+  assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+});
+
 test('runUpdatePipeline applies broader punctuation-folded fuzzy fallback for same-source title matches within 72 hours', async () => {
   const tempDir = await fsp.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-update-fuzzy-punct-'),

@@ -557,6 +557,15 @@ Phase 6 の進め方:
 - source-family fallback は既存の same `sourceName` fuzzy lookup を優先した後段に限定し、generic hostname grouping・site-wide blanket rule・cross-language merge・edit distance・token reorder・body fetch・HTML canonical parse は同じ task に含めない
 - `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持し、new public JSON / route / checked-in artifact / confidence score / `update-state.json` mutation は同じ task に含めない
 
+### Post-v1 fuzzy dedupe source-family implementation
+
+- [x] `FS-DATA-19` repo-managed な allowlisted source-family key に一致する sibling feed 間だけを fuzzy fallback の追加 lookup として実装する
+
+完了条件:
+- fuzzy candidate lookup は既存の same `sourceName` fuzzy lookup を優先し、未一致時だけ same `language` + 72 時間 window を維持した allowlisted source-family fallback を試せる
+- source-family key は deterministic な repo-managed table に閉じ、Qiita / Zenn / ITmedia の sibling feed だけを対象にして generic hostname grouping / site-wide blanket rule / cross-language merge を含めない
+- source-family fallback で merge しても `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持する
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -592,6 +601,7 @@ Phase 6 の進め方:
 - `FS-DOCS-37` では broader matching の次差分を same-source / same-language + 72h を維持した deterministic punctuation-folded title compare key に限定し、cross-source fuzzy / edit distance / state mutation から分離した
 - `FS-DATA-18` では same-source / same-language + 72h gating を維持したまま punctuation-folded title compare key を fuzzy fallback の追加 lookup key として実装し、audit / handoff の `titleCompareKey` も matched compare key を反映できるようにした
 - `FS-DOCS-38` では cross-source fuzzy を generic に広げず、repo-managed な allowlisted source-family key に一致する sibling feed 間だけを widening 対象にする次差分を docs で先に固定した
+- `FS-DATA-19` では Qiita / Zenn / ITmedia の allowlisted sibling feed だけを same `language` + 72h gating 維持の source-family fallback 対象として実装し、same `sourceName` lookup 優先と既存 review surface を保ったまま cross-source duplicate を conservative に拾えるようにした
 - 次の runtime widening は generic cross-source fuzzy ではなく、必要ならまず docs-first で source-family fallback の境界を固定してから別 task として進める
 
 ## メモ

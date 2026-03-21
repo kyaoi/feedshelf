@@ -1087,6 +1087,12 @@
 - 理由: Qiita / Zenn / ITmedia のような同一 platform / publisher 配下の feed バリエーションで duplicate を拾いたい一方、generic hostname grouping や cross-source fuzzy を先に入れると false positive 面が急に広がり、既存 accept/reject / review-state / audit / handoff / review HTML の bounded state surface を不必要に複雑化するため
 - 影響: 後続 implementation は same `language` と既存 72 時間 window を維持した allowlisted source-family fallback に閉じ、same `sourceName` fuzzy lookup を優先した後段として扱ってよい。一方で generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / token reorder / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+## D-167: `FS-DATA-19` は same-source 優先の allowlisted source-family fallback に閉じる
+
+- 決定: `FS-DATA-19` では fuzzy candidate lookup を same `sourceName` 優先のまま広げ、未一致時だけ repo-managed な allowlisted source-family key に一致する sibling feed 間で fallback lookup を行う。first implementation の family table は Qiita / Zenn / ITmedia に限定する
+- 理由: Qiita / Zenn / ITmedia の sibling feed では同一記事が複数 feed に重複して出やすく、same-source だけでは取りこぼす一方、generic hostname grouping や blanket cross-source fuzzy を開けると false positive 面が急に広がるため
+- 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` と existing run / update surface の再利用、`tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。family fallback でも existing title compare key sequence と same `language` + 72h gating、`matchedBy='fuzzyTitleDate'`、accept/reject / review-state / audit / handoff / review HTML contract を維持してよい。一方で generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

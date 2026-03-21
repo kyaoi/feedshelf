@@ -916,6 +916,130 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
   assert.deepEqual(disabled.fuzzyHandoffRecords, []);
 });
 
+test('dedupeArticles applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-fuzzy-family-a',
+      feedId: 'qiita-popular',
+      sourceName: 'Qiita Popular',
+      language: 'ja',
+      shelfIds: ['it'],
+      title: 'Qiita shared article',
+      url: 'https://qiita.com/example/items/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['Qiita'],
+      entryTags: ['popular'],
+      sourceItemId: 'qiita-shared-a',
+      provenance: [
+        {
+          feedId: 'qiita-popular',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'qiita-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['qiita-popular'],
+    },
+    {
+      id: 'article-fuzzy-family-b',
+      feedId: 'qiita-rust',
+      sourceName: 'Qiita Rust Tag',
+      language: 'ja',
+      shelfIds: ['it', 'science'],
+      title: '  qiita   shared article  ',
+      url: 'https://qiita.com/example/items/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Qiita Author',
+      imageUrl: 'https://qiita.com/shared.jpg',
+      sourceTags: ['Qiita'],
+      entryTags: ['rust'],
+      sourceItemId: 'qiita-shared-b',
+      provenance: [
+        {
+          feedId: 'qiita-rust',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'qiita-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['qiita-rust'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 1);
+  assert.deepEqual(deduped[0].seenInFeeds, ['qiita-rust', 'qiita-popular']);
+  assert.equal(deduped[0].provenance[1].matchedBy, 'fuzzyTitleDate');
+});
+
+test('dedupeArticles does not fuzzy-merge non-allowlisted cross-source title matches within 72 hours', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-fuzzy-nonfamily-a',
+      feedId: 'publickey-feed',
+      sourceName: 'Publickey',
+      language: 'ja',
+      shelfIds: ['it'],
+      title: 'Shared cross-source title',
+      url: 'https://www.publickey1.jp/posts/shared-a.html',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['Publickey'],
+      entryTags: ['news'],
+      sourceItemId: 'publickey-shared-a',
+      provenance: [
+        {
+          feedId: 'publickey-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'publickey-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['publickey-feed'],
+    },
+    {
+      id: 'article-fuzzy-nonfamily-b',
+      feedId: 'gigazine-feed',
+      sourceName: 'GIGAZINE',
+      language: 'ja',
+      shelfIds: ['it'],
+      title: ' shared cross-source title ',
+      url: 'https://gigazine.net/news/shared-b/',
+      summary: 'Another summary.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'GIGAZINE',
+      imageUrl: null,
+      sourceTags: ['GIGAZINE'],
+      entryTags: ['news'],
+      sourceItemId: 'gigazine-shared-b',
+      provenance: [
+        {
+          feedId: 'gigazine-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'gigazine-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['gigazine-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 2);
+});
+
 test('dedupeArticlesWithSummary reports punctuation-folded titleCompareKey for broader fuzzy matches', () => {
   const articles = [
     {
@@ -1452,6 +1576,115 @@ test('runPipeline reports fuzzyDuplicatesCollapsed and supports disableFuzzyDedu
   assert.equal(disabledSummary.dedupedArticles, 2);
   assert.equal(disabledSummary.duplicatesCollapsed, 0);
   assert.equal(disabledSummary.fuzzyDuplicatesCollapsed, 0);
+});
+
+test('runPipeline applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-family-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'qiita-popular',
+        name: 'Qiita Popular',
+      },
+      {
+        ...RSS_FEED,
+        id: 'qiita-rust',
+        name: 'Qiita Rust Tag',
+        feedUrl: 'https://example.com/qiita-rust.xml',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  const normalizedArticles = [
+    {
+      id: 'article-fuzzy-family-a',
+      feedId: 'qiita-popular',
+      sourceName: 'Qiita Popular',
+      language: 'ja',
+      shelfIds: ['it'],
+      title: 'Qiita shared article',
+      url: 'https://qiita.com/example/items/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['Qiita'],
+      entryTags: ['popular'],
+      sourceItemId: 'qiita-shared-a',
+      provenance: [
+        {
+          feedId: 'qiita-popular',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'qiita-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['qiita-popular'],
+    },
+    {
+      id: 'article-fuzzy-family-b',
+      feedId: 'qiita-rust',
+      sourceName: 'Qiita Rust Tag',
+      language: 'ja',
+      shelfIds: ['it', 'science'],
+      title: '  qiita   shared article  ',
+      url: 'https://qiita.com/example/items/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Qiita Author',
+      imageUrl: 'https://qiita.com/shared.jpg',
+      sourceTags: ['Qiita'],
+      entryTags: ['rust'],
+      sourceItemId: 'qiita-shared-b',
+      provenance: [
+        {
+          feedId: 'qiita-rust',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'qiita-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['qiita-rust'],
+    },
+  ];
+
+  const summary = await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    fuzzyAuditPath,
+    normalizedArticles,
+    logger: { log() {} },
+  });
+
+  assert.equal(summary.dedupedArticles, 1);
+  assert.equal(summary.fuzzyDuplicatesCollapsed, 1);
+  assert.deepEqual(JSON.parse(await fs.readFile(fuzzyAuditPath, 'utf8')), [
+    {
+      winnerArticleId: 'article-fuzzy-family-b',
+      incomingArticleId: 'article-fuzzy-family-b',
+      winnerFeedId: 'qiita-rust',
+      incomingFeedId: 'qiita-rust',
+      titleCompareKey: 'qiita shared article',
+      publishedAtDeltaHours: 72,
+      matchedBy: 'fuzzyTitleDate',
+    },
+  ]);
 });
 
 test('runPipeline applies broader punctuation-folded fuzzy fallback for same-source title matches within 72 hours', async () => {
