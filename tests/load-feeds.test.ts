@@ -338,7 +338,7 @@ test('runPipeline rejects feeds whose shelfIds are missing from shelves.yaml', a
   );
 });
 
-test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, and --fuzzy-reject-file', () => {
+test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, and --fuzzy-accept-file', () => {
   const parsed = parseArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -354,12 +354,15 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-f
     'tmp/fuzzy-handoff.json',
     '--fuzzy-reject-file',
     'tmp/fuzzy-reject.json',
+    '--fuzzy-accept-file',
+    'tmp/fuzzy-accept.json',
   ]);
   assert.equal(parsed.dryRun, true);
   assert.equal(parsed.disableFuzzyDedupe, true);
   assert.match(parsed.fuzzyAuditPath ?? '', /tmp[/]fuzzy-audit\.json$/);
   assert.match(parsed.fuzzyHandoffPath ?? '', /tmp[/]fuzzy-handoff\.json$/);
   assert.match(parsed.fuzzyRejectPath ?? '', /tmp[/]fuzzy-reject\.json$/);
+  assert.match(parsed.fuzzyAcceptPath ?? '', /tmp[/]fuzzy-accept\.json$/);
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[\\/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
@@ -839,6 +842,163 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
   assert.equal(disabled.fuzzyDuplicatesCollapsed, 0);
   assert.deepEqual(disabled.fuzzyAuditRecords, []);
   assert.deepEqual(disabled.fuzzyHandoffRecords, []);
+});
+
+test('dedupeArticlesWithSummary suppresses repeat fuzzy audit and handoff records for accepted pairs', () => {
+  const articles = [
+    {
+      id: 'article-fuzzy-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared Title',
+      url: 'https://example.com/posts/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: '  shared   title  ',
+      url: 'https://example.com/posts/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ];
+
+  const accepted = dedupeArticlesWithSummary(articles, {
+    fuzzyAcceptEntries: [
+      {
+        articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+        matchedBy: 'fuzzyTitleDate',
+        winnerTitle: 'shared title',
+        incomingTitle: 'Shared Title',
+        note: 'reviewed true positive',
+      },
+    ],
+  });
+
+  assert.equal(accepted.articles.length, 1);
+  assert.equal(accepted.fuzzyDuplicatesCollapsed, 1);
+  assert.deepEqual(accepted.fuzzyAuditRecords, []);
+  assert.deepEqual(accepted.fuzzyHandoffRecords, []);
+});
+
+test('dedupeArticlesWithSummary prefers reject entries over accept entries when both match', () => {
+  const articles = [
+    {
+      id: 'article-fuzzy-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared Title',
+      url: 'https://example.com/posts/shared-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: '  shared   title  ',
+      url: 'https://example.com/posts/shared-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ];
+
+  const conflict = dedupeArticlesWithSummary(articles, {
+    fuzzyRejectEntries: [
+      {
+        articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'known false positive',
+      },
+    ],
+    fuzzyAcceptEntries: [
+      {
+        articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'reviewed true positive',
+      },
+    ],
+  });
+
+  assert.equal(conflict.articles.length, 2);
+  assert.equal(conflict.fuzzyDuplicatesCollapsed, 0);
+  assert.deepEqual(conflict.fuzzyAuditRecords, []);
+  assert.deepEqual(conflict.fuzzyHandoffRecords, []);
 });
 
 test('dedupeArticles does not fuzzy-merge same-source title matches outside the 72 hour window', () => {
@@ -1478,6 +1638,123 @@ test('runPipeline suppresses fuzzy merges when --fuzzy-reject-file is provided',
   assert.equal(summary.duplicatesCollapsed, 0);
   assert.equal(summary.fuzzyDuplicatesCollapsed, 0);
   assert.equal(summary.publicArticles, 2);
+});
+
+test('runPipeline suppresses repeat fuzzy audit and handoff records when --fuzzy-accept-file is provided', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-accept-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+  const fuzzyHandoffPath = path.join(tempDir, 'reports', 'fuzzy-handoff.json');
+  const fuzzyAcceptPath = path.join(tempDir, 'reports', 'fuzzy-accept.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'rss-feed',
+        name: 'Example Source',
+      },
+      {
+        ...RSS_FEED,
+        id: 'atom-feed',
+        name: 'Example Source',
+        feedUrl: 'https://example.com/atom.xml',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+  await fs.mkdir(path.dirname(fuzzyAcceptPath), { recursive: true });
+  await fs.writeFile(
+    fuzzyAcceptPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+        matchedBy: 'fuzzyTitleDate',
+        winnerTitle: 'shared title',
+        incomingTitle: 'Shared Title',
+        note: 'reviewed true positive',
+      },
+    ]),
+  );
+
+  const summary = await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    fuzzyAuditPath,
+    fuzzyHandoffPath,
+    fuzzyAcceptPath,
+    normalizedArticles: [
+      {
+        id: 'article-fuzzy-a',
+        feedId: 'rss-feed',
+        sourceName: 'Example Source',
+        language: 'en',
+        shelfIds: ['examples'],
+        title: 'Shared Title',
+        url: 'https://example.com/posts/shared-a',
+        summary: 'Short summary.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['RSS Source'],
+        entryTags: ['rss'],
+        sourceItemId: 'rss-shared-a',
+        provenance: [
+          {
+            feedId: 'rss-feed',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'rss-shared-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['rss-feed'],
+      },
+      {
+        id: 'article-fuzzy-b',
+        feedId: 'atom-feed',
+        sourceName: 'Example Source',
+        language: 'en',
+        shelfIds: ['examples', 'research'],
+        title: 'shared title',
+        url: 'https://example.com/posts/shared-b',
+        summary: 'Longer summary with more useful detail.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: 'Atom Author',
+        imageUrl: 'https://example.com/shared.jpg',
+        sourceTags: ['Atom Source'],
+        entryTags: ['atom'],
+        sourceItemId: 'atom-shared-b',
+        provenance: [
+          {
+            feedId: 'atom-feed',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'atom-shared-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['atom-feed'],
+      },
+    ],
+  });
+
+  const fuzzyAudit = JSON.parse(await fs.readFile(fuzzyAuditPath, 'utf8'));
+  const fuzzyHandoff = JSON.parse(await fs.readFile(fuzzyHandoffPath, 'utf8'));
+
+  assert.equal(summary.dedupedArticles, 1);
+  assert.equal(summary.fuzzyDuplicatesCollapsed, 1);
+  assert.deepEqual(fuzzyAudit, []);
+  assert.deepEqual(fuzzyHandoff, []);
 });
 
 test('runPipeline writes shelves.json, shelf route shells, and reports shelf/category counts', async () => {

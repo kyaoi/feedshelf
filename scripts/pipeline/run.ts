@@ -4,6 +4,7 @@ import path from 'node:path';
 import type {
   CanonicalArticle,
   FeedDefinition,
+  FuzzyDedupeAcceptEntry,
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
   FuzzyDedupeRejectEntry,
@@ -54,6 +55,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     fuzzyAuditPath: null,
     fuzzyHandoffPath: null,
     fuzzyRejectPath: null,
+    fuzzyAcceptPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -125,6 +127,16 @@ export function parseArgs(argv: string[]): PipelineArgs {
         throw new Error('--fuzzy-reject-file requires a path argument.');
       }
       args.fuzzyRejectPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--fuzzy-accept-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-accept-file requires a path argument.');
+      }
+      args.fuzzyAcceptPath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -254,6 +266,73 @@ export async function loadFuzzyRejectEntries(
     .filter((entry): entry is FuzzyDedupeRejectEntry => entry !== null);
 }
 
+function normalizeFuzzyAcceptEntry(
+  value: unknown,
+): FuzzyDedupeAcceptEntry | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const candidate = value as {
+    articleIdPair?: unknown;
+    matchedBy?: unknown;
+    winnerTitle?: unknown;
+    incomingTitle?: unknown;
+    note?: unknown;
+  };
+
+  if (candidate.matchedBy !== 'fuzzyTitleDate') {
+    return null;
+  }
+
+  if (
+    !Array.isArray(candidate.articleIdPair) ||
+    candidate.articleIdPair.length !== 2
+  ) {
+    return null;
+  }
+
+  const left = candidate.articleIdPair[0];
+  const right = candidate.articleIdPair[1];
+  if (
+    typeof left !== 'string' ||
+    left === '' ||
+    typeof right !== 'string' ||
+    right === ''
+  ) {
+    return null;
+  }
+
+  return {
+    articleIdPair: [left, right],
+    matchedBy: 'fuzzyTitleDate',
+    ...(typeof candidate.winnerTitle === 'string'
+      ? { winnerTitle: candidate.winnerTitle }
+      : {}),
+    ...(typeof candidate.incomingTitle === 'string'
+      ? { incomingTitle: candidate.incomingTitle }
+      : {}),
+    ...(typeof candidate.note === 'string' ? { note: candidate.note } : {}),
+  };
+}
+
+export async function loadFuzzyAcceptEntries(
+  fuzzyAcceptPath?: string,
+): Promise<FuzzyDedupeAcceptEntry[]> {
+  if (typeof fuzzyAcceptPath !== 'string') {
+    return [];
+  }
+
+  const raw = JSON.parse(await fs.readFile(fuzzyAcceptPath, 'utf8')) as unknown;
+  if (!Array.isArray(raw)) {
+    throw new Error('--fuzzy-accept-file must point to a JSON array.');
+  }
+
+  return raw
+    .map((entry) => normalizeFuzzyAcceptEntry(entry))
+    .filter((entry): entry is FuzzyDedupeAcceptEntry => entry !== null);
+}
+
 async function normalizeFeedDocumentsToArticles({
   feedDocuments,
   feeds,
@@ -304,6 +383,9 @@ export async function runPipeline(
   const fuzzyRejectEntries = Array.isArray(options.fuzzyRejectEntries)
     ? options.fuzzyRejectEntries
     : await loadFuzzyRejectEntries(options.fuzzyRejectPath);
+  const fuzzyAcceptEntries = Array.isArray(options.fuzzyAcceptEntries)
+    ? options.fuzzyAcceptEntries
+    : await loadFuzzyAcceptEntries(options.fuzzyAcceptPath);
   const feeds = await loadFeeds(feedsPath);
   const shelves = await loadShelves(shelvesPath);
   validateFeedShelfReferences(feeds, shelves);
@@ -319,6 +401,7 @@ export async function runPipeline(
   const dedupeResult = dedupeArticlesWithSummary(normalizedArticles, {
     disableFuzzyDedupe: options.disableFuzzyDedupe,
     fuzzyRejectEntries,
+    fuzzyAcceptEntries,
   });
   if (typeof options.fuzzyAuditPath === 'string') {
     await writeFuzzyAuditFile({
@@ -421,6 +504,7 @@ export async function main(
     fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
     fuzzyHandoffPath: args.fuzzyHandoffPath ?? undefined,
     fuzzyRejectPath: args.fuzzyRejectPath ?? undefined,
+    fuzzyAcceptPath: args.fuzzyAcceptPath ?? undefined,
   });
 }
 

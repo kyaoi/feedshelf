@@ -935,6 +935,13 @@ v1 の生成優先順位は以下とする。
 - accept list は既存 heuristic に一致した `matchedBy='fuzzyTitleDate'` candidate だけを pre-reviewed として扱ってよく、non-candidate を force merge したり exact dedupe precedence を飛び越えたりしてはならない。first implementation では repeat fuzzy audit / handoff artifact への再掲抑止に閉じてよく、public confidence score や broader heuristic enable には使わない
 - accept list は `run.ts` / `update.ts` の明示的 flag を通したときだけ有効にしてよく、`update-state.json` への自動書き戻し、checked-in artifact、自動 accept 生成、retroactive unmerge、manual review UI route、broader fuzzy matching、cross-source fuzzy を同じ task に含めない。accept list と reject list が競合する場合は reject を優先する
 
+### 10.5.13 Post-v1 fuzzy dedupe accept persistence implementation (`FS-DATA-15`)
+
+- first implementation では `run.ts` / `update.ts` が `--fuzzy-accept-file <path>` を受け付け、operator-authored な JSON accept list を明示的 flag 指定時だけ読み込む。accept entry は `FS-DOCS-34` と同じく order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を必須 key にし、`winnerTitle` / `incomingTitle` / `note` のような human-readable echo field は任意でよい
+- `dedupeArticlesWithSummary()` は accept list に一致する既存 heuristic candidate を今までどおり fuzzy merge してよいが、repeat fuzzy audit / handoff artifact への再掲だけを抑止する。fuzzy merge 自体、`fuzzyDuplicatesCollapsed` count、winner selection、public JSON export は変えない
+- accept list は non-candidate の force merge や exact dedupe precedence の上書きに使わない。`update-state.json` への自動書き戻し、checked-in artifact、自動 accept 生成、retroactive unmerge、manual review UI route、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
+- accept list と reject list が同じ `articleIdPair` で競合する場合は reject を優先し、future run の candidate suppression を保つ
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

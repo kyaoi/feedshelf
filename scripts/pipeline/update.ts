@@ -20,7 +20,11 @@ import {
   applyCanonicalUrlPrecisionLayer,
   normalizeFeedDocument,
 } from './normalizeFeed.ts';
-import { loadFuzzyRejectEntries, runPipeline } from './run.ts';
+import {
+  loadFuzzyAcceptEntries,
+  loadFuzzyRejectEntries,
+  runPipeline,
+} from './run.ts';
 
 const DEFAULT_SAFETY_WINDOW_HOURS = 72;
 const PROVENANCE_MATCHED_BY_VALUES = new Set<ArticleProvenanceMatchedBy>([
@@ -145,6 +149,7 @@ export interface UpdatePipelineArgs {
   fuzzyAuditPath: string | null;
   fuzzyHandoffPath: string | null;
   fuzzyRejectPath: string | null;
+  fuzzyAcceptPath: string | null;
 }
 
 export interface RunUpdatePipelineOptions
@@ -154,11 +159,13 @@ export interface RunUpdatePipelineOptions
     | 'fuzzyAuditPath'
     | 'fuzzyHandoffPath'
     | 'fuzzyRejectPath'
+    | 'fuzzyAcceptPath'
   > {
   disableFuzzyDedupe?: boolean;
   fuzzyAuditPath?: string;
   fuzzyHandoffPath?: string;
   fuzzyRejectPath?: string;
+  fuzzyAcceptPath?: string;
   logger?: PipelineLogger;
   fetchImpl?: typeof fetch;
   generatedAt?: string;
@@ -181,6 +188,7 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
     fuzzyAuditPath: null,
     fuzzyHandoffPath: null,
     fuzzyRejectPath: null,
+    fuzzyAcceptPath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -252,6 +260,16 @@ export function parseUpdateArgs(argv: string[]): UpdatePipelineArgs {
         throw new Error('--fuzzy-reject-file requires a path argument.');
       }
       args.fuzzyRejectPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--fuzzy-accept-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-accept-file requires a path argument.');
+      }
+      args.fuzzyAcceptPath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -669,6 +687,9 @@ export async function runUpdatePipeline(
   const fuzzyRejectEntries = await loadFuzzyRejectEntries(
     options.fuzzyRejectPath,
   );
+  const fuzzyAcceptEntries = await loadFuzzyAcceptEntries(
+    options.fuzzyAcceptPath,
+  );
   const fetched = await fetchEnabledFeedDocuments({
     feedsPath: options.feedsPath,
     logger,
@@ -717,6 +738,7 @@ export async function runUpdatePipeline(
   const dedupeResult = dedupeArticlesWithSummary(canonicalizedFreshArticles, {
     disableFuzzyDedupe: options.disableFuzzyDedupe,
     fuzzyRejectEntries,
+    fuzzyAcceptEntries,
   });
   const dedupedFreshArticles = dedupeResult.articles;
   const summary = await runPipeline({
@@ -732,6 +754,7 @@ export async function runUpdatePipeline(
     fuzzyAuditPath: options.fuzzyAuditPath,
     fuzzyHandoffPath: options.fuzzyHandoffPath,
     fuzzyRejectEntries,
+    fuzzyAcceptEntries,
   });
 
   if (options.disableFuzzyDedupe) {
@@ -768,6 +791,7 @@ export async function main(
     fuzzyAuditPath: args.fuzzyAuditPath ?? undefined,
     fuzzyHandoffPath: args.fuzzyHandoffPath ?? undefined,
     fuzzyRejectPath: args.fuzzyRejectPath ?? undefined,
+    fuzzyAcceptPath: args.fuzzyAcceptPath ?? undefined,
   });
 }
 

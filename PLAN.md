@@ -492,6 +492,16 @@ Phase 6 の進め方:
 - accept entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を中心にした bounded key に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を添えてよい
 - accept list は既存 heuristic に一致した candidate だけを pre-reviewed として扱い、non-candidate を force merge したり `update-state.json` へ自動書き戻ししたりしない。reject list と競合する場合は reject を優先し、checked-in artifact / public JSON / manual review UI route / broader matching は同じ task に含めない
 
+### Post-v1 fuzzy dedupe accept persistence implementation
+
+- [x] `FS-DATA-15` `--fuzzy-accept-file` による explicit accept list 読み込みを `dedupeArticles()` / `run.ts` / `update.ts` / tests に閉じて実装する
+
+完了条件:
+- `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-accept-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が operator-authored な JSON accept list を読み込んで review 済み true positive pair の repeat fuzzy audit / handoff 再掲を抑止する
+- accept entry は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を必須 key にした bounded shape に限定し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を無視せず通してよい
+- accept list は既存 heuristic に一致した candidate の fuzzy merge 自体は維持したまま artifact 再掲抑止にだけ使い、non-candidate の force merge / exact dedupe precedence の上書き / `update-state.json` 自動書き戻し / checked-in artifact / 自動 accept 生成 / retroactive unmerge / broader fuzzy matching / manual review UI route は同じ task に含めない
+- accept list と reject list が競合する場合は reject を優先する
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -519,7 +529,8 @@ Phase 6 の進め方:
 - `FS-DATA-14` では `--fuzzy-reject-file` 経由の explicit false-positive reject list を `run` / `update` / tests に閉じて実装し、operator-authored な order-insensitive `articleIdPair` key に一致する `matchedBy='fuzzyTitleDate'` candidate だけを future run で suppress できるようにした
 - `FS-DOCS-33` では retroactive unmerge を新しい runtime feature ではなく、retained public data / `update-state.json` を持ち越さない clean full rebuild と既存 `--fuzzy-reject-file` を組み合わせる operator-run workflow として固定した
 - `FS-DOCS-34` では review 済み true positive pair の再確認 churn を減らす次差分を explicit accept list に限定し、non-candidate force merge / reject 自動生成 / `update-state.json` 書き戻し / manual review UI / broader matching から分離した
-- 次に runtime まで進めるなら `FS-DATA-15` として explicit accept list の opt-in 読み込みを `run` / `update` / tests に閉じて実装し、その先の broader matching や manual review UI はさらに別 docs-first task として扱う
+- `FS-DATA-15` では `--fuzzy-accept-file` 経由の explicit accept list を `run` / `update` / tests に閉じて実装し、review 済み true positive pair の fuzzy merge は維持したまま repeat fuzzy audit / handoff の再掲だけを suppress できるようにした
+- 次に runtime を広げるなら broader matching / manual review UI / state writeback のどれか 1 つだけを docs-first task として切り出す
 
 ## メモ
 

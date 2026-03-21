@@ -1039,6 +1039,12 @@
 - 理由: reject list と rebuild-only recovery path で false positive 側の制御は揃ったが、同じ true positive pair を full rebuild や recurring run のたびに handoff で見直す運用はまだ重い。一方で broader matching や UI を同時に入れると scope が一気に広がるため、既存 heuristic の candidate を pre-reviewed 扱いに閉じる方が安全だから
 - 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` を key にした accept entry を opt-in で読んで repeat fuzzy audit / handoff の再掲を抑止してよい。ただし non-candidate の force merge、`update-state.json` への自動書き戻し、自動 accept 生成、checked-in artifact、retroactive unmerge、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない。accept list と reject list が競合する場合は reject list が優先する
 
+## D-159: `FS-DATA-15` は `--fuzzy-accept-file` による explicit accept list 読み込みと repeat artifact suppression に閉じる
+
+- 決定: `FS-DATA-15` の first implementation では、`run.ts` / `update.ts` が `--fuzzy-accept-file <path>` を受け付け、operator-authored な JSON accept list を明示的 flag 指定時だけ読み込む。`dedupeArticlesWithSummary()` は order-insensitive な `articleIdPair` と `matchedBy='fuzzyTitleDate'` に一致する既存 heuristic candidate を従来どおり fuzzy merge してよいが、repeat fuzzy audit / handoff artifact への再掲だけを抑止する
+- 理由: review 済み true positive pair について必要なのは merge semantics の変更ではなく、同じ evidence を毎回見直す churn を減らすことだから。merge 自体や summary / public export を変えない方が scope が小さく、既存 runtime と矛盾しにくい
+- 影響: `src/shared/contracts.ts` に bounded accept entry shape と CLI option を追加し、`scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests を最小差分で拡張してよい。ただし non-candidate の force merge、exact dedupe precedence の上書き、`update-state.json` 自動書き戻し、自動 accept 生成、checked-in artifact、retroactive unmerge、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない。accept list と reject list が競合する場合は reject list を優先する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

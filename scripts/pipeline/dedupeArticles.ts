@@ -2,6 +2,7 @@ import type {
   ArticleProvenanceEntry,
   ArticleProvenanceMatchedBy,
   CanonicalArticle,
+  FuzzyDedupeAcceptEntry,
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
   FuzzyDedupeRejectEntry,
@@ -13,6 +14,7 @@ type DedupeMatchedBy = Exclude<ArticleProvenanceMatchedBy, 'primary'>;
 export interface DedupeArticlesOptions {
   disableFuzzyDedupe?: boolean;
   fuzzyRejectEntries?: FuzzyDedupeRejectEntry[];
+  fuzzyAcceptEntries?: FuzzyDedupeAcceptEntry[];
 }
 
 export interface DedupeArticlesResult {
@@ -379,7 +381,7 @@ function createFuzzyDedupeHandoffRecord(
   };
 }
 
-function createFuzzyRejectPairKey(
+function createFuzzyArticlePairKey(
   leftArticleId: string,
   rightArticleId: string,
 ): string {
@@ -387,17 +389,24 @@ function createFuzzyRejectPairKey(
 }
 
 function createFuzzyRejectEntryKey(entry: FuzzyDedupeRejectEntry): string {
-  return `${entry.matchedBy}\u0000${createFuzzyRejectPairKey(
+  return `${entry.matchedBy}\u0000${createFuzzyArticlePairKey(
     entry.articleIdPair[0],
     entry.articleIdPair[1],
   )}`;
 }
 
-function createFuzzyRejectCandidateKey(
+function createFuzzyAcceptEntryKey(entry: FuzzyDedupeAcceptEntry): string {
+  return `${entry.matchedBy}\u0000${createFuzzyArticlePairKey(
+    entry.articleIdPair[0],
+    entry.articleIdPair[1],
+  )}`;
+}
+
+function createFuzzyCandidateKey(
   existing: CanonicalArticle,
   incoming: CanonicalArticle,
 ): string {
-  return `fuzzyTitleDate\u0000${createFuzzyRejectPairKey(existing.id, incoming.id)}`;
+  return `fuzzyTitleDate\u0000${createFuzzyArticlePairKey(existing.id, incoming.id)}`;
 }
 
 function buildFuzzyRejectEntrySet(
@@ -416,6 +425,22 @@ function buildFuzzyRejectEntrySet(
   return keys;
 }
 
+function buildFuzzyAcceptEntrySet(
+  entries: FuzzyDedupeAcceptEntry[] | undefined,
+): Set<string> {
+  const keys = new Set<string>();
+
+  if (!Array.isArray(entries)) {
+    return keys;
+  }
+
+  for (const entry of entries) {
+    keys.add(createFuzzyAcceptEntryKey(entry));
+  }
+
+  return keys;
+}
+
 function isFuzzyMergeRejected(
   fuzzyRejectEntryKeys: Set<string>,
   existing: CanonicalArticle,
@@ -425,9 +450,19 @@ function isFuzzyMergeRejected(
     return false;
   }
 
-  return fuzzyRejectEntryKeys.has(
-    createFuzzyRejectCandidateKey(existing, incoming),
-  );
+  return fuzzyRejectEntryKeys.has(createFuzzyCandidateKey(existing, incoming));
+}
+
+function isFuzzyMergeAccepted(
+  fuzzyAcceptEntryKeys: Set<string>,
+  existing: CanonicalArticle,
+  incoming: CanonicalArticle,
+): boolean {
+  if (fuzzyAcceptEntryKeys.size === 0) {
+    return false;
+  }
+
+  return fuzzyAcceptEntryKeys.has(createFuzzyCandidateKey(existing, incoming));
 }
 
 function findFuzzyDuplicateIndex(
@@ -523,6 +558,9 @@ export function dedupeArticlesWithSummary(
   const fuzzyRejectEntryKeys = buildFuzzyRejectEntrySet(
     options.fuzzyRejectEntries,
   );
+  const fuzzyAcceptEntryKeys = buildFuzzyAcceptEntrySet(
+    options.fuzzyAcceptEntries,
+  );
   const fuzzyAuditRecords: FuzzyDedupeAuditRecord[] = [];
   const fuzzyHandoffRecords: FuzzyDedupeHandoffRecord[] = [];
   let fuzzyDuplicatesCollapsed = 0;
@@ -573,13 +611,20 @@ export function dedupeArticlesWithSummary(
           article,
           'fuzzyTitleDate',
         );
+        const isAccepted = isFuzzyMergeAccepted(
+          fuzzyAcceptEntryKeys,
+          existingArticle,
+          article,
+        );
         dedupedArticles[fuzzyDuplicateIndex] = mergedArticle;
-        fuzzyAuditRecords.push(
-          createFuzzyDedupeAuditRecord(existingArticle, article),
-        );
-        fuzzyHandoffRecords.push(
-          createFuzzyDedupeHandoffRecord(existingArticle, article),
-        );
+        if (!isAccepted) {
+          fuzzyAuditRecords.push(
+            createFuzzyDedupeAuditRecord(existingArticle, article),
+          );
+          fuzzyHandoffRecords.push(
+            createFuzzyDedupeHandoffRecord(existingArticle, article),
+          );
+        }
         fuzzyDuplicatesCollapsed += 1;
         registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
         registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
