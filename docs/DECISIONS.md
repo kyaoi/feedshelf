@@ -1075,6 +1075,12 @@
 - 理由: handoff / reject / accept / review-state / read-only HTML まで揃ったため、次の最小価値は同一 source 内の punctuation-only near-miss を conservative に拾うことにある。一方で cross-source fuzzy や edit distance を先に入れると false positive 面と state surface が一気に広がるため
 - 影響: 後続 implementation は `scripts/pipeline/dedupeArticles.ts` / `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` を中心に、既存 `createTitleCompareKey()` 相当の deterministic broadening に閉じてよい。ただし `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、accept/reject / review-state / audit / handoff / manual-review HTML の bounded contract は維持し、cross-source fuzzy / edit distance / state mutation / public route は同じ task に含めない
 
+## D-165: `FS-DATA-18` は exact title key 優先 + punctuation-folded fallback に閉じる
+
+- 決定: `FS-DATA-18` では fuzzy candidate lookup を same `sourceName` / `language` + 72 時間 window のまま二段階化し、まず既存の trim・連続空白 collapse・lowercase compare key を試し、未一致のときだけ bounded な separator / wrapper punctuation を folding した title compare key を fallback として試す
+- 理由: punctuation-only near-miss を拾いたい一方で、既存 exact title key による conservative matching の振る舞いは維持したいため。二段階 lookup なら broader key を足しても既存 match を優先でき、accept/reject / review-state / audit / handoff / review HTML の state surface を増やさずに widening できる
+- 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` と existing run / update surface の再利用、`tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。broader fallback で merge した場合も `matchedBy='fuzzyTitleDate'` は維持し、audit / handoff の `titleCompareKey` には実際に candidate 判定へ使われた compare key を記録してよい。一方で cross-source fuzzy / edit distance / token reorder / stemming / body fetch / HTML canonical parse / state mutation / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

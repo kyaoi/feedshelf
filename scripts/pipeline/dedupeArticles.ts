@@ -29,7 +29,19 @@ interface DedupeMatch {
   matchedBy: DedupeMatchedBy | null;
 }
 
+interface FuzzyDedupeLookupKey {
+  key: string;
+  titleCompareKey: string;
+}
+
+interface FuzzyDuplicateMatch {
+  index: number;
+  titleCompareKey: string;
+}
+
 const FUZZY_DEDUPE_WINDOW_MS = 72 * 60 * 60 * 1000;
+const FUZZY_TITLE_PUNCTUATION_PATTERN =
+  /[\(\)\[\]\{\}<>"'`“”‘’«»‹›「」『』【】〔〕（）〈〉《》｢｣:：;；,，.。!！?？\/／\\|｜·•・･_—–-]+/gu;
 
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
@@ -157,22 +169,57 @@ export function createTitleCompareKey(title: string): string {
   return title.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US');
 }
 
-function resolveFuzzyDedupeKey(article: CanonicalArticle): string | null {
+function createPunctuationFoldedTitleCompareKey(title: string): string {
+  return createTitleCompareKey(title)
+    .replace(FUZZY_TITLE_PUNCTUATION_PATTERN, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildFuzzyLookupKey(
+  article: CanonicalArticle,
+  titleCompareKey: string,
+): string {
+  return [article.sourceName, article.language, titleCompareKey].join('\u0000');
+}
+
+function resolveFuzzyDedupeLookupKeys(
+  article: CanonicalArticle,
+): FuzzyDedupeLookupKey[] {
   if (typeof article.publishedAt !== 'string') {
-    return null;
+    return [];
   }
 
   const publishedAt = toComparableTime(article.publishedAt);
   if (!Number.isFinite(publishedAt)) {
-    return null;
+    return [];
   }
 
   const titleCompareKey = createTitleCompareKey(article.title);
   if (titleCompareKey === '') {
-    return null;
+    return [];
   }
 
-  return [article.sourceName, article.language, titleCompareKey].join('\u0000');
+  const lookupKeys: FuzzyDedupeLookupKey[] = [
+    {
+      key: buildFuzzyLookupKey(article, titleCompareKey),
+      titleCompareKey,
+    },
+  ];
+
+  const punctuationFoldedTitleCompareKey =
+    createPunctuationFoldedTitleCompareKey(article.title);
+  if (
+    punctuationFoldedTitleCompareKey !== '' &&
+    punctuationFoldedTitleCompareKey !== titleCompareKey
+  ) {
+    lookupKeys.push({
+      key: buildFuzzyLookupKey(article, punctuationFoldedTitleCompareKey),
+      titleCompareKey: punctuationFoldedTitleCompareKey,
+    });
+  }
+
+  return lookupKeys;
 }
 
 function areWithinFuzzyWindow(
@@ -305,23 +352,20 @@ function registerExactDedupeKey(
   }
 }
 
-function registerFuzzyDedupeKey(
+function registerFuzzyDedupeKeys(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   article: CanonicalArticle,
   index: number,
 ): void {
-  const key = resolveFuzzyDedupeKey(article);
-  if (key === null) {
-    return;
-  }
+  for (const lookupKey of resolveFuzzyDedupeLookupKeys(article)) {
+    const existing = fuzzyKeyToIndexes.get(lookupKey.key);
+    if (existing) {
+      existing.add(index);
+      continue;
+    }
 
-  const existing = fuzzyKeyToIndexes.get(key);
-  if (existing) {
-    existing.add(index);
-    return;
+    fuzzyKeyToIndexes.set(lookupKey.key, new Set([index]));
   }
-
-  fuzzyKeyToIndexes.set(key, new Set([index]));
 }
 
 function toPublishedAtDeltaHours(
@@ -347,6 +391,7 @@ function toPublishedAtDeltaHours(
 function createFuzzyDedupeAuditRecord(
   existing: CanonicalArticle,
   incoming: CanonicalArticle,
+  titleCompareKey: string,
 ): FuzzyDedupeAuditRecord {
   const winner = pickWinner(existing, incoming);
 
@@ -355,7 +400,7 @@ function createFuzzyDedupeAuditRecord(
     incomingArticleId: incoming.id,
     winnerFeedId: winner.feedId,
     incomingFeedId: incoming.feedId,
-    titleCompareKey: createTitleCompareKey(incoming.title),
+    titleCompareKey,
     publishedAtDeltaHours: toPublishedAtDeltaHours(
       existing.publishedAt,
       incoming.publishedAt,
@@ -367,11 +412,12 @@ function createFuzzyDedupeAuditRecord(
 function createFuzzyDedupeHandoffRecord(
   existing: CanonicalArticle,
   incoming: CanonicalArticle,
+  titleCompareKey: string,
 ): FuzzyDedupeHandoffRecord {
   const winner = pickWinner(existing, incoming);
 
   return {
-    ...createFuzzyDedupeAuditRecord(existing, incoming),
+    ...createFuzzyDedupeAuditRecord(existing, incoming, titleCompareKey),
     winnerTitle: winner.title,
     incomingTitle: incoming.title,
     winnerUrl: winner.url,
@@ -465,45 +511,49 @@ function isFuzzyMergeAccepted(
   return fuzzyAcceptEntryKeys.has(createFuzzyCandidateKey(existing, incoming));
 }
 
-function findFuzzyDuplicateIndex(
+function findFuzzyDuplicateMatch(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   dedupedArticles: CanonicalArticle[],
   article: CanonicalArticle,
-): number | null {
-  const key = resolveFuzzyDedupeKey(article);
-  if (key === null) {
-    return null;
-  }
-
-  const candidateIndexes = fuzzyKeyToIndexes.get(key);
-  if (!candidateIndexes) {
-    return null;
-  }
-
-  let bestIndex: number | null = null;
-  let bestDelta = Number.POSITIVE_INFINITY;
-
-  for (const index of candidateIndexes) {
-    const candidate = dedupedArticles[index];
-    if (!candidate) {
+): FuzzyDuplicateMatch | null {
+  for (const lookupKey of resolveFuzzyDedupeLookupKeys(article)) {
+    const candidateIndexes = fuzzyKeyToIndexes.get(lookupKey.key);
+    if (!candidateIndexes) {
       continue;
     }
 
-    if (!areWithinFuzzyWindow(candidate.publishedAt, article.publishedAt)) {
-      continue;
+    let bestIndex: number | null = null;
+    let bestDelta = Number.POSITIVE_INFINITY;
+
+    for (const index of candidateIndexes) {
+      const candidate = dedupedArticles[index];
+      if (!candidate) {
+        continue;
+      }
+
+      if (!areWithinFuzzyWindow(candidate.publishedAt, article.publishedAt)) {
+        continue;
+      }
+
+      const delta = Math.abs(
+        toComparableTime(candidate.publishedAt || '') -
+          toComparableTime(article.publishedAt || ''),
+      );
+      if (delta < bestDelta) {
+        bestIndex = index;
+        bestDelta = delta;
+      }
     }
 
-    const delta = Math.abs(
-      toComparableTime(candidate.publishedAt || '') -
-        toComparableTime(article.publishedAt || ''),
-    );
-    if (delta < bestDelta) {
-      bestIndex = index;
-      bestDelta = delta;
+    if (bestIndex !== null) {
+      return {
+        index: bestIndex,
+        titleCompareKey: lookupKey.titleCompareKey,
+      };
     }
   }
 
-  return bestIndex;
+  return null;
 }
 
 export function getDedupeKey(article: CanonicalArticle): string | null {
@@ -579,7 +629,7 @@ export function dedupeArticlesWithSummary(
         registerExactDedupeKey(keyToIndex, article, existingIndex);
         registerExactDedupeKey(keyToIndex, mergedArticle, existingIndex);
         if (!disableFuzzyDedupe) {
-          registerFuzzyDedupeKey(
+          registerFuzzyDedupeKeys(
             fuzzyKeyToIndexes,
             mergedArticle,
             existingIndex,
@@ -590,12 +640,14 @@ export function dedupeArticlesWithSummary(
     }
 
     if (!disableFuzzyDedupe) {
-      const fuzzyDuplicateIndex = findFuzzyDuplicateIndex(
+      const fuzzyDuplicateMatch = findFuzzyDuplicateMatch(
         fuzzyKeyToIndexes,
         dedupedArticles,
         article,
       );
-      if (fuzzyDuplicateIndex !== null) {
+      if (fuzzyDuplicateMatch !== null) {
+        const { index: fuzzyDuplicateIndex, titleCompareKey } =
+          fuzzyDuplicateMatch;
         const existingArticle = dedupedArticles[fuzzyDuplicateIndex];
         if (
           isFuzzyMergeRejected(fuzzyRejectEntryKeys, existingArticle, article)
@@ -603,7 +655,7 @@ export function dedupeArticlesWithSummary(
           dedupedArticles.push(article);
           const rejectedIndex = dedupedArticles.length - 1;
           registerExactDedupeKey(keyToIndex, article, rejectedIndex);
-          registerFuzzyDedupeKey(fuzzyKeyToIndexes, article, rejectedIndex);
+          registerFuzzyDedupeKeys(fuzzyKeyToIndexes, article, rejectedIndex);
           continue;
         }
         const mergedArticle = mergeDuplicateArticles(
@@ -619,16 +671,24 @@ export function dedupeArticlesWithSummary(
         dedupedArticles[fuzzyDuplicateIndex] = mergedArticle;
         if (!isAccepted) {
           fuzzyAuditRecords.push(
-            createFuzzyDedupeAuditRecord(existingArticle, article),
+            createFuzzyDedupeAuditRecord(
+              existingArticle,
+              article,
+              titleCompareKey,
+            ),
           );
           fuzzyHandoffRecords.push(
-            createFuzzyDedupeHandoffRecord(existingArticle, article),
+            createFuzzyDedupeHandoffRecord(
+              existingArticle,
+              article,
+              titleCompareKey,
+            ),
           );
         }
         fuzzyDuplicatesCollapsed += 1;
         registerExactDedupeKey(keyToIndex, article, fuzzyDuplicateIndex);
         registerExactDedupeKey(keyToIndex, mergedArticle, fuzzyDuplicateIndex);
-        registerFuzzyDedupeKey(
+        registerFuzzyDedupeKeys(
           fuzzyKeyToIndexes,
           mergedArticle,
           fuzzyDuplicateIndex,
@@ -641,7 +701,7 @@ export function dedupeArticlesWithSummary(
     const nextIndex = dedupedArticles.length - 1;
     registerExactDedupeKey(keyToIndex, article, nextIndex);
     if (!disableFuzzyDedupe) {
-      registerFuzzyDedupeKey(fuzzyKeyToIndexes, article, nextIndex);
+      registerFuzzyDedupeKeys(fuzzyKeyToIndexes, article, nextIndex);
     }
   }
 

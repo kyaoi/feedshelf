@@ -756,6 +756,69 @@ test('dedupeArticles applies conservative fuzzy fallback for same-source title m
   ]);
 });
 
+test('dedupeArticles applies broader punctuation-folded fuzzy fallback for same-source title matches within 72 hours', () => {
+  const deduped = dedupeArticles([
+    {
+      id: 'article-fuzzy-punct-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared: Title (Update)',
+      url: 'https://example.com/posts/shared-punct-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-punct-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-punct-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-punct-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: ' shared title update ',
+      url: 'https://example.com/posts/shared-punct-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared-update.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-punct-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-punct-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ]);
+
+  assert.equal(deduped.length, 1);
+  assert.deepEqual(deduped[0].seenInFeeds, ['atom-feed', 'rss-feed']);
+  assert.equal(deduped[0].provenance[1].matchedBy, 'fuzzyTitleDate');
+});
+
 test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disableFuzzyDedupe', () => {
   const articles = [
     {
@@ -851,6 +914,77 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
   assert.equal(disabled.fuzzyDuplicatesCollapsed, 0);
   assert.deepEqual(disabled.fuzzyAuditRecords, []);
   assert.deepEqual(disabled.fuzzyHandoffRecords, []);
+});
+
+test('dedupeArticlesWithSummary reports punctuation-folded titleCompareKey for broader fuzzy matches', () => {
+  const articles = [
+    {
+      id: 'article-fuzzy-punct-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared: Title (Update)',
+      url: 'https://example.com/posts/shared-punct-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-punct-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-punct-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-punct-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: ' shared title update ',
+      url: 'https://example.com/posts/shared-punct-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared-update.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-punct-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-punct-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ];
+
+  const enabled = dedupeArticlesWithSummary(articles);
+  assert.equal(enabled.articles.length, 1);
+  assert.equal(enabled.fuzzyDuplicatesCollapsed, 1);
+  assert.equal(
+    enabled.fuzzyAuditRecords[0]?.titleCompareKey,
+    'shared title update',
+  );
+  assert.equal(
+    enabled.fuzzyHandoffRecords[0]?.titleCompareKey,
+    'shared title update',
+  );
 });
 
 test('dedupeArticlesWithSummary suppresses repeat fuzzy audit and handoff records for accepted pairs', () => {
@@ -1318,6 +1452,115 @@ test('runPipeline reports fuzzyDuplicatesCollapsed and supports disableFuzzyDedu
   assert.equal(disabledSummary.dedupedArticles, 2);
   assert.equal(disabledSummary.duplicatesCollapsed, 0);
   assert.equal(disabledSummary.fuzzyDuplicatesCollapsed, 0);
+});
+
+test('runPipeline applies broader punctuation-folded fuzzy fallback for same-source title matches within 72 hours', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-punct-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'rss-feed',
+        name: 'Example Source',
+      },
+      {
+        ...RSS_FEED,
+        id: 'atom-feed',
+        name: 'Example Source',
+        feedUrl: 'https://example.com/atom.xml',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  const normalizedArticles = [
+    {
+      id: 'article-fuzzy-punct-a',
+      feedId: 'rss-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples'],
+      title: 'Shared: Title (Update)',
+      url: 'https://example.com/posts/shared-punct-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['RSS Source'],
+      entryTags: ['rss'],
+      sourceItemId: 'rss-shared-punct-a',
+      provenance: [
+        {
+          feedId: 'rss-feed',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'rss-shared-punct-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['rss-feed'],
+    },
+    {
+      id: 'article-fuzzy-punct-b',
+      feedId: 'atom-feed',
+      sourceName: 'Example Source',
+      language: 'en',
+      shelfIds: ['examples', 'research'],
+      title: ' shared title update ',
+      url: 'https://example.com/posts/shared-punct-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Atom Author',
+      imageUrl: 'https://example.com/shared-update.jpg',
+      sourceTags: ['Atom Source'],
+      entryTags: ['atom'],
+      sourceItemId: 'atom-shared-punct-b',
+      provenance: [
+        {
+          feedId: 'atom-feed',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'atom-shared-punct-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['atom-feed'],
+    },
+  ];
+
+  const summary = await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    fuzzyAuditPath,
+    normalizedArticles,
+    logger: { log() {} },
+  });
+
+  assert.equal(summary.dedupedArticles, 1);
+  assert.equal(summary.fuzzyDuplicatesCollapsed, 1);
+  assert.deepEqual(JSON.parse(await fs.readFile(fuzzyAuditPath, 'utf8')), [
+    {
+      winnerArticleId: 'article-fuzzy-punct-b',
+      incomingArticleId: 'article-fuzzy-punct-b',
+      winnerFeedId: 'atom-feed',
+      incomingFeedId: 'atom-feed',
+      titleCompareKey: 'shared title update',
+      publishedAtDeltaHours: 72,
+      matchedBy: 'fuzzyTitleDate',
+    },
+  ]);
 });
 
 test('runPipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided', async () => {

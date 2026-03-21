@@ -976,6 +976,12 @@ v1 の生成優先順位は以下とする。
 - broader compare key で candidate になった場合も `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject list、review-state writeback、audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよく、新しい public JSON / route / checked-in artifact / source-wide blanket rule は追加しない
 - cross-source fuzzy、source-specific heuristic table、generic substring match、confidence score 公開、manual-review HTML からの state mutation は同じ task に含めず、必要ならさらに別 docs-first task として分離する
 
+### 10.5.19 Post-v1 fuzzy dedupe broader title-key implementation (`FS-DATA-18`)
+
+- `dedupeArticles()` の fuzzy candidate lookup は既存の same `sourceName` / `language` + 72 時間 window を維持しつつ、まず従来の trim・連続空白 collapse・lowercase compare key を試し、未一致なら bounded な separator / wrapper punctuation を folding した punctuation-folded title compare key を fallback key として試してよい
+- punctuation-folded fallback で candidate になった場合も `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject list、review-state writeback、audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよい。`titleCompareKey` は実際に candidate 判定に使われた compare key を記録してよい
+- first implementation は `scripts/pipeline/dedupeArticles.ts` と existing run / update surface の再利用に閉じ、cross-source fuzzy、edit distance、token reorder、stemming、body fetch、HTML canonical parse、source-wide blanket rule、state mutation、public route は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

@@ -538,6 +538,16 @@ Phase 6 の進め方:
 - broader compare key は既存の trim・連続空白 collapse・lowercase を基礎に、bounded な separator / wrapper punctuation の folding に限定し、token reorder / stemming / edit distance / body fetch / HTML canonical parse / embedding / LLM は同じ task に含めない
 - `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持し、new public JSON / route / checked-in artifact / source-wide blanket rule / cross-source fuzzy は同じ task に含めない
 
+
+### Post-v1 fuzzy dedupe broader title-key implementation
+
+- [x] `FS-DATA-18` same `sourceName` / `language` と既存 72 時間 window を維持した deterministic punctuation-folded title compare key を `dedupeArticles()` / `runPipeline()` / `runUpdatePipeline()` の既存 fuzzy surface に閉じて実装する
+
+完了条件:
+- fuzzy candidate lookup は既存の trim・連続空白 collapse・lowercase compare key を優先し、same-source / same-language + 72h gating を維持したまま bounded な separator / wrapper punctuation folding を fallback key として追加できる
+- broader fallback で merge しても `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持される
+- cross-source fuzzy / edit distance / token reorder / stemming / body fetch / HTML canonical parse / embedding / LLM / state mutation / public route は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -571,6 +581,7 @@ Phase 6 の進め方:
 - `FS-DOCS-36` では manual review UI の次差分を checked-in route ではなく `--fuzzy-review-html-file` 経由の opt-in internal HTML artifact に限定し、read-only evidence surfacing と broader matching / state mutation を分離した
 - `FS-DATA-17` では `--fuzzy-review-html-file` 経由の self-contained manual-review HTML artifact を `run` / `update` / tests に閉じて実装し、current-run fuzzy handoff evidence と explicit review state を read-only の local HTML としてまとめて確認できるようにした
 - `FS-DOCS-37` では broader matching の次差分を same-source / same-language + 72h を維持した deterministic punctuation-folded title compare key に限定し、cross-source fuzzy / edit distance / state mutation から分離した
+- `FS-DATA-18` では same-source / same-language + 72h gating を維持したまま punctuation-folded title compare key を fuzzy fallback の追加 lookup key として実装し、audit / handoff の `titleCompareKey` も matched compare key を反映できるようにした
 - 次の runtime widening は broader matching のような matching semantics 変更ではなく、必要ならまず docs-first で境界を固定してから別 task として進める
 
 ## メモ
