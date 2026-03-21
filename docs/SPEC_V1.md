@@ -942,6 +942,13 @@ v1 の生成優先順位は以下とする。
 - accept list は non-candidate の force merge や exact dedupe precedence の上書きに使わない。`update-state.json` への自動書き戻し、checked-in artifact、自動 accept 生成、retroactive unmerge、manual review UI route、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
 - accept list と reject list が同じ `articleIdPair` で競合する場合は reject を優先し、future run の candidate suppression を保つ
 
+### 10.5.14 Post-v1 fuzzy dedupe review-state writeback docs split (`FS-DOCS-35`)
+
+- `FS-DATA-15` までで explicit accept list / reject list は揃ったが、operator-managed な review state を毎回手で整形・重複除去する運用を減らしたい場合の次差分は、`update-state.json` mutation や public UI ではなく、accept/reject input を専用 review-state JSON snapshot へ canonical writeback する internal-only task として切り出す
+- first implementation は `accepted[]` / `rejected[]` の 2 配列からなる bounded review-state file に限定してよく、entry shape は既存 `FuzzyDedupeAcceptEntry` / `FuzzyDedupeRejectEntry` と同じ order-insensitive な `articleIdPair` + `matchedBy='fuzzyTitleDate'` key を使う。必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を保持してよい
+- writeback は current run で明示的に与えられた accept/reject state の canonicalize / dedupe / conflict resolution にだけ使い、未レビュー handoff 候補の自動 accept/reject 生成、pending queue 追加、`update-state.json` への manual override 記録、checked-in artifact、自動 publish、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない
+- accept/reject が同じ `articleIdPair` で競合する場合は reject を優先し、writeback 先は operator-managed な dedicated JSON path として扱う。default logger / public JSON / route / article card UI は無変更のままとする
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

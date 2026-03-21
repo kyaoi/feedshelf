@@ -502,6 +502,15 @@ Phase 6 の進め方:
 - accept list は既存 heuristic に一致した candidate の fuzzy merge 自体は維持したまま artifact 再掲抑止にだけ使い、non-candidate の force merge / exact dedupe precedence の上書き / `update-state.json` 自動書き戻し / checked-in artifact / 自動 accept 生成 / retroactive unmerge / broader fuzzy matching / manual review UI route は同じ task に含めない
 - accept list と reject list が競合する場合は reject を優先する
 
+### Post-v1 fuzzy dedupe review-state writeback docs split
+
+- [x] `FS-DOCS-35` fuzzy dedupe の次差分を explicit accept/reject state の canonical writeback に限定し、broader matching / manual review UI / `update-state.json` mutation と分離する
+
+完了条件:
+- `FS-DATA-16` の first implementation が、operator-authored な accept/reject input を明示的 flag 経由で読み込んだ上で、同じ bounded entry shape を保つ dedicated review-state JSON snapshot を別 path へ writeback する internal-only task として着手できる
+- writeback は current run で与えられた accept/reject state の canonicalize / dedupe / conflict resolution に限定し、未レビュー handoff の自動 accept/reject 生成、pending 候補の自動追加、`update-state.json` への manual override 記録、checked-in artifact、public JSON / route / article card UI は同じ task に含めない
+- accept/reject が同じ `articleIdPair` で競合する場合は reject を優先し、writeback 先は operator-managed な専用 JSON file として扱う。broader matching / cross-source fuzzy / manual review UI route とは分離する
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -530,7 +539,8 @@ Phase 6 の進め方:
 - `FS-DOCS-33` では retroactive unmerge を新しい runtime feature ではなく、retained public data / `update-state.json` を持ち越さない clean full rebuild と既存 `--fuzzy-reject-file` を組み合わせる operator-run workflow として固定した
 - `FS-DOCS-34` では review 済み true positive pair の再確認 churn を減らす次差分を explicit accept list に限定し、non-candidate force merge / reject 自動生成 / `update-state.json` 書き戻し / manual review UI / broader matching から分離した
 - `FS-DATA-15` では `--fuzzy-accept-file` 経由の explicit accept list を `run` / `update` / tests に閉じて実装し、review 済み true positive pair の fuzzy merge は維持したまま repeat fuzzy audit / handoff の再掲だけを suppress できるようにした
-- 次に runtime を広げるなら broader matching / manual review UI / state writeback のどれか 1 つだけを docs-first task として切り出す
+- `FS-DOCS-35` では explicit accept/reject input を dedicated review-state JSON へ canonical writeback する次差分を docs で先に固定し、`update-state.json` mutation / pending 自動生成 / broader matching / manual review UI から分離した
+- 次に runtime を広げるなら `FS-DATA-16` の state writeback implementation か、broader matching / manual review UI のどれか 1 つだけを docs-first task として切り出す
 
 ## メモ
 

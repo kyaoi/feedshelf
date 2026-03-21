@@ -1045,6 +1045,12 @@
 - 理由: review 済み true positive pair について必要なのは merge semantics の変更ではなく、同じ evidence を毎回見直す churn を減らすことだから。merge 自体や summary / public export を変えない方が scope が小さく、既存 runtime と矛盾しにくい
 - 影響: `src/shared/contracts.ts` に bounded accept entry shape と CLI option を追加し、`scripts/pipeline/dedupeArticles.ts` / `run.ts` / `update.ts` / tests を最小差分で拡張してよい。ただし non-candidate の force merge、exact dedupe precedence の上書き、`update-state.json` 自動書き戻し、自動 accept 生成、checked-in artifact、retroactive unmerge、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない。accept list と reject list が競合する場合は reject list を優先する
 
+## D-160: fuzzy dedupe の次差分は dedicated review-state JSON への canonical writeback に限定する
+
+- 決定: `FS-DATA-15` 後に accept/reject state 管理の手作業 churn を減らしたい場合は、`update-state.json` や manual review UI ではなく、operator-managed な explicit accept/reject input を dedicated review-state JSON snapshot へ canonical writeback する internal-only task として切り出す
+- 理由: 既に accept/reject list で runtime decision は制御できるので、次の最小価値は heuristic を広げることではなく、review state の整形・重複除去・競合整理を保守的に自動化することだから。`update-state.json` mutation や pending queue まで同時に入れると state machine が急に重くなるため
+- 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、既存 accept/reject entry を canonical order で dedicated review-state JSON へ writeback してよい。ただし未レビュー handoff の自動 accept/reject 化、pending queue、自動 accept 生成、`update-state.json` manual override、checked-in artifact、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない。競合時は reject 優先を維持する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

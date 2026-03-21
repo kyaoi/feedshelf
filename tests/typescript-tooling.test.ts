@@ -813,6 +813,44 @@ test('FS-DOCS-34 fuzzy dedupe accept persistence docs split stays aligned across
   assert.match(traceability, /repeat fuzzy audit \/ handoff の再掲抑止/);
 });
 
+test('FS-DOCS-35 fuzzy dedupe review-state writeback docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-35/);
+  assert.match(plan, /explicit accept\/reject state の canonical writeback/);
+  assert.match(plan, /dedicated review-state JSON snapshot/);
+  assert.match(
+    spec,
+    /10\.5\.14 Post-v1 fuzzy dedupe review-state writeback docs split/,
+  );
+  assert.match(
+    spec,
+    /`accepted\[\]` \/ `rejected\[\]` の 2 配列からなる bounded review-state file/,
+  );
+  assert.match(decisions, /D-160/);
+  assert.match(decisions, /review state の整形・重複除去・競合整理/);
+  assert.match(traceability, /FS-174/);
+  assert.match(
+    traceability,
+    /pending 自動生成 \/ checked-in artifact \/ broader matching \/ manual review UI 非採用/,
+  );
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
