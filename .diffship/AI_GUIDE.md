@@ -5,9 +5,9 @@
 ## Generated repo snapshot
 
 - Repository: `feedshelf`
-- Current branch: `main`
-- Preferred promote target: `main`
-- Current HEAD: `5d2da74148c14088749c25f155ac1ac8d883d154`
+- Current branch: `develop`
+- Preferred promote target: `develop`
+- Current HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
 - Detected stack:
   - Just task runner
   - Node.js package
@@ -507,7 +507,8 @@ Return `MODE: ANALYSIS_ONLY` with findings, file references, and the smallest ne
 ## Generated metadata
 
 - Repository name: `feedshelf`
-- Current branch: `main`
-- Preferred promote target: `main`
-- Repository HEAD: `5d2da74148c14088749c25f155ac1ac8d883d154`
-- Active `[ops.forbid]` patterns: (none)
+- Current branch: `develop`
+- Preferred promote target: `develop`
+- Repository HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
+- Active `[ops.forbid]` patterns:
+  - `pnpm-lock.yaml`

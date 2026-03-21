@@ -5,9 +5,9 @@
 ## Generated repo snapshot
 
 - Repository: `feedshelf`
-- Current branch: `main`
-- Preferred promote target: `main`
-- Current HEAD: `5d2da74148c14088749c25f155ac1ac8d883d154`
+- Current branch: `develop`
+- Preferred promote target: `develop`
+- Current HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
 - Detected stack:
   - Just task runner
   - Node.js package
@@ -29,8 +29,9 @@
 ## Suggested next steps
 
 - Replace the `Customize this section` blocks with repository-specific rules.
+- Use `.diffship/PROJECT_RULES.md` as the short copy/paste snippet for external AI project-rule UIs.
 - Check that the suggested read-first files and commands match the real workflow.
-- Decide whether `.diffship/config.toml` should keep `target_branch = "main"`.
+- Decide whether `.diffship/config.toml` should keep `target_branch = "develop"`.
 - If you want an attachment-ready rules bundle for external AI tools, run `diffship init --zip`.
 
 
@@ -455,7 +456,8 @@ Avoid sending:
 ## Generated metadata
 
 - Repository name: `feedshelf`
-- Current branch: `main`
-- Preferred promote target: `main`
-- Repository HEAD: `5d2da74148c14088749c25f155ac1ac8d883d154`
-- Active `[ops.forbid]` patterns: (none)
+- Current branch: `develop`
+- Preferred promote target: `develop`
+- Repository HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
+- Active `[ops.forbid]` patterns:
+  - `pnpm-lock.yaml`
