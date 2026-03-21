@@ -921,6 +921,41 @@ test('FS-DOCS-37 fuzzy dedupe broader title-key docs split stays aligned across 
   );
 });
 
+test('FS-DOCS-38 fuzzy dedupe source-family docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-38/);
+  assert.match(plan, /allowlisted source-family fallback/);
+  assert.match(
+    plan,
+    /generic cross-source fuzzy \/ hostname heuristic \/ state mutation/,
+  );
+  assert.match(spec, /10\.5\.20 Post-v1 fuzzy dedupe source-family docs split/);
+  assert.match(spec, /repo-managed な allowlisted source-family fallback/);
+  assert.match(decisions, /D-166/);
+  assert.match(decisions, /Qiita \/ Zenn \/ ITmedia/);
+  assert.match(traceability, /FS-180/);
+  assert.match(
+    traceability,
+    /generic hostname grouping \/ site-wide blanket rule \/ cross-language merge \/ edit distance \/ `update-state\.json` mutation \/ checked-in artifact \/ public route 非採用/,
+  );
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

@@ -1081,6 +1081,12 @@
 - 理由: punctuation-only near-miss を拾いたい一方で、既存 exact title key による conservative matching の振る舞いは維持したいため。二段階 lookup なら broader key を足しても既存 match を優先でき、accept/reject / review-state / audit / handoff / review HTML の state surface を増やさずに widening できる
 - 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` と existing run / update surface の再利用、`tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。broader fallback で merge した場合も `matchedBy='fuzzyTitleDate'` は維持し、audit / handoff の `titleCompareKey` には実際に candidate 判定へ使われた compare key を記録してよい。一方で cross-source fuzzy / edit distance / token reorder / stemming / body fetch / HTML canonical parse / state mutation / public route は同じ task に含めない
 
+## D-166: fuzzy dedupe の次の widening は allowlisted source-family fallback に限定する
+
+- 決定: `FS-DATA-18` 後に same-source を越えた widening が必要でも、generic cross-source fuzzy や hostname heuristic ではなく、repo-managed な allowlisted source-family key に一致する sibling feed 間だけを対象にした fallback として docs-first で切り出す
+- 理由: Qiita / Zenn / ITmedia のような同一 platform / publisher 配下の feed バリエーションで duplicate を拾いたい一方、generic hostname grouping や cross-source fuzzy を先に入れると false positive 面が急に広がり、既存 accept/reject / review-state / audit / handoff / review HTML の bounded state surface を不必要に複雑化するため
+- 影響: 後続 implementation は same `language` と既存 72 時間 window を維持した allowlisted source-family fallback に閉じ、same `sourceName` fuzzy lookup を優先した後段として扱ってよい。一方で generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / token reorder / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
