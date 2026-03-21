@@ -886,6 +886,41 @@ test('FS-DOCS-36 fuzzy dedupe manual-review HTML docs split stays aligned across
   );
 });
 
+test('FS-DOCS-37 fuzzy dedupe broader title-key docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-37/);
+  assert.match(plan, /broader title compare key/);
+  assert.match(plan, /cross-source fuzzy \/ edit distance \/ state mutation/);
+  assert.match(
+    spec,
+    /10\.5\.18 Post-v1 fuzzy dedupe broader title-key docs split/,
+  );
+  assert.match(spec, /deterministic な broader title compare key/);
+  assert.match(decisions, /D-164/);
+  assert.match(decisions, /punctuation-only near-miss/);
+  assert.match(traceability, /FS-178/);
+  assert.match(
+    traceability,
+    /cross-source fuzzy \/ edit distance \/ state mutation 非採用/,
+  );
+});
+
 test('FS-DATA-10 fuzzy dedupe observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

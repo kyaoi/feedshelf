@@ -529,6 +529,15 @@ Phase 6 の進め方:
 - manual-review artifact は read-only に限定し、`winnerTitle` / `incomingTitle` / `winnerUrl` / `incomingUrl` / `winnerSourceName` / `incomingSourceName` / `matchedBy` / `publishedAtDeltaHours` のような bounded evidence と、必要なら accepted / rejected / unreviewed の status badge を表示してよい
 - HTML artifact は local file として明示的 path へ出力するだけに留め、accept/reject の書き戻し、localStorage や form submit を使った state mutation、checked-in artifact、public JSON / route / article card UI、broader matching / cross-source fuzzy は同じ task に含めない
 
+### Post-v1 fuzzy dedupe broader title-key docs split
+
+- [x] `FS-DOCS-37` fuzzy dedupe の次差分を same-source / same-language + 72h window を維持した broader title compare key に限定し、cross-source fuzzy / edit distance / state mutation と分離する
+
+完了条件:
+- `FS-DATA-18` の first implementation が、same `sourceName` / `language` かつ既存 72 時間 window 内の candidate 判定だけを対象に、deterministic な punctuation-folded title compare key を追加する internal-only task として着手できる
+- broader compare key は既存の trim・連続空白 collapse・lowercase を基礎に、bounded な separator / wrapper punctuation の folding に限定し、token reorder / stemming / edit distance / body fetch / HTML canonical parse / embedding / LLM は同じ task に含めない
+- `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持し、new public JSON / route / checked-in artifact / source-wide blanket rule / cross-source fuzzy は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -561,6 +570,7 @@ Phase 6 の進め方:
 - `FS-DATA-16` では `--fuzzy-review-state-file` 経由の dedicated review-state JSON writeback を `run` / `update` / tests に閉じて実装し、order-insensitive pair 正規化・dedupe・reject 優先 conflict resolution を internal artifact として出力できるようにした
 - `FS-DOCS-36` では manual review UI の次差分を checked-in route ではなく `--fuzzy-review-html-file` 経由の opt-in internal HTML artifact に限定し、read-only evidence surfacing と broader matching / state mutation を分離した
 - `FS-DATA-17` では `--fuzzy-review-html-file` 経由の self-contained manual-review HTML artifact を `run` / `update` / tests に閉じて実装し、current-run fuzzy handoff evidence と explicit review state を read-only の local HTML としてまとめて確認できるようにした
+- `FS-DOCS-37` では broader matching の次差分を same-source / same-language + 72h を維持した deterministic punctuation-folded title compare key に限定し、cross-source fuzzy / edit distance / state mutation から分離した
 - 次の runtime widening は broader matching のような matching semantics 変更ではなく、必要ならまず docs-first で境界を固定してから別 task として進める
 
 ## メモ

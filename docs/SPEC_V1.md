@@ -969,6 +969,13 @@ v1 の生成優先順位は以下とする。
 - HTML artifact は current run の `fuzzyHandoffRecords[]` を main evidence とし、同じ run で既に読み込まれた explicit review state（canonicalized `{ accepted, rejected }`）を併せて表示してよい。current-run candidate には必要に応じて accepted / rejected / unreviewed status badge を付けてよいが、writeback や pending queue 自動生成は行わない
 - review-state section は order-insensitive pair 正規化・dedupe・reject 優先後の canonical state を使ってよく、`winnerTitle` / `incomingTitle` / `note` のような human-readable echo field をそのまま表示してよい。ただし localStorage、form submit、API call、`update-state.json` mutation、自動 accept/reject 書き戻し、checked-in artifact、public route、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
 
+### 10.5.18 Post-v1 fuzzy dedupe broader title-key docs split (`FS-DOCS-37`)
+
+- `FS-DATA-17` までで manual-review artifact まで揃った後に broader matching へ進みたい場合でも、次差分は cross-source fuzzy や stateful review ではなく、same `sourceName` / `language` と既存 72 時間 window を維持した deterministic な broader title compare key として切り出す
+- first implementation は既存の trim・連続空白 collapse・lowercase に加えて、bounded な separator / wrapper punctuation だけを folding した punctuation-folded title compare key を追加してよい。token reorder、stemming、edit distance、body fetch、HTML canonical parse、embedding / LLM 判定は含めない
+- broader compare key で candidate になった場合も `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject list、review-state writeback、audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよく、新しい public JSON / route / checked-in artifact / source-wide blanket rule は追加しない
+- cross-source fuzzy、source-specific heuristic table、generic substring match、confidence score 公開、manual-review HTML からの state mutation は同じ task に含めず、必要ならさらに別 docs-first task として分離する
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

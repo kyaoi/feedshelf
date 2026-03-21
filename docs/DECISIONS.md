@@ -1069,6 +1069,12 @@
 - 理由: `FS-DATA-16` までで accept / reject の canonical state は JSON として書き出せるため、次に必要なのは matching を広げることではなく、operator が JSON を手で辿らずに current run の evidence と既存 review state を同時に眺められる read-only artifact だから
 - 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests に閉じる。HTML artifact は self-contained / local-only / read-only とし、current-run candidate には accepted / rejected / unreviewed status badge を付けてよい。一方で accept/reject の書き戻し、pending queue、自動 accept/reject 生成、localStorage / form submit / API call、`update-state.json` mutation、checked-in artifact、public route、broader fuzzy matching、cross-source fuzzy は含めない
 
+## D-164: fuzzy dedupe の次の broader matching は same-source punctuation-folded title key に限定する
+
+- 決定: `FS-DATA-17` 後に broader matching へ進む場合でも、まずは cross-source fuzzy や新しい review state machine ではなく、same `sourceName` / `language` と既存 72 時間 window を維持した deterministic な punctuation-folded title compare key として切り出す
+- 理由: handoff / reject / accept / review-state / read-only HTML まで揃ったため、次の最小価値は同一 source 内の punctuation-only near-miss を conservative に拾うことにある。一方で cross-source fuzzy や edit distance を先に入れると false positive 面と state surface が一気に広がるため
+- 影響: 後続 implementation は `scripts/pipeline/dedupeArticles.ts` / `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` を中心に、既存 `createTitleCompareKey()` 相当の deterministic broadening に閉じてよい。ただし `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、accept/reject / review-state / audit / handoff / manual-review HTML の bounded contract は維持し、cross-source fuzzy / edit distance / state mutation / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
