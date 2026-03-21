@@ -8,6 +8,7 @@ import type {
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
   FuzzyDedupeRejectEntry,
+  FuzzyDedupeReviewState,
   PipelineArgs,
   PipelineLogger,
   PipelineSummary,
@@ -56,6 +57,7 @@ export function parseArgs(argv: string[]): PipelineArgs {
     fuzzyHandoffPath: null,
     fuzzyRejectPath: null,
     fuzzyAcceptPath: null,
+    fuzzyReviewStatePath: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -137,6 +139,16 @@ export function parseArgs(argv: string[]): PipelineArgs {
         throw new Error('--fuzzy-accept-file requires a path argument.');
       }
       args.fuzzyAcceptPath = path.resolve(process.cwd(), nextValue);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--fuzzy-review-state-file') {
+      const nextValue = argv[index + 1];
+      if (!nextValue) {
+        throw new Error('--fuzzy-review-state-file requires a path argument.');
+      }
+      args.fuzzyReviewStatePath = path.resolve(process.cwd(), nextValue);
       index += 1;
       continue;
     }
@@ -333,6 +345,165 @@ export async function loadFuzzyAcceptEntries(
     .filter((entry): entry is FuzzyDedupeAcceptEntry => entry !== null);
 }
 
+function createFuzzyEntryMapKey({
+  articleIdPair,
+  matchedBy,
+}: {
+  articleIdPair: [string, string];
+  matchedBy: 'fuzzyTitleDate';
+}): string {
+  return `${matchedBy}\u0000${articleIdPair[0]}\u0000${articleIdPair[1]}`;
+}
+
+function canonicalizeArticleIdPair(
+  articleIdPair: [string, string],
+): [string, string] {
+  return [...articleIdPair].sort() as [string, string];
+}
+
+function mergeOptionalHumanFields<
+  T extends { winnerTitle?: string; incomingTitle?: string; note?: string },
+>(existing: T, incoming: T): T {
+  return {
+    ...existing,
+    ...(existing.winnerTitle
+      ? {}
+      : incoming.winnerTitle
+        ? { winnerTitle: incoming.winnerTitle }
+        : {}),
+    ...(existing.incomingTitle
+      ? {}
+      : incoming.incomingTitle
+        ? { incomingTitle: incoming.incomingTitle }
+        : {}),
+    ...(existing.note ? {} : incoming.note ? { note: incoming.note } : {}),
+  };
+}
+
+function canonicalizeFuzzyRejectEntry(
+  entry: FuzzyDedupeRejectEntry,
+): FuzzyDedupeRejectEntry {
+  return {
+    articleIdPair: canonicalizeArticleIdPair(entry.articleIdPair),
+    matchedBy: 'fuzzyTitleDate',
+    ...(typeof entry.winnerTitle === 'string'
+      ? { winnerTitle: entry.winnerTitle }
+      : {}),
+    ...(typeof entry.incomingTitle === 'string'
+      ? { incomingTitle: entry.incomingTitle }
+      : {}),
+    ...(typeof entry.note === 'string' ? { note: entry.note } : {}),
+  };
+}
+
+function canonicalizeFuzzyAcceptEntry(
+  entry: FuzzyDedupeAcceptEntry,
+): FuzzyDedupeAcceptEntry {
+  return {
+    articleIdPair: canonicalizeArticleIdPair(entry.articleIdPair),
+    matchedBy: 'fuzzyTitleDate',
+    ...(typeof entry.winnerTitle === 'string'
+      ? { winnerTitle: entry.winnerTitle }
+      : {}),
+    ...(typeof entry.incomingTitle === 'string'
+      ? { incomingTitle: entry.incomingTitle }
+      : {}),
+    ...(typeof entry.note === 'string' ? { note: entry.note } : {}),
+  };
+}
+
+function buildCanonicalFuzzyRejectEntries(
+  entries: FuzzyDedupeRejectEntry[] = [],
+): FuzzyDedupeRejectEntry[] {
+  const merged = new Map<string, FuzzyDedupeRejectEntry>();
+
+  for (const entry of entries) {
+    const canonicalEntry = canonicalizeFuzzyRejectEntry(entry);
+    const key = createFuzzyEntryMapKey(canonicalEntry);
+    const existing = merged.get(key);
+    if (existing) {
+      merged.set(key, mergeOptionalHumanFields(existing, canonicalEntry));
+      continue;
+    }
+    merged.set(key, canonicalEntry);
+  }
+
+  return [...merged.entries()]
+    .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey, 'en'))
+    .map(([, entry]) => entry);
+}
+
+function buildCanonicalFuzzyAcceptEntries({
+  entries = [],
+  rejectedEntries = [],
+}: {
+  entries?: FuzzyDedupeAcceptEntry[];
+  rejectedEntries?: FuzzyDedupeRejectEntry[];
+}): FuzzyDedupeAcceptEntry[] {
+  const rejectedKeys = new Set(
+    buildCanonicalFuzzyRejectEntries(rejectedEntries).map((entry) =>
+      createFuzzyEntryMapKey(entry),
+    ),
+  );
+  const merged = new Map<string, FuzzyDedupeAcceptEntry>();
+
+  for (const entry of entries) {
+    const canonicalEntry = canonicalizeFuzzyAcceptEntry(entry);
+    const key = createFuzzyEntryMapKey(canonicalEntry);
+    if (rejectedKeys.has(key)) {
+      continue;
+    }
+    const existing = merged.get(key);
+    if (existing) {
+      merged.set(key, mergeOptionalHumanFields(existing, canonicalEntry));
+      continue;
+    }
+    merged.set(key, canonicalEntry);
+  }
+
+  return [...merged.entries()]
+    .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey, 'en'))
+    .map(([, entry]) => entry);
+}
+
+export function buildFuzzyReviewState({
+  fuzzyRejectEntries = [],
+  fuzzyAcceptEntries = [],
+}: {
+  fuzzyRejectEntries?: FuzzyDedupeRejectEntry[];
+  fuzzyAcceptEntries?: FuzzyDedupeAcceptEntry[];
+}): FuzzyDedupeReviewState {
+  const rejected = buildCanonicalFuzzyRejectEntries(fuzzyRejectEntries);
+  const accepted = buildCanonicalFuzzyAcceptEntries({
+    entries: fuzzyAcceptEntries,
+    rejectedEntries: rejected,
+  });
+
+  return {
+    accepted,
+    rejected,
+  };
+}
+
+async function writeFuzzyReviewStateFile({
+  fuzzyReviewStatePath,
+  logger,
+  state,
+}: {
+  fuzzyReviewStatePath: string;
+  logger: PipelineLogger;
+  state: FuzzyDedupeReviewState;
+}): Promise<void> {
+  await fs.mkdir(path.dirname(fuzzyReviewStatePath), { recursive: true });
+  await fs.writeFile(
+    fuzzyReviewStatePath,
+    `${JSON.stringify(state, null, 2)}\n`,
+  );
+  logger.log(
+    `[pipeline] fuzzy review-state accepted=${state.accepted.length} rejected=${state.rejected.length} path=${path.relative(process.cwd(), fuzzyReviewStatePath) || fuzzyReviewStatePath}`,
+  );
+}
+
 async function normalizeFeedDocumentsToArticles({
   feedDocuments,
   feeds,
@@ -386,6 +557,10 @@ export async function runPipeline(
   const fuzzyAcceptEntries = Array.isArray(options.fuzzyAcceptEntries)
     ? options.fuzzyAcceptEntries
     : await loadFuzzyAcceptEntries(options.fuzzyAcceptPath);
+  const fuzzyReviewState = buildFuzzyReviewState({
+    fuzzyRejectEntries,
+    fuzzyAcceptEntries,
+  });
   const feeds = await loadFeeds(feedsPath);
   const shelves = await loadShelves(shelvesPath);
   validateFeedShelfReferences(feeds, shelves);
@@ -415,6 +590,16 @@ export async function runPipeline(
       fuzzyHandoffPath: path.resolve(process.cwd(), options.fuzzyHandoffPath),
       logger,
       records: dedupeResult.fuzzyHandoffRecords,
+    });
+  }
+  if (typeof options.fuzzyReviewStatePath === 'string') {
+    await writeFuzzyReviewStateFile({
+      fuzzyReviewStatePath: path.resolve(
+        process.cwd(),
+        options.fuzzyReviewStatePath,
+      ),
+      logger,
+      state: fuzzyReviewState,
     });
   }
   const dedupedArticles = dedupeResult.articles;
@@ -505,6 +690,7 @@ export async function main(
     fuzzyHandoffPath: args.fuzzyHandoffPath ?? undefined,
     fuzzyRejectPath: args.fuzzyRejectPath ?? undefined,
     fuzzyAcceptPath: args.fuzzyAcceptPath ?? undefined,
+    fuzzyReviewStatePath: args.fuzzyReviewStatePath ?? undefined,
   });
 }
 

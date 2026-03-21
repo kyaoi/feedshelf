@@ -1051,6 +1051,12 @@
 - 理由: 既に accept/reject list で runtime decision は制御できるので、次の最小価値は heuristic を広げることではなく、review state の整形・重複除去・競合整理を保守的に自動化することだから。`update-state.json` mutation や pending queue まで同時に入れると state machine が急に重くなるため
 - 影響: 後続 implementation は `run.ts` / `update.ts` / tests を中心に、既存 accept/reject entry を canonical order で dedicated review-state JSON へ writeback してよい。ただし未レビュー handoff の自動 accept/reject 化、pending queue、自動 accept 生成、`update-state.json` manual override、checked-in artifact、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない。競合時は reject 優先を維持する
 
+## D-161: `FS-DATA-16` は `--fuzzy-review-state-file` による dedicated review-state JSON writeback に閉じる
+
+- 決定: `FS-DATA-16` の first implementation では、`run.ts` / `update.ts` が `--fuzzy-review-state-file <path>` を受け付け、current run の explicit `--fuzzy-reject-file` / `--fuzzy-accept-file` input から `{ accepted, rejected }` の review-state JSON snapshot を operator-managed path へ書き出す
+- 理由: 次の最小価値は runtime heuristic や UI を広げることではなく、operator-authored な review state を canonical pair order・dedupe・reject 優先の競合解決つきで再利用しやすい internal artifact に揃えることだから。これなら既存 accept/reject semantics を変えずに手作業 churn だけ減らせる
+- 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests に閉じる。review-state JSON は bounded `{ accepted, rejected }` shape とし、既存 entry shape を再利用してよいが、未レビュー handoff 候補の自動 accept/reject 生成、pending queue、`update-state.json` mutation、checked-in artifact、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

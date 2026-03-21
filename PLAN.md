@@ -511,6 +511,15 @@ Phase 6 の進め方:
 - writeback は current run で与えられた accept/reject state の canonicalize / dedupe / conflict resolution に限定し、未レビュー handoff の自動 accept/reject 生成、pending 候補の自動追加、`update-state.json` への manual override 記録、checked-in artifact、public JSON / route / article card UI は同じ task に含めない
 - accept/reject が同じ `articleIdPair` で競合する場合は reject を優先し、writeback 先は operator-managed な専用 JSON file として扱う。broader matching / cross-source fuzzy / manual review UI route とは分離する
 
+### Post-v1 fuzzy dedupe review-state writeback implementation
+
+- [x] `FS-DATA-16` dedicated review-state JSON snapshot の canonical writeback を `run.ts` / `update.ts` / tests に閉じて実装する
+
+完了条件:
+- `parseArgs()` / `parseUpdateArgs()` が `--fuzzy-review-state-file <path>` を受け付け、flag 指定時のみ `runPipeline()` / `runUpdatePipeline()` が current run の explicit accept/reject input を canonical な review-state JSON `{ accepted, rejected }` として別 path へ書き出す
+- writeback は order-insensitive な `articleIdPair` の pair order 正規化、同一 key の dedupe、reject 優先の conflict resolution に限定し、未レビュー handoff 候補の自動 accept/reject 生成、pending queue、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI は同じ task に含めない
+- review-state JSON は既存 `FuzzyDedupeAcceptEntry` / `FuzzyDedupeRejectEntry` shape を再利用し、必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を保持してよい
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -540,7 +549,8 @@ Phase 6 の進め方:
 - `FS-DOCS-34` では review 済み true positive pair の再確認 churn を減らす次差分を explicit accept list に限定し、non-candidate force merge / reject 自動生成 / `update-state.json` 書き戻し / manual review UI / broader matching から分離した
 - `FS-DATA-15` では `--fuzzy-accept-file` 経由の explicit accept list を `run` / `update` / tests に閉じて実装し、review 済み true positive pair の fuzzy merge は維持したまま repeat fuzzy audit / handoff の再掲だけを suppress できるようにした
 - `FS-DOCS-35` では explicit accept/reject input を dedicated review-state JSON へ canonical writeback する次差分を docs で先に固定し、`update-state.json` mutation / pending 自動生成 / broader matching / manual review UI から分離した
-- 次に runtime を広げるなら `FS-DATA-16` の state writeback implementation か、broader matching / manual review UI のどれか 1 つだけを docs-first task として切り出す
+- `FS-DATA-16` では `--fuzzy-review-state-file` 経由の dedicated review-state JSON writeback を `run` / `update` / tests に閉じて実装し、order-insensitive pair 正規化・dedupe・reject 優先 conflict resolution を internal artifact として出力できるようにした
+- 次に runtime を広げるなら broader matching / manual review UI のどれか 1 つだけを docs-first task として切り出す
 
 ## メモ
 

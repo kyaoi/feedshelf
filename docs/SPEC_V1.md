@@ -949,6 +949,13 @@ v1 の生成優先順位は以下とする。
 - writeback は current run で明示的に与えられた accept/reject state の canonicalize / dedupe / conflict resolution にだけ使い、未レビュー handoff 候補の自動 accept/reject 生成、pending queue 追加、`update-state.json` への manual override 記録、checked-in artifact、自動 publish、broader fuzzy matching、cross-source fuzzy、manual review UI route は同じ task に含めない
 - accept/reject が同じ `articleIdPair` で競合する場合は reject を優先し、writeback 先は operator-managed な dedicated JSON path として扱う。default logger / public JSON / route / article card UI は無変更のままとする
 
+### 10.5.15 Post-v1 fuzzy dedupe review-state writeback implementation (`FS-DATA-16`)
+
+- first implementation では `run.ts` / `update.ts` が `--fuzzy-review-state-file <path>` を受け付け、`--fuzzy-reject-file` / `--fuzzy-accept-file` から読み込んだ current run の explicit review state を dedicated JSON snapshot へ書き出してよい。flag 未指定時は logger / public JSON / route / article card UI / `update-state.json` を変えない
+- review-state JSON は `{ accepted, rejected }` の object shape に限定し、各 entry は既存 `FuzzyDedupeAcceptEntry` / `FuzzyDedupeRejectEntry` と同じ order-insensitive `articleIdPair` + `matchedBy='fuzzyTitleDate'` を key とする。pair order は canonical に並べ替え、同一 key が重複する場合は 1 件へ畳み込んでよい
+- accept/reject が同じ key で競合する場合は reject を優先し、conflicted accept entry は writeback から除外してよい。必要なら `winnerTitle` / `incomingTitle` / `note` のような human-readable echo field を保持してよいが、未レビュー handoff 候補の自動 accept/reject 生成、pending queue、manual review UI route、broader fuzzy matching、cross-source fuzzy は同じ task に含めない
+- `runUpdatePipeline()` でも同じ review-state snapshot を fresh dedupe / publish 用 pipeline と整合する accept/reject input から生成してよいが、artifact は operator-managed path へ明示的に出力される internal JSON に限定し、checked-in artifact や auto-publish surface には広げない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

@@ -338,7 +338,7 @@ test('runPipeline rejects feeds whose shelfIds are missing from shelves.yaml', a
   );
 });
 
-test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, and --fuzzy-accept-file', () => {
+test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, --fuzzy-accept-file, and --fuzzy-review-state-file', () => {
   const parsed = parseArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -356,6 +356,8 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-f
     'tmp/fuzzy-reject.json',
     '--fuzzy-accept-file',
     'tmp/fuzzy-accept.json',
+    '--fuzzy-review-state-file',
+    'tmp/fuzzy-review-state.json',
   ]);
   assert.equal(parsed.dryRun, true);
   assert.equal(parsed.disableFuzzyDedupe, true);
@@ -363,6 +365,10 @@ test('parseArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-f
   assert.match(parsed.fuzzyHandoffPath ?? '', /tmp[/]fuzzy-handoff\.json$/);
   assert.match(parsed.fuzzyRejectPath ?? '', /tmp[/]fuzzy-reject\.json$/);
   assert.match(parsed.fuzzyAcceptPath ?? '', /tmp[/]fuzzy-accept\.json$/);
+  assert.match(
+    parsed.fuzzyReviewStatePath ?? '',
+    /tmp[/]fuzzy-review-state\.json$/,
+  );
   assert.match(parsed.feedsPath, /fixtures[\\/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[\\/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[\\/]public-data$/);
@@ -1638,6 +1644,104 @@ test('runPipeline suppresses fuzzy merges when --fuzzy-reject-file is provided',
   assert.equal(summary.duplicatesCollapsed, 0);
   assert.equal(summary.fuzzyDuplicatesCollapsed, 0);
   assert.equal(summary.publicArticles, 2);
+});
+
+test('runPipeline writes canonical fuzzy review-state JSON when --fuzzy-review-state-file is provided', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-review-state-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyRejectPath = path.join(tempDir, 'reports', 'fuzzy-reject.json');
+  const fuzzyAcceptPath = path.join(tempDir, 'reports', 'fuzzy-accept.json');
+  const fuzzyReviewStatePath = path.join(
+    tempDir,
+    'reports',
+    'fuzzy-review-state.json',
+  );
+
+  await fs.writeFile(feedsPath, JSON.stringify([RSS_FEED]));
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+  await fs.mkdir(path.dirname(fuzzyRejectPath), { recursive: true });
+  await fs.writeFile(
+    fuzzyRejectPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-b', 'article-fuzzy-a'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'known false positive',
+      },
+      {
+        articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+        matchedBy: 'fuzzyTitleDate',
+        winnerTitle: 'Shared Title',
+      },
+      {
+        articleIdPair: ['article-fuzzy-d', 'article-fuzzy-c'],
+        matchedBy: 'fuzzyTitleDate',
+        incomingTitle: 'Other Incoming',
+      },
+    ]),
+  );
+  await fs.writeFile(
+    fuzzyAcceptPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-b', 'article-fuzzy-a'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'should lose to reject',
+      },
+      {
+        articleIdPair: ['article-fuzzy-f', 'article-fuzzy-e'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'reviewed true positive',
+      },
+      {
+        articleIdPair: ['article-fuzzy-e', 'article-fuzzy-f'],
+        matchedBy: 'fuzzyTitleDate',
+        winnerTitle: 'Winner Title',
+      },
+    ]),
+  );
+
+  await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-12T00:00:00Z',
+    fuzzyRejectPath,
+    fuzzyAcceptPath,
+    fuzzyReviewStatePath,
+    logger: { log() {} },
+  });
+
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(fuzzyReviewStatePath, 'utf8')),
+    {
+      accepted: [
+        {
+          articleIdPair: ['article-fuzzy-e', 'article-fuzzy-f'],
+          matchedBy: 'fuzzyTitleDate',
+          winnerTitle: 'Winner Title',
+          note: 'reviewed true positive',
+        },
+      ],
+      rejected: [
+        {
+          articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+          matchedBy: 'fuzzyTitleDate',
+          winnerTitle: 'Shared Title',
+          note: 'known false positive',
+        },
+        {
+          articleIdPair: ['article-fuzzy-c', 'article-fuzzy-d'],
+          matchedBy: 'fuzzyTitleDate',
+          incomingTitle: 'Other Incoming',
+        },
+      ],
+    },
+  );
 });
 
 test('runPipeline suppresses repeat fuzzy audit and handoff records when --fuzzy-accept-file is provided', async () => {

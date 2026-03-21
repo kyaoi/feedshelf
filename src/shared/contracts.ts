@@ -222,6 +222,7 @@ export interface PipelineArgs {
   fuzzyHandoffPath: string | null;
   fuzzyRejectPath: string | null;
   fuzzyAcceptPath: string | null;
+  fuzzyReviewStatePath: string | null;
 }
 
 export interface FuzzyDedupeAuditRecord {
@@ -257,6 +258,11 @@ export interface FuzzyDedupeAcceptEntry {
   winnerTitle?: string;
   incomingTitle?: string;
   note?: string;
+}
+
+export interface FuzzyDedupeReviewState {
+  accepted: FuzzyDedupeAcceptEntry[];
+  rejected: FuzzyDedupeRejectEntry[];
 }
 
 export interface PipelineSummary {
@@ -312,6 +318,7 @@ export interface RunPipelineOptions {
   fuzzyHandoffPath?: string;
   fuzzyRejectPath?: string;
   fuzzyAcceptPath?: string;
+  fuzzyReviewStatePath?: string;
   fuzzyRejectEntries?: FuzzyDedupeRejectEntry[];
   fuzzyAcceptEntries?: FuzzyDedupeAcceptEntry[];
 }

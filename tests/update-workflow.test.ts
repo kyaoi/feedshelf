@@ -90,7 +90,7 @@ test('resolveUpdateStatePath defaults to outputDir/update-state.json', () => {
   );
 });
 
-test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, and --fuzzy-accept-file', () => {
+test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --disable-fuzzy-dedupe, --fuzzy-audit-file, --fuzzy-handoff-file, --fuzzy-reject-file, --fuzzy-accept-file, and --fuzzy-review-state-file', () => {
   const parsed = parseUpdateArgs([
     '--feeds',
     'fixtures/feeds.json',
@@ -108,6 +108,8 @@ test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --dis
     'tmp/fuzzy-reject.json',
     '--fuzzy-accept-file',
     'tmp/fuzzy-accept.json',
+    '--fuzzy-review-state-file',
+    'tmp/fuzzy-review-state.json',
   ]);
 
   assert.equal(parsed.dryRun, true);
@@ -116,6 +118,10 @@ test('parseUpdateArgs accepts --feeds, --shelves, --output-dir, --dry-run, --dis
   assert.match(parsed.fuzzyHandoffPath ?? '', /tmp[/]fuzzy-handoff\.json$/);
   assert.match(parsed.fuzzyRejectPath ?? '', /tmp[/]fuzzy-reject\.json$/);
   assert.match(parsed.fuzzyAcceptPath ?? '', /tmp[/]fuzzy-accept\.json$/);
+  assert.match(
+    parsed.fuzzyReviewStatePath ?? '',
+    /tmp[/]fuzzy-review-state\.json$/,
+  );
   assert.match(parsed.feedsPath, /fixtures[/]feeds\.json$/);
   assert.match(parsed.shelvesPath, /fixtures[/]shelves\.yaml$/);
   assert.match(parsed.outputDir, /tmp[/]public-data$/);
@@ -592,6 +598,103 @@ test('runUpdatePipeline suppresses fuzzy merges when --fuzzy-reject-file is prov
   assert.equal(summary.duplicatesCollapsed, 0);
   assert.equal(summary.fuzzyDuplicatesCollapsed, 0);
   assert.equal(summary.publicArticles, 2);
+});
+
+test('runUpdatePipeline writes canonical fuzzy review-state JSON when --fuzzy-review-state-file is provided', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-fuzzy-review-state-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const fuzzyRejectPath = path.join(tempDir, 'reports', 'fuzzy-reject.json');
+  const fuzzyAcceptPath = path.join(tempDir, 'reports', 'fuzzy-accept.json');
+  const fuzzyReviewStatePath = path.join(
+    tempDir,
+    'reports',
+    'fuzzy-review-state.json',
+  );
+
+  await fsp.writeFile(feedsPath, JSON.stringify([ENABLED_FEED]));
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+  await fsp.mkdir(path.dirname(fuzzyRejectPath), { recursive: true });
+  await fsp.writeFile(
+    fuzzyRejectPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-b', 'article-fuzzy-a'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'known false positive',
+      },
+    ]),
+  );
+  await fsp.writeFile(
+    fuzzyAcceptPath,
+    JSON.stringify([
+      {
+        articleIdPair: ['article-fuzzy-d', 'article-fuzzy-c'],
+        matchedBy: 'fuzzyTitleDate',
+        note: 'reviewed true positive',
+      },
+      {
+        articleIdPair: ['article-fuzzy-c', 'article-fuzzy-d'],
+        matchedBy: 'fuzzyTitleDate',
+        incomingTitle: 'Incoming Title',
+      },
+    ]),
+  );
+
+  await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: true,
+    generatedAt: '2026-03-12T09:10:11Z',
+    fuzzyRejectPath,
+    fuzzyAcceptPath,
+    fuzzyReviewStatePath,
+    logger: { log() {} },
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example Feed</title>
+    <item>
+      <title>Workflow review state</title>
+      <link>https://example.com/review-state</link>
+      <description><![CDATA[<p>Example.</p>]]></description>
+      <pubDate>Thu, 12 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>review-state</guid>
+    </item>
+  </channel>
+</rss>`;
+      },
+    }),
+  });
+
+  assert.deepEqual(
+    JSON.parse(await fsp.readFile(fuzzyReviewStatePath, 'utf8')),
+    {
+      accepted: [
+        {
+          articleIdPair: ['article-fuzzy-c', 'article-fuzzy-d'],
+          matchedBy: 'fuzzyTitleDate',
+          incomingTitle: 'Incoming Title',
+          note: 'reviewed true positive',
+        },
+      ],
+      rejected: [
+        {
+          articleIdPair: ['article-fuzzy-a', 'article-fuzzy-b'],
+          matchedBy: 'fuzzyTitleDate',
+          note: 'known false positive',
+        },
+      ],
+    },
+  );
 });
 
 test('runUpdatePipeline suppresses repeat fuzzy audit and handoff records when --fuzzy-accept-file is provided', async () => {
