@@ -921,6 +921,37 @@ test('FS-DOCS-37 fuzzy dedupe broader title-key docs split stays aligned across 
   );
 });
 
+test('FS-DOCS-39 fuzzy dedupe source-family registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-39/);
+  assert.match(plan, /explicit source-family registry field/);
+  assert.match(
+    spec,
+    /10\.5\.22 Post-v1 fuzzy dedupe source-family registry docs split/,
+  );
+  assert.match(spec, /`data\/feeds\.json` の explicit bounded registry field/);
+  assert.match(decisions, /D-168/);
+  assert.match(decisions, /hardcoded sourceName table/);
+  assert.match(traceability, /FS-182/);
+  assert.match(traceability, /same `sourceName` 優先/);
+});
+
 test('FS-DOCS-38 fuzzy dedupe source-family docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

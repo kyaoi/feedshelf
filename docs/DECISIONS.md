@@ -1093,6 +1093,12 @@
 - 理由: Qiita / Zenn / ITmedia の sibling feed では同一記事が複数 feed に重複して出やすく、same-source だけでは取りこぼす一方、generic hostname grouping や blanket cross-source fuzzy を開けると false positive 面が急に広がるため
 - 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` と existing run / update surface の再利用、`tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。family fallback でも existing title compare key sequence と same `language` + 72h gating、`matchedBy='fuzzyTitleDate'`、accept/reject / review-state / audit / handoff / review HTML contract を維持してよい。一方で generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+## D-168: fuzzy dedupe の次差分は source-family allowlist を explicit registry metadata へ移すことに限定する
+
+- 決定: `FS-DATA-19` 後に source-family fallback を維持拡張したい場合でも、generic hostname grouping や broader cross-source fuzzy ではなく、family key の定義源を `scripts/pipeline/dedupeArticles.ts` の hardcoded sourceName table から `data/feeds.json` の explicit bounded field へ移す docs-first task として切り出す
+- 理由: source-family fallback 自体は conservative に入ったが、source 名の rename や source 追加時に hardcoded table を毎回 code 側で更新すると drift しやすい。一方で family key を registry metadata に寄せれば repo-managed な allowlist を維持しつつ、matching semantics を広げずに運用しやすくできるため
+- 影響: 後続 implementation は `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/dedupeArticles.ts` / tests を中心に、optional な explicit registry field を読んで existing Qiita / Zenn / ITmedia allowlist を metadata 化してよい。ただし same `sourceName` 優先、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` は維持し、generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

@@ -994,6 +994,12 @@ v1 の生成優先順位は以下とする。
 - first implementation の source-family table は Qiita / Zenn / ITmedia に限定し、family key に一致する sibling feed 間だけを existing title compare key sequence（exact title key → punctuation-folded fallback）で検索してよい。generic hostname grouping、site-wide blanket rule、cross-language merge は含めない
 - source-family fallback で candidate になった場合も `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject list、review-state writeback、audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよい。`titleCompareKey` は実際に candidate 判定に使われた compare key を記録してよい
 
+### 10.5.22 Post-v1 fuzzy dedupe source-family registry docs split (`FS-DOCS-39`)
+
+- `FS-DATA-19` までで allowlisted sibling feed fallback は入ったが、family key を code 内 hardcoded sourceName table に固定し続けるのではなく、`data/feeds.json` の explicit bounded registry field へ移す次差分を docs-first で切り出す
+- 次差分は new public export や wider matching を導入せず、same `language` と既存 72 時間 window、same `sourceName` fuzzy lookup 優先、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持したまま、allowlisted sibling feed fallback の family key source を registry metadata に置き換える task に限定する
+- 新しい registry field は generic hostname grouping / site-wide blanket rule / cross-language merge の導入口として扱わず、first implementation では existing Qiita / Zenn / ITmedia allowlist を repo-managed registry metadata に移すことに限定する。`update-state.json` mutation、checked-in artifact、public route、edit distance、body fetch、HTML canonical parse は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

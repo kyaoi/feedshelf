@@ -566,6 +566,15 @@ Phase 6 の進め方:
 - source-family key は deterministic な repo-managed table に閉じ、Qiita / Zenn / ITmedia の sibling feed だけを対象にして generic hostname grouping / site-wide blanket rule / cross-language merge を含めない
 - source-family fallback で merge しても `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持する
 
+### Post-v1 fuzzy dedupe source-family registry docs split
+
+- [x] `FS-DOCS-39` fuzzy dedupe の次差分を `feeds.json` 上の explicit source-family registry field に限定し、hardcoded sourceName table / generic hostname grouping / wider matching から分離する
+
+完了条件:
+- `FS-DATA-20` の first implementation が、allowlisted sibling feed fallback の family key を code 内 hardcoded sourceName table ではなく `data/feeds.json` の optional bounded field から読む task として着手できる
+- 新しい registry field は fuzzy widening を generic に広げるためではなく、既存 allowlisted family を repo-managed registry metadata へ移すために限定し、same `language` + 72 時間 window、same `sourceName` 優先、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する
+- generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -602,7 +611,8 @@ Phase 6 の進め方:
 - `FS-DATA-18` では same-source / same-language + 72h gating を維持したまま punctuation-folded title compare key を fuzzy fallback の追加 lookup key として実装し、audit / handoff の `titleCompareKey` も matched compare key を反映できるようにした
 - `FS-DOCS-38` では cross-source fuzzy を generic に広げず、repo-managed な allowlisted source-family key に一致する sibling feed 間だけを widening 対象にする次差分を docs で先に固定した
 - `FS-DATA-19` では Qiita / Zenn / ITmedia の allowlisted sibling feed だけを same `language` + 72h gating 維持の source-family fallback 対象として実装し、same `sourceName` lookup 優先と既存 review surface を保ったまま cross-source duplicate を conservative に拾えるようにした
-- 次の runtime widening は generic cross-source fuzzy ではなく、必要ならまず docs-first で source-family fallback の境界を固定してから別 task として進める
+- `FS-DOCS-39` では source-family fallback の allowlist を hardcoded sourceName table に固定し続けず、`data/feeds.json` の explicit registry field へ移す次差分を docs で先に固定した
+- 次の runtime widening は generic cross-source fuzzy ではなく、必要ならまず docs-first で source-family registry の境界を固定してから別 task として進める
 
 ## メモ
 
