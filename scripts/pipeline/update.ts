@@ -767,6 +767,7 @@ export async function runUpdatePipeline(
     disableFuzzyDedupe: options.disableFuzzyDedupe,
     fuzzyRejectEntries,
     fuzzyAcceptEntries,
+    feeds: fetched.feeds,
   });
   const dedupedFreshArticles = dedupeResult.articles;
   const summary = await runPipeline({

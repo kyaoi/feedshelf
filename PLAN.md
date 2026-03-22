@@ -575,6 +575,15 @@ Phase 6 の進め方:
 - 新しい registry field は fuzzy widening を generic に広げるためではなく、既存 allowlisted family を repo-managed registry metadata へ移すために限定し、same `language` + 72 時間 window、same `sourceName` 優先、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する
 - generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+### Post-v1 fuzzy dedupe source-family registry implementation
+
+- [x] `FS-DATA-20` allowlisted source-family fallback の family key を `data/feeds.json` の optional bounded registry field から読むように実装する
+
+完了条件:
+- `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` が optional `fuzzySourceFamilyKey` registry field を受け付け、first implementation では `itmedia` / `qiita` / `zenn` だけを許可する
+- `scripts/pipeline/dedupeArticles.ts` は hardcoded sourceName table を持たず、same `sourceName` fuzzy lookup 未一致時だけ `feedId -> fuzzySourceFamilyKey` を使った sibling feed fallback を適用する
+- `data/feeds.json` は existing Qiita / Zenn / ITmedia feed にだけ bounded family key を付与し、generic hostname grouping / cross-language merge / `matchedBy='fuzzyTitleDate'` 以外の runtime surface は広げない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -612,6 +621,7 @@ Phase 6 の進め方:
 - `FS-DOCS-38` では cross-source fuzzy を generic に広げず、repo-managed な allowlisted source-family key に一致する sibling feed 間だけを widening 対象にする次差分を docs で先に固定した
 - `FS-DATA-19` では Qiita / Zenn / ITmedia の allowlisted sibling feed だけを same `language` + 72h gating 維持の source-family fallback 対象として実装し、same `sourceName` lookup 優先と既存 review surface を保ったまま cross-source duplicate を conservative に拾えるようにした
 - `FS-DOCS-39` では source-family fallback の allowlist を hardcoded sourceName table に固定し続けず、`data/feeds.json` の explicit registry field へ移す次差分を docs で先に固定した
+- `FS-DATA-20` では allowlisted source-family key の定義源を `data/feeds.json` の optional `fuzzySourceFamilyKey` へ移し、same `sourceName` lookup 優先・same `language` + 72h gating・existing title compare key sequence を保ったまま hardcoded sourceName table を除去した
 - 次の runtime widening は generic cross-source fuzzy ではなく、必要ならまず docs-first で source-family registry の境界を固定してから別 task として進める
 
 ## メモ

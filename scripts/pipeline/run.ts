@@ -973,6 +973,7 @@ export async function runPipeline(
     disableFuzzyDedupe: options.disableFuzzyDedupe,
     fuzzyRejectEntries,
     fuzzyAcceptEntries,
+    feeds,
   });
   if (typeof options.fuzzyAuditPath === 'string') {
     await writeFuzzyAuditFile({

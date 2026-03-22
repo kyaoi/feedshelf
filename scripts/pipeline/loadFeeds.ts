@@ -1,7 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import type { FeedDefinition } from '../../src/shared/contracts.ts';
+import type {
+  FeedDefinition,
+  FuzzySourceFamilyKey,
+} from '../../src/shared/contracts.ts';
 
 const REQUIRED_STRING_FIELDS = [
   'id',
@@ -14,6 +17,12 @@ const HTTP_URL_FIELDS = ['feedUrl', 'siteUrl'] as const;
 
 type FeedDefinitionRecord = Record<string, unknown>;
 
+const ALLOWLISTED_FUZZY_SOURCE_FAMILY_KEYS = new Set<FuzzySourceFamilyKey>([
+  'itmedia',
+  'qiita',
+  'zenn',
+]);
+
 function normalizeTagCompareKey(value: string): string {
   return value
     .normalize('NFKC')
@@ -24,6 +33,31 @@ function normalizeTagCompareKey(value: string): string {
 
 function isFeedDefinitionRecord(value: unknown): value is FeedDefinitionRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validateFuzzySourceFamilyKey(
+  value: unknown,
+  index: number,
+): FuzzySourceFamilyKey | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(
+      `Feed at index ${index} has invalid fuzzySourceFamilyKey value.`,
+    );
+  }
+
+  if (
+    !ALLOWLISTED_FUZZY_SOURCE_FAMILY_KEYS.has(value as FuzzySourceFamilyKey)
+  ) {
+    throw new Error(
+      `Feed at index ${index} has unsupported fuzzySourceFamilyKey value: ${value}`,
+    );
+  }
+
+  return value as FuzzySourceFamilyKey;
 }
 
 function validateAbsoluteHttpUrlField(
@@ -124,6 +158,11 @@ export function validateFeedDefinition(
       })
     : [];
 
+  const fuzzySourceFamilyKey = validateFuzzySourceFamilyKey(
+    feed.fuzzySourceFamilyKey,
+    index,
+  );
+
   seenIds.add(feed.id as string);
 
   return {
@@ -135,6 +174,7 @@ export function validateFeedDefinition(
     enabled: feed.enabled,
     shelfIds,
     tags,
+    ...(fuzzySourceFamilyKey ? { fuzzySourceFamilyKey } : {}),
   };
 }
 

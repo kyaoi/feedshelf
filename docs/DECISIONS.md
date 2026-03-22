@@ -1099,6 +1099,12 @@
 - 理由: source-family fallback 自体は conservative に入ったが、source 名の rename や source 追加時に hardcoded table を毎回 code 側で更新すると drift しやすい。一方で family key を registry metadata に寄せれば repo-managed な allowlist を維持しつつ、matching semantics を広げずに運用しやすくできるため
 - 影響: 後続 implementation は `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/dedupeArticles.ts` / tests を中心に、optional な explicit registry field を読んで existing Qiita / Zenn / ITmedia allowlist を metadata 化してよい。ただし same `sourceName` 優先、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` は維持し、generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+## D-169: `FS-DATA-20` は allowlisted source-family key の定義源だけを `feeds.json` registry field に移す
+
+- 決定: `FS-DATA-20` では `scripts/pipeline/dedupeArticles.ts` の hardcoded sourceName table を廃し、allowlisted sibling feed fallback の family key は `data/feeds.json` の optional `fuzzySourceFamilyKey` を `loadFeeds()` 経由で読み込んだ値だけから解決する
+- 理由: `FS-DATA-19` の matching semantics はそのままでも、hardcoded sourceName table を持ち続けると source rename や feed 追加ごとに code と registry が drift しやすい。一方で explicit registry field に寄せれば repo-managed allowlist を保ったまま定義源を 1 か所へ寄せられるため
+- 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `data/feeds.json` / `scripts/pipeline/dedupeArticles.ts` / tests に閉じる。first implementation の `fuzzySourceFamilyKey` は `itmedia` / `qiita` / `zenn` に限定し、same `sourceName` 優先、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する。一方で generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

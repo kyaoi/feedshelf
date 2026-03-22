@@ -1471,6 +1471,80 @@ test('FS-DATA-17 fuzzy dedupe manual-review HTML implementation stays aligned ac
   );
 });
 
+test('FS-DATA-20 fuzzy dedupe source-family registry implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, data, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const feedsData = fs.readFileSync(
+    path.resolve(__dirname, '..', 'data/feeds.json'),
+    'utf8',
+  );
+  const loadFeedsSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/loadFeeds.ts'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-20/);
+  assert.match(plan, /`fuzzySourceFamilyKey`/);
+  assert.match(
+    spec,
+    /10\.5\.23 Post-v1 fuzzy dedupe source-family registry implementation/,
+  );
+  assert.match(spec, /explicit registry field `fuzzySourceFamilyKey`/);
+  assert.match(decisions, /D-169/);
+  assert.match(decisions, /hardcoded sourceName table を廃し/);
+  assert.match(traceability, /FS-183/);
+  assert.match(
+    contracts,
+    /export type FuzzySourceFamilyKey = 'itmedia' \| 'qiita' \| 'zenn';/,
+  );
+  assert.match(contracts, /fuzzySourceFamilyKey\?: FuzzySourceFamilyKey;/);
+  assert.match(feedsData, /"fuzzySourceFamilyKey": "qiita"/);
+  assert.match(feedsData, /"fuzzySourceFamilyKey": "zenn"/);
+  assert.match(feedsData, /"fuzzySourceFamilyKey": "itmedia"/);
+  assert.match(loadFeedsSource, /ALLOWLISTED_FUZZY_SOURCE_FAMILY_KEYS/);
+  assert.match(loadFeedsSource, /validateFuzzySourceFamilyKey/);
+  assert.match(dedupeSource, /buildFeedIdToFuzzySourceFamilyKey/);
+  assert.doesNotMatch(dedupeSource, /ALLOWLISTED_SOURCE_FAMILIES/);
+  assert.match(
+    loadFeedsTest,
+    /loadFeeds rejects unsupported fuzzySourceFamilyKey values/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours/,
+  );
+});
+
 test('FS-DATA-19 fuzzy dedupe source-family implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
@@ -1514,9 +1588,9 @@ test('FS-DATA-19 fuzzy dedupe source-family implementation stays aligned across 
     /same-source 優先の allowlisted source-family fallback/,
   );
   assert.match(traceability, /FS-181/);
-  assert.match(dedupeSource, /ALLOWLISTED_SOURCE_FAMILIES/);
-  assert.match(dedupeSource, /resolveAllowlistedSourceFamilyKey/);
+  assert.match(dedupeSource, /buildFeedIdToFuzzySourceFamilyKey/);
   assert.match(dedupeSource, /source-family:/);
+  assert.match(dedupeSource, /feedIdToFuzzySourceFamilyKey/);
   assert.match(
     loadFeedsTest,
     /dedupeArticles applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours/,

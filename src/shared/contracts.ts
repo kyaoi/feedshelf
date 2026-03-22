@@ -1,3 +1,5 @@
+export type FuzzySourceFamilyKey = 'itmedia' | 'qiita' | 'zenn';
+
 export interface FeedDefinition {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface FeedDefinition {
   enabled: boolean;
   shelfIds: string[];
   tags?: string[];
+  fuzzySourceFamilyKey?: FuzzySourceFamilyKey;
 }
 
 export interface ShelfDefinition {

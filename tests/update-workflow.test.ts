@@ -330,12 +330,14 @@ test('runUpdatePipeline applies allowlisted source-family fuzzy fallback for sib
         id: 'qiita-popular',
         name: 'Qiita Popular',
         feedUrl: 'https://example.com/qiita-popular.xml',
+        fuzzySourceFamilyKey: 'qiita',
       },
       {
         ...ENABLED_FEED,
         id: 'qiita-rust',
         name: 'Qiita Rust Tag',
         feedUrl: 'https://example.com/qiita-rust.xml',
+        fuzzySourceFamilyKey: 'qiita',
       },
     ]),
   );

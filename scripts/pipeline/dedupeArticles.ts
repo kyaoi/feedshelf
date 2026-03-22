@@ -2,6 +2,7 @@ import type {
   ArticleProvenanceEntry,
   ArticleProvenanceMatchedBy,
   CanonicalArticle,
+  FeedDefinition,
   FuzzyDedupeAcceptEntry,
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
@@ -15,6 +16,7 @@ export interface DedupeArticlesOptions {
   disableFuzzyDedupe?: boolean;
   fuzzyRejectEntries?: FuzzyDedupeRejectEntry[];
   fuzzyAcceptEntries?: FuzzyDedupeAcceptEntry[];
+  feeds?: FeedDefinition[];
 }
 
 export interface DedupeArticlesResult {
@@ -42,44 +44,21 @@ interface FuzzyDuplicateMatch {
 const FUZZY_DEDUPE_WINDOW_MS = 72 * 60 * 60 * 1000;
 const FUZZY_TITLE_PUNCTUATION_PATTERN =
   /[\(\)\[\]\{\}<>"'`“”‘’«»‹›「」『』【】〔〕（）〈〉《》｢｣:：;；,，.。!！?？\/／\\|｜·•・･_—–-]+/gu;
-const ALLOWLISTED_SOURCE_FAMILIES = [
-  {
-    familyKey: 'qiita',
-    sourceNames: [
-      'Qiita Popular',
-      'Qiita Python Tag',
-      'Qiita Rust Tag',
-      'Qiita AI Tag',
-      'Qiita Linux Tag',
-      'Qiita neovim',
-      'Qiita archlinux',
-      'Qiita LLM',
-    ],
-  },
-  {
-    familyKey: 'zenn',
-    sourceNames: [
-      'Zenn Feed',
-      'Zenn Python Topic',
-      'Zenn Rust Topic',
-      'Zenn AI Topic',
-      'Zenn Productivity Weekly Topic',
-      'Zenn Neovim',
-      'Zenn Linux',
-      'Zenn Arch Linux',
-      'Zenn LLM',
-    ],
-  },
-  {
-    familyKey: 'itmedia',
-    sourceNames: ['ITmedia NEWS 新着', 'ITmedia AI+ 新着'],
-  },
-] as const;
-const ALLOWLISTED_SOURCE_FAMILY_BY_SOURCE_NAME = new Map<string, string>(
-  ALLOWLISTED_SOURCE_FAMILIES.flatMap(({ familyKey, sourceNames }) =>
-    sourceNames.map((sourceName) => [sourceName, familyKey] as const),
-  ),
-);
+function buildFeedIdToFuzzySourceFamilyKey(
+  feeds: FeedDefinition[] = [],
+): Map<string, string> {
+  const byFeedId = new Map<string, string>();
+
+  for (const feed of feeds) {
+    if (typeof feed.fuzzySourceFamilyKey !== 'string') {
+      continue;
+    }
+
+    byFeedId.set(feed.id, feed.fuzzySourceFamilyKey);
+  }
+
+  return byFeedId;
+}
 
 function toComparableTime(value: string): number {
   const parsed = new Date(value);
@@ -214,10 +193,6 @@ function createPunctuationFoldedTitleCompareKey(title: string): string {
     .trim();
 }
 
-function resolveAllowlistedSourceFamilyKey(sourceName: string): string | null {
-  return ALLOWLISTED_SOURCE_FAMILY_BY_SOURCE_NAME.get(sourceName) ?? null;
-}
-
 function resolveTitleCompareKeys(title: string): string[] {
   const titleCompareKey = createTitleCompareKey(title);
   if (titleCompareKey === '') {
@@ -261,6 +236,7 @@ function appendFuzzyLookupKeys(
 
 function resolveFuzzyDedupeLookupKeys(
   article: CanonicalArticle,
+  feedIdToFuzzySourceFamilyKey: ReadonlyMap<string, string>,
 ): FuzzyDedupeLookupKey[] {
   if (typeof article.publishedAt !== 'string') {
     return [];
@@ -284,8 +260,8 @@ function resolveFuzzyDedupeLookupKeys(
     titleCompareKeys,
   );
 
-  const sourceFamilyKey = resolveAllowlistedSourceFamilyKey(article.sourceName);
-  if (sourceFamilyKey !== null) {
+  const sourceFamilyKey = feedIdToFuzzySourceFamilyKey.get(article.feedId);
+  if (typeof sourceFamilyKey === 'string') {
     appendFuzzyLookupKeys(
       lookupKeys,
       `source-family:${sourceFamilyKey}`,
@@ -431,8 +407,12 @@ function registerFuzzyDedupeKeys(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   article: CanonicalArticle,
   index: number,
+  feedIdToFuzzySourceFamilyKey: ReadonlyMap<string, string>,
 ): void {
-  for (const lookupKey of resolveFuzzyDedupeLookupKeys(article)) {
+  for (const lookupKey of resolveFuzzyDedupeLookupKeys(
+    article,
+    feedIdToFuzzySourceFamilyKey,
+  )) {
     const existing = fuzzyKeyToIndexes.get(lookupKey.key);
     if (existing) {
       existing.add(index);
@@ -590,8 +570,12 @@ function findFuzzyDuplicateMatch(
   fuzzyKeyToIndexes: Map<string, Set<number>>,
   dedupedArticles: CanonicalArticle[],
   article: CanonicalArticle,
+  feedIdToFuzzySourceFamilyKey: ReadonlyMap<string, string>,
 ): FuzzyDuplicateMatch | null {
-  for (const lookupKey of resolveFuzzyDedupeLookupKeys(article)) {
+  for (const lookupKey of resolveFuzzyDedupeLookupKeys(
+    article,
+    feedIdToFuzzySourceFamilyKey,
+  )) {
     const candidateIndexes = fuzzyKeyToIndexes.get(lookupKey.key);
     if (!candidateIndexes) {
       continue;
@@ -679,6 +663,9 @@ export function dedupeArticlesWithSummary(
   const dedupedArticles: CanonicalArticle[] = [];
   const keyToIndex = new Map<string, number>();
   const fuzzyKeyToIndexes = new Map<string, Set<number>>();
+  const feedIdToFuzzySourceFamilyKey = buildFeedIdToFuzzySourceFamilyKey(
+    options.feeds,
+  );
   const disableFuzzyDedupe = options.disableFuzzyDedupe === true;
   const fuzzyRejectEntryKeys = buildFuzzyRejectEntrySet(
     options.fuzzyRejectEntries,
@@ -708,6 +695,7 @@ export function dedupeArticlesWithSummary(
             fuzzyKeyToIndexes,
             mergedArticle,
             existingIndex,
+            feedIdToFuzzySourceFamilyKey,
           );
         }
         continue;
@@ -719,6 +707,7 @@ export function dedupeArticlesWithSummary(
         fuzzyKeyToIndexes,
         dedupedArticles,
         article,
+        feedIdToFuzzySourceFamilyKey,
       );
       if (fuzzyDuplicateMatch !== null) {
         const { index: fuzzyDuplicateIndex, titleCompareKey } =
@@ -730,7 +719,12 @@ export function dedupeArticlesWithSummary(
           dedupedArticles.push(article);
           const rejectedIndex = dedupedArticles.length - 1;
           registerExactDedupeKey(keyToIndex, article, rejectedIndex);
-          registerFuzzyDedupeKeys(fuzzyKeyToIndexes, article, rejectedIndex);
+          registerFuzzyDedupeKeys(
+            fuzzyKeyToIndexes,
+            article,
+            rejectedIndex,
+            feedIdToFuzzySourceFamilyKey,
+          );
           continue;
         }
         const mergedArticle = mergeDuplicateArticles(
@@ -767,6 +761,7 @@ export function dedupeArticlesWithSummary(
           fuzzyKeyToIndexes,
           mergedArticle,
           fuzzyDuplicateIndex,
+          feedIdToFuzzySourceFamilyKey,
         );
         continue;
       }
@@ -776,7 +771,12 @@ export function dedupeArticlesWithSummary(
     const nextIndex = dedupedArticles.length - 1;
     registerExactDedupeKey(keyToIndex, article, nextIndex);
     if (!disableFuzzyDedupe) {
-      registerFuzzyDedupeKeys(fuzzyKeyToIndexes, article, nextIndex);
+      registerFuzzyDedupeKeys(
+        fuzzyKeyToIndexes,
+        article,
+        nextIndex,
+        feedIdToFuzzySourceFamilyKey,
+      );
     }
   }
 

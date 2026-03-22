@@ -246,6 +246,32 @@ test('loadFeeds rejects empty or non-string manual tag values', async () => {
   );
 });
 
+test('loadFeeds rejects unsupported fuzzySourceFamilyKey values', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'feedshelf-feeds-'));
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        id: 'rss-feed',
+        name: 'Example RSS',
+        feedUrl: 'https://example.com/feed.xml',
+        siteUrl: 'https://example.com/',
+        language: 'en',
+        enabled: true,
+        shelfIds: ['it'],
+        fuzzySourceFamilyKey: 'example',
+      },
+    ]),
+  );
+
+  await assert.rejects(
+    loadFeeds(feedsPath),
+    /unsupported fuzzySourceFamilyKey value: example/,
+  );
+});
+
 test('loadFeeds rejects non-http feedUrl values', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-invalid-feed-url-'),
@@ -917,62 +943,88 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
 });
 
 test('dedupeArticles applies allowlisted source-family fuzzy fallback for sibling feed title matches within 72 hours', () => {
-  const deduped = dedupeArticles([
+  const feeds: FeedDefinition[] = [
     {
-      id: 'article-fuzzy-family-a',
-      feedId: 'qiita-popular',
-      sourceName: 'Qiita Popular',
+      id: 'qiita-popular',
+      name: 'Qiita Popular',
+      feedUrl: 'https://qiita.example.com/popular.xml',
+      siteUrl: 'https://qiita.example.com/',
       language: 'ja',
+      enabled: true,
       shelfIds: ['it'],
-      title: 'Qiita shared article',
-      url: 'https://qiita.com/example/items/shared-a',
-      summary: 'Short summary.',
-      publishedAt: '2026-03-08T00:00:00.000Z',
-      fetchedAt: '2026-03-08T06:00:00.000Z',
-      author: null,
-      imageUrl: null,
-      sourceTags: ['Qiita'],
-      entryTags: ['popular'],
-      sourceItemId: 'qiita-shared-a',
-      provenance: [
-        {
-          feedId: 'qiita-popular',
-          firstSeenAt: '2026-03-08T06:00:00.000Z',
-          lastSeenAt: '2026-03-08T06:00:00.000Z',
-          sourceItemId: 'qiita-shared-a',
-          matchedBy: 'primary',
-        },
-      ],
-      seenInFeeds: ['qiita-popular'],
+      fuzzySourceFamilyKey: 'qiita',
     },
     {
-      id: 'article-fuzzy-family-b',
-      feedId: 'qiita-rust',
-      sourceName: 'Qiita Rust Tag',
+      id: 'qiita-rust',
+      name: 'Qiita Rust Tag',
+      feedUrl: 'https://qiita.example.com/rust.xml',
+      siteUrl: 'https://qiita.example.com/rust',
       language: 'ja',
+      enabled: true,
       shelfIds: ['it', 'science'],
-      title: '  qiita   shared article  ',
-      url: 'https://qiita.com/example/items/shared-b',
-      summary: 'Longer summary with more useful detail.',
-      publishedAt: '2026-03-10T23:59:59.000Z',
-      fetchedAt: '2026-03-10T06:05:00.000Z',
-      author: 'Qiita Author',
-      imageUrl: 'https://qiita.com/shared.jpg',
-      sourceTags: ['Qiita'],
-      entryTags: ['rust'],
-      sourceItemId: 'qiita-shared-b',
-      provenance: [
-        {
-          feedId: 'qiita-rust',
-          firstSeenAt: '2026-03-10T06:05:00.000Z',
-          lastSeenAt: '2026-03-10T06:05:00.000Z',
-          sourceItemId: 'qiita-shared-b',
-          matchedBy: 'primary',
-        },
-      ],
-      seenInFeeds: ['qiita-rust'],
+      fuzzySourceFamilyKey: 'qiita',
     },
-  ]);
+  ];
+
+  const deduped = dedupeArticles(
+    [
+      {
+        id: 'article-fuzzy-family-a',
+        feedId: 'qiita-popular',
+        sourceName: 'Qiita Popular',
+        language: 'ja',
+        shelfIds: ['it'],
+        title: 'Qiita shared article',
+        url: 'https://qiita.com/example/items/shared-a',
+        summary: 'Short summary.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['Qiita'],
+        entryTags: ['popular'],
+        sourceItemId: 'qiita-shared-a',
+        provenance: [
+          {
+            feedId: 'qiita-popular',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'qiita-shared-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['qiita-popular'],
+      },
+      {
+        id: 'article-fuzzy-family-b',
+        feedId: 'qiita-rust',
+        sourceName: 'Qiita Rust Tag',
+        language: 'ja',
+        shelfIds: ['it', 'science'],
+        title: '  qiita   shared article  ',
+        url: 'https://qiita.com/example/items/shared-b',
+        summary: 'Longer summary with more useful detail.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: 'Qiita Author',
+        imageUrl: 'https://qiita.com/shared.jpg',
+        sourceTags: ['Qiita'],
+        entryTags: ['rust'],
+        sourceItemId: 'qiita-shared-b',
+        provenance: [
+          {
+            feedId: 'qiita-rust',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'qiita-shared-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['qiita-rust'],
+      },
+    ],
+    { feeds },
+  );
 
   assert.equal(deduped.length, 1);
   assert.deepEqual(deduped[0].seenInFeeds, ['qiita-rust', 'qiita-popular']);
@@ -1593,12 +1645,14 @@ test('runPipeline applies allowlisted source-family fuzzy fallback for sibling f
         ...RSS_FEED,
         id: 'qiita-popular',
         name: 'Qiita Popular',
+        fuzzySourceFamilyKey: 'qiita',
       },
       {
         ...RSS_FEED,
         id: 'qiita-rust',
         name: 'Qiita Rust Tag',
         feedUrl: 'https://example.com/qiita-rust.xml',
+        fuzzySourceFamilyKey: 'qiita',
       },
     ]),
   );
@@ -2722,15 +2776,20 @@ test('repository feed registry keeps documented first-party feeds and officially
   );
 
   assert.equal(byId.get('itmedia-news')?.enabled, true);
+  assert.equal(byId.get('itmedia-news')?.fuzzySourceFamilyKey, 'itmedia');
   assert.equal(byId.get('itmedia-aiplus')?.enabled, true);
+  assert.equal(byId.get('itmedia-aiplus')?.fuzzySourceFamilyKey, 'itmedia');
   assert.equal(byId.get('qiita-popular')?.enabled, true);
+  assert.equal(byId.get('qiita-popular')?.fuzzySourceFamilyKey, 'qiita');
   assert.equal(byId.get('gigazine')?.enabled, true);
   assert.equal(byId.get('gihyo')?.enabled, true);
   assert.equal(byId.get('codezine')?.enabled, true);
   assert.equal(byId.get('hatena-hotentry-it')?.enabled, true);
   assert.equal(byId.get('openai-news')?.enabled, true);
   assert.equal(byId.get('publickey')?.enabled, true);
+  assert.equal(byId.get('zenn-feed')?.fuzzySourceFamilyKey, 'zenn');
   assert.equal(byId.get('zenn-topic-python')?.enabled, true);
+  assert.equal(byId.get('zenn-topic-python')?.fuzzySourceFamilyKey, 'zenn');
   assert.equal(byId.get('zenn-topic-rust')?.enabled, true);
   assert.equal(byId.get('zenn-topic-ai')?.enabled, true);
   assert.equal(byId.get('zenn-topic-neovim')?.enabled, true);

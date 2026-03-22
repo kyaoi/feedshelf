@@ -7,7 +7,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["日本IT", "ニュース", "クラウド"]
+    "tags": ["日本IT", "ニュース", "クラウド"],
+    "fuzzySourceFamilyKey": "itmedia"
   },
   {
     "id": "publickey",
@@ -67,7 +68,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["ai"],
-    "tags": ["生成AI", "業界動向", "実装事例"]
+    "tags": ["生成AI", "業界動向", "実装事例"],
+    "fuzzySourceFamilyKey": "itmedia"
   },
   {
     "id": "gigazine",
@@ -87,7 +89,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["日本開発", "実装", "人気記事"]
+    "tags": ["日本開発", "実装", "人気記事"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-python",
@@ -97,7 +100,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it", "science"],
-    "tags": ["Python", "数値計算", "自動化"]
+    "tags": ["Python", "数値計算", "自動化"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-rust",
@@ -107,7 +111,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["Rust", "CLI", "実装"]
+    "tags": ["Rust", "CLI", "実装"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-ai",
@@ -117,7 +122,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["ai"],
-    "tags": ["AI", "実装", "生成AI"]
+    "tags": ["AI", "実装", "生成AI"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-linux",
@@ -127,7 +133,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["Linux", "開発環境", "運用"]
+    "tags": ["Linux", "開発環境", "運用"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-neovim",
@@ -137,7 +144,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["Neovim", "エディタ", "開発環境"]
+    "tags": ["Neovim", "エディタ", "開発環境"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-archlinux",
@@ -147,7 +155,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["ArchLinux", "Linux", "開発環境"]
+    "tags": ["ArchLinux", "Linux", "開発環境"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "qiita-tag-llm",
@@ -157,7 +166,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["ai"],
-    "tags": ["LLM", "生成AI", "実装"]
+    "tags": ["LLM", "生成AI", "実装"],
+    "fuzzySourceFamilyKey": "qiita"
   },
   {
     "id": "zenn-feed",
@@ -167,7 +177,8 @@
     "language": "ja",
     "enabled": false,
     "shelfIds": ["it"],
-    "tags": ["日本開発", "個人開発", "実装"]
+    "tags": ["日本開発", "個人開発", "実装"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-python",
@@ -177,7 +188,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it", "science"],
-    "tags": ["Python", "数値計算", "理系開発"]
+    "tags": ["Python", "数値計算", "理系開発"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-rust",
@@ -187,7 +199,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["Rust", "CLI", "実装"]
+    "tags": ["Rust", "CLI", "実装"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-ai",
@@ -197,7 +210,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["ai"],
-    "tags": ["AI", "実装", "活用"]
+    "tags": ["AI", "実装", "活用"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-productivityweekly",
@@ -207,7 +221,8 @@
     "language": "ja",
     "enabled": false,
     "shelfIds": ["it"],
-    "tags": ["生産性", "開発体験", "週刊まとめ"]
+    "tags": ["生産性", "開発体験", "週刊まとめ"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-neovim",
@@ -217,7 +232,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["Neovim", "エディタ", "個人開発"]
+    "tags": ["Neovim", "エディタ", "個人開発"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-linux",
@@ -227,7 +243,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["Linux", "開発環境", "個人開発"]
+    "tags": ["Linux", "開発環境", "個人開発"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-archlinux",
@@ -237,7 +254,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["it"],
-    "tags": ["ArchLinux", "Linux", "開発環境"]
+    "tags": ["ArchLinux", "Linux", "開発環境"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "zenn-topic-llm",
@@ -247,7 +265,8 @@
     "language": "ja",
     "enabled": true,
     "shelfIds": ["ai"],
-    "tags": ["LLM", "生成AI", "活用"]
+    "tags": ["LLM", "生成AI", "活用"],
+    "fuzzySourceFamilyKey": "zenn"
   },
   {
     "id": "developersio",
