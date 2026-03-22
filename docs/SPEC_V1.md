@@ -1006,6 +1006,12 @@ v1 の生成優先順位は以下とする。
 - first implementation の `fuzzySourceFamilyKey` は `itmedia` / `qiita` / `zenn` だけを受け付け、existing Qiita / Zenn / ITmedia feed にだけ付与してよい。same `sourceName` fuzzy lookup が未一致のときだけ `feedId -> fuzzySourceFamilyKey` を使った sibling feed fallback を試し、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）を維持する
 - source-family registry 化でも `matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / manual-review HTML artifact の既存 bounded contract は維持してよい。generic hostname grouping、site-wide blanket rule、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
 
+### 10.5.24 Post-v1 fuzzy dedupe hostname allowlist docs split (`FS-DOCS-40`)
+
+- `FS-DATA-20` までで explicit source-family fallback は registry metadata に寄ったが、さらに取りこぼしを減らしたい場合でも、generic hostname grouping や blanket cross-source fuzzy ではなく、`siteUrl` を優先し必要なら `feedUrl` を fallback に使って導出した registrable domain による allowlisted fallback を docs-first で切り出す
+- 次差分は same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ後段で試す hostname fallback に限定し、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
+- hostname fallback は repo-managed な allowlisted registrable domain にだけ閉じ、同じ host なら一律に merge 候補化する generic site-wide rule を導入しない。とくに `www.reddit.com` のような topic/community feed が多数ぶら下がる host を blanket に束ねる heuristic、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

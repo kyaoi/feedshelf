@@ -1105,6 +1105,12 @@
 - 理由: `FS-DATA-19` の matching semantics はそのままでも、hardcoded sourceName table を持ち続けると source rename や feed 追加ごとに code と registry が drift しやすい。一方で explicit registry field に寄せれば repo-managed allowlist を保ったまま定義源を 1 か所へ寄せられるため
 - 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `data/feeds.json` / `scripts/pipeline/dedupeArticles.ts` / tests に閉じる。first implementation の `fuzzySourceFamilyKey` は `itmedia` / `qiita` / `zenn` に限定し、same `sourceName` 優先、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する。一方で generic hostname grouping / site-wide blanket rule / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+## D-170: fuzzy dedupe の次差分は allowlisted registrable-domain fallback に限定する
+
+- 決定: `FS-DATA-20` 後に source-family fallback の外側でも取りこぼしを減らしたい場合、generic hostname grouping や blanket cross-source fuzzy を開けるのではなく、same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ、`siteUrl` を優先し必要なら `feedUrl` を fallback に使って導出した registrable domain による allowlisted fallback を docs-first task として切り出す
+- 理由: explicit source-family key で扱う sibling feed は既に conservative に束ねられる一方、publisher 配下の feed variation では source-family key を増やす前に host 由来の bounded fallback を検討したいケースがある。ただし `www.reddit.com` のような topic/community feed が多数ぶら下がる host を generic に束ねると false positive 面が急激に広がるため、registrable domain 由来でも repo-managed allowlist に閉じる必要がある
+- 影響: 後続 implementation は `siteUrl` 優先・`feedUrl` fallback の registrable domain 抽出、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'`、explicit `fuzzySourceFamilyKey` precedence の維持に閉じてよい。一方で generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

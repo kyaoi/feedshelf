@@ -921,6 +921,37 @@ test('FS-DOCS-37 fuzzy dedupe broader title-key docs split stays aligned across 
   );
 });
 
+test('FS-DOCS-40 fuzzy dedupe hostname allowlist docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-40/);
+  assert.match(plan, /allowlisted registrable-domain fallback/);
+  assert.match(
+    spec,
+    /10\.5\.24 Post-v1 fuzzy dedupe hostname allowlist docs split/,
+  );
+  assert.match(spec, /`siteUrl` を優先し必要なら `feedUrl` を fallback/);
+  assert.match(decisions, /D-170/);
+  assert.match(decisions, /www\.reddit\.com/);
+  assert.match(traceability, /FS-184/);
+  assert.match(traceability, /generic site-wide hostname grouping/);
+});
+
 test('FS-DOCS-39 fuzzy dedupe source-family registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
