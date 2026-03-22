@@ -1123,6 +1123,12 @@
 - 理由: existing feed metadata からの導出は first implementation としては十分だが、feed metadata の更新や `siteUrl` 変更だけで hostname fallback 参加面が暗黙に変わると drift と accidental widening を招きやすい。explicit registry field に寄せれば repo-managed な opt-in を維持しつつ、same `sourceName` / explicit `fuzzySourceFamilyKey` precedence や bounded review surface を崩さずに管理しやすくなる
 - 影響: 後続 implementation は `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `data/feeds.json` / `scripts/pipeline/dedupeArticles.ts` / tests に閉じ、existing allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）だけを explicit registry value として許可してよい。一方で generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+## D-173: `FS-DATA-22` は registrable-domain fallback の opt-in 定義源を explicit registry field に限定する
+
+- 決定: `FS-DATA-22` では `siteUrl` / `feedUrl` からの自動導出と hardcoded domain allowlist を廃し、allowlisted registrable-domain fallback の opt-in key は `data/feeds.json` の optional `fuzzyRegistrableDomainKey` を `loadFeeds()` 経由で読み込んだ値だけから解決する
+- 理由: `FS-DATA-21` の derived metadata fallback は first implementation としては十分だったが、feed metadata の変更だけで hostname fallback 参加面が暗黙に変わると drift と accidental widening を招きやすい。一方で explicit registry field に寄せれば repo-managed な opt-in を維持しつつ、same `sourceName` / explicit `fuzzySourceFamilyKey` precedence や bounded review surface を崩さずに管理しやすくなるため
+- 影響: 実装対象は `src/shared/contracts.ts` / `data/feeds.json` / `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/dedupeArticles.ts` / `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。first implementation の `fuzzyRegistrableDomainKey` は `itmedia.co.jp` / `qiita.com` / `zenn.dev` に限定し、same `sourceName` → explicit `fuzzySourceFamilyKey` → registrable-domain fallback の precedence、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する。一方で derived metadata fallback / hardcoded domain allowlist / generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

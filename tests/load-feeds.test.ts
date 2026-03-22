@@ -272,6 +272,34 @@ test('loadFeeds rejects unsupported fuzzySourceFamilyKey values', async () => {
   );
 });
 
+test('loadFeeds rejects unsupported fuzzyRegistrableDomainKey values', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-loadfeeds-domainkey-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        id: 'bad-domain-key',
+        name: 'Bad Domain Key',
+        feedUrl: 'https://example.com/feed.xml',
+        siteUrl: 'https://example.com/',
+        language: 'ja',
+        enabled: true,
+        shelfIds: ['it'],
+        fuzzyRegistrableDomainKey: 'example.com',
+      },
+    ]),
+  );
+
+  await assert.rejects(
+    () => loadFeeds(feedsPath),
+    /unsupported fuzzyRegistrableDomainKey value: example\.com/,
+  );
+});
+
 test('loadFeeds rejects non-http feedUrl values', async () => {
   const tempDir = await fs.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-invalid-feed-url-'),
@@ -1041,6 +1069,7 @@ test('dedupeArticles applies allowlisted registrable-domain fuzzy fallback when 
       language: 'ja',
       enabled: true,
       shelfIds: ['it'],
+      fuzzyRegistrableDomainKey: 'zenn.dev',
     },
     {
       id: 'zenn-beta',
@@ -1050,6 +1079,7 @@ test('dedupeArticles applies allowlisted registrable-domain fuzzy fallback when 
       language: 'ja',
       enabled: true,
       shelfIds: ['it', 'science'],
+      fuzzyRegistrableDomainKey: 'zenn.dev',
     },
   ];
 
@@ -1126,22 +1156,22 @@ test('dedupeArticles applies allowlisted registrable-domain fuzzy fallback when 
   assert.equal(deduped.articles[0].provenance[1].matchedBy, 'fuzzyTitleDate');
 });
 
-test('dedupeArticles falls back to feedUrl for allowlisted registrable-domain fuzzy matching when siteUrl does not resolve', () => {
+test('dedupeArticles does not fuzzy-merge allowlisted hostname matches without explicit fuzzyRegistrableDomainKey', () => {
   const feeds: FeedDefinition[] = [
     {
-      id: 'zenn-feedurl-alpha',
-      name: 'Zenn Feedurl Alpha',
-      feedUrl: 'https://feeds.zenn.dev/alpha.xml',
-      siteUrl: 'https://publisher.example.com/alpha',
+      id: 'zenn-implicit-alpha',
+      name: 'Zenn Implicit Alpha',
+      feedUrl: 'https://feeds.example.net/implicit-alpha.xml',
+      siteUrl: 'https://alpha.zenn.dev/',
       language: 'ja',
       enabled: true,
       shelfIds: ['it'],
     },
     {
-      id: 'zenn-feedurl-beta',
-      name: 'Zenn Feedurl Beta',
-      feedUrl: 'https://api.zenn.dev/beta.xml',
-      siteUrl: 'https://publisher.example.com/beta',
+      id: 'zenn-implicit-beta',
+      name: 'Zenn Implicit Beta',
+      feedUrl: 'https://feeds.example.net/implicit-beta.xml',
+      siteUrl: 'https://beta.zenn.dev/topics/rust',
       language: 'ja',
       enabled: true,
       shelfIds: ['it'],
@@ -1151,13 +1181,13 @@ test('dedupeArticles falls back to feedUrl for allowlisted registrable-domain fu
   const deduped = dedupeArticles(
     [
       {
-        id: 'article-fuzzy-domain-feedurl-a',
-        feedId: 'zenn-feedurl-alpha',
-        sourceName: 'Zenn Feedurl Alpha',
+        id: 'article-fuzzy-domain-implicit-a',
+        feedId: 'zenn-implicit-alpha',
+        sourceName: 'Zenn Implicit Alpha',
         language: 'ja',
         shelfIds: ['it'],
-        title: 'Feedurl based fallback article',
-        url: 'https://zenn.dev/example/articles/feedurl-a',
+        title: 'Implicit hostname fallback article',
+        url: 'https://zenn.dev/example/articles/implicit-a',
         summary: 'First copy.',
         publishedAt: '2026-03-08T00:00:00.000Z',
         fetchedAt: '2026-03-08T06:00:00.000Z',
@@ -1165,26 +1195,26 @@ test('dedupeArticles falls back to feedUrl for allowlisted registrable-domain fu
         imageUrl: null,
         sourceTags: ['Zenn'],
         entryTags: ['alpha'],
-        sourceItemId: 'feedurl-a',
+        sourceItemId: 'implicit-a',
         provenance: [
           {
-            feedId: 'zenn-feedurl-alpha',
+            feedId: 'zenn-implicit-alpha',
             firstSeenAt: '2026-03-08T06:00:00.000Z',
             lastSeenAt: '2026-03-08T06:00:00.000Z',
-            sourceItemId: 'feedurl-a',
+            sourceItemId: 'implicit-a',
             matchedBy: 'primary',
           },
         ],
-        seenInFeeds: ['zenn-feedurl-alpha'],
+        seenInFeeds: ['zenn-implicit-alpha'],
       },
       {
-        id: 'article-fuzzy-domain-feedurl-b',
-        feedId: 'zenn-feedurl-beta',
-        sourceName: 'Zenn Feedurl Beta',
+        id: 'article-fuzzy-domain-implicit-b',
+        feedId: 'zenn-implicit-beta',
+        sourceName: 'Zenn Implicit Beta',
         language: 'ja',
         shelfIds: ['it'],
-        title: ' feedurl   based fallback article ',
-        url: 'https://zenn.dev/example/articles/feedurl-b',
+        title: ' implicit   hostname fallback article ',
+        url: 'https://zenn.dev/example/articles/implicit-b',
         summary: 'Second copy.',
         publishedAt: '2026-03-10T23:59:59.000Z',
         fetchedAt: '2026-03-10T06:05:00.000Z',
@@ -1192,27 +1222,23 @@ test('dedupeArticles falls back to feedUrl for allowlisted registrable-domain fu
         imageUrl: null,
         sourceTags: ['Zenn'],
         entryTags: ['beta'],
-        sourceItemId: 'feedurl-b',
+        sourceItemId: 'implicit-b',
         provenance: [
           {
-            feedId: 'zenn-feedurl-beta',
+            feedId: 'zenn-implicit-beta',
             firstSeenAt: '2026-03-10T06:05:00.000Z',
             lastSeenAt: '2026-03-10T06:05:00.000Z',
-            sourceItemId: 'feedurl-b',
+            sourceItemId: 'implicit-b',
             matchedBy: 'primary',
           },
         ],
-        seenInFeeds: ['zenn-feedurl-beta'],
+        seenInFeeds: ['zenn-implicit-beta'],
       },
     ],
     { feeds },
   );
 
-  assert.equal(deduped.length, 1);
-  assert.deepEqual(deduped[0].seenInFeeds, [
-    'zenn-feedurl-beta',
-    'zenn-feedurl-alpha',
-  ]);
+  assert.equal(deduped.length, 2);
 });
 
 test('dedupeArticles does not fuzzy-merge blanket reddit hostname matches within 72 hours', () => {
@@ -2027,6 +2053,7 @@ test('runPipeline applies allowlisted registrable-domain fuzzy fallback when sou
         name: 'Zenn Alpha',
         feedUrl: 'https://feeds.example.net/zenn-alpha.xml',
         siteUrl: 'https://alpha.zenn.dev/',
+        fuzzyRegistrableDomainKey: 'zenn.dev',
       },
       {
         ...RSS_FEED,
@@ -2034,6 +2061,7 @@ test('runPipeline applies allowlisted registrable-domain fuzzy fallback when sou
         name: 'Zenn Beta',
         feedUrl: 'https://feeds.example.net/zenn-beta.xml',
         siteUrl: 'https://beta.zenn.dev/topics/rust',
+        fuzzyRegistrableDomainKey: 'zenn.dev',
       },
     ]),
   );
@@ -3158,10 +3186,18 @@ test('repository feed registry keeps documented first-party feeds and officially
 
   assert.equal(byId.get('itmedia-news')?.enabled, true);
   assert.equal(byId.get('itmedia-news')?.fuzzySourceFamilyKey, 'itmedia');
+  assert.equal(
+    byId.get('itmedia-news')?.fuzzyRegistrableDomainKey,
+    'itmedia.co.jp',
+  );
   assert.equal(byId.get('itmedia-aiplus')?.enabled, true);
   assert.equal(byId.get('itmedia-aiplus')?.fuzzySourceFamilyKey, 'itmedia');
   assert.equal(byId.get('qiita-popular')?.enabled, true);
   assert.equal(byId.get('qiita-popular')?.fuzzySourceFamilyKey, 'qiita');
+  assert.equal(
+    byId.get('qiita-popular')?.fuzzyRegistrableDomainKey,
+    'qiita.com',
+  );
   assert.equal(byId.get('gigazine')?.enabled, true);
   assert.equal(byId.get('gihyo')?.enabled, true);
   assert.equal(byId.get('codezine')?.enabled, true);
@@ -3169,6 +3205,7 @@ test('repository feed registry keeps documented first-party feeds and officially
   assert.equal(byId.get('openai-news')?.enabled, true);
   assert.equal(byId.get('publickey')?.enabled, true);
   assert.equal(byId.get('zenn-feed')?.fuzzySourceFamilyKey, 'zenn');
+  assert.equal(byId.get('zenn-feed')?.fuzzyRegistrableDomainKey, 'zenn.dev');
   assert.equal(byId.get('zenn-topic-python')?.enabled, true);
   assert.equal(byId.get('zenn-topic-python')?.fuzzySourceFamilyKey, 'zenn');
   assert.equal(byId.get('zenn-topic-rust')?.enabled, true);

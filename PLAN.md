@@ -603,6 +603,15 @@ Phase 6 の進め方:
 - 新しい registry field は fuzzy widening を generic に広げるためではなく、既存 allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）への explicit opt-in を repo-managed metadata へ移すために限定し、same `sourceName` → explicit `fuzzySourceFamilyKey` → registrable-domain fallback の precedence、same `language` + 72 時間 window、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する
 - generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+### Post-v1 fuzzy dedupe hostname registry implementation
+
+- [x] `FS-DATA-22` allowlisted registrable-domain fallback の opt-in key を `data/feeds.json` の explicit registry field から読むように実装する
+
+完了条件:
+- `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` が optional `fuzzyRegistrableDomainKey` registry field を受け付け、first implementation では `itmedia.co.jp` / `qiita.com` / `zenn.dev` だけを許可する
+- `scripts/pipeline/dedupeArticles.ts` は `siteUrl` / `feedUrl` から hostname fallback 参加面を自動導出せず、same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ `feedId -> fuzzyRegistrableDomainKey` を使った registrable-domain fallback を後段で適用する
+- `data/feeds.json` は existing ITmedia / Qiita / Zenn feed にだけ bounded registrable-domain key を付与し、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'`、accept/reject / review-state / audit / handoff / manual-review HTML artifact の既存 bounded surface を維持する
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -643,7 +652,7 @@ Phase 6 の進め方:
 - `FS-DATA-20` では allowlisted source-family key の定義源を `data/feeds.json` の optional `fuzzySourceFamilyKey` へ移し、same `sourceName` lookup 優先・same `language` + 72h gating・existing title compare key sequence を保ったまま hardcoded sourceName table を除去した
 - `FS-DOCS-40` で generic hostname grouping を blanket rule として開けず、same `sourceName` と explicit `fuzzySourceFamilyKey` の後段にある allowlisted registrable-domain fallback に限定する境界を docs で先に固定した
 - `FS-DATA-21` では same `sourceName` / explicit `fuzzySourceFamilyKey` の両方が未一致のときだけ、existing feed metadata から導出した allowlisted registrable-domain fallback を後段で使い、generic hostname grouping を開けずに bounded な cross-source duplicate を conservative に畳み込めるようにした
-- 次に drift を減らすなら、`siteUrl` / `feedUrl` 由来の allowlisted registrable-domain fallback を code 内 allowlist と自動導出に任せ続けず、まず `data/feeds.json` の explicit registry field へ寄せる docs-first task (`FS-DOCS-41`) を挟む
+- `FS-DATA-22` で allowlisted registrable-domain fallback の opt-in 定義源を `data/feeds.json` の explicit `fuzzyRegistrableDomainKey` へ移し、`siteUrl` / `feedUrl` 変更だけで参加面が暗黙に広がらないようにした
 
 ## メモ
 

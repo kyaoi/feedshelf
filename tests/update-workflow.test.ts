@@ -418,6 +418,7 @@ test('runUpdatePipeline applies allowlisted registrable-domain fuzzy fallback wh
         name: 'Zenn Alpha',
         feedUrl: 'https://example.com/zenn-alpha.xml',
         siteUrl: 'https://alpha.zenn.dev/',
+        fuzzyRegistrableDomainKey: 'zenn.dev',
       },
       {
         ...ENABLED_FEED,
@@ -425,6 +426,7 @@ test('runUpdatePipeline applies allowlisted registrable-domain fuzzy fallback wh
         name: 'Zenn Beta',
         feedUrl: 'https://example.com/zenn-beta.xml',
         siteUrl: 'https://beta.zenn.dev/topics/rust',
+        fuzzyRegistrableDomainKey: 'zenn.dev',
       },
     ]),
   );

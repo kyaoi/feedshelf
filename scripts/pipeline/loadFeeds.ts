@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type {
   FeedDefinition,
+  FuzzyRegistrableDomainKey,
   FuzzySourceFamilyKey,
 } from '../../src/shared/contracts.ts';
 
@@ -22,6 +23,12 @@ const ALLOWLISTED_FUZZY_SOURCE_FAMILY_KEYS = new Set<FuzzySourceFamilyKey>([
   'qiita',
   'zenn',
 ]);
+const ALLOWLISTED_FUZZY_REGISTRABLE_DOMAIN_KEYS =
+  new Set<FuzzyRegistrableDomainKey>([
+    'itmedia.co.jp',
+    'qiita.com',
+    'zenn.dev',
+  ]);
 
 function normalizeTagCompareKey(value: string): string {
   return value
@@ -58,6 +65,33 @@ function validateFuzzySourceFamilyKey(
   }
 
   return value as FuzzySourceFamilyKey;
+}
+
+function validateFuzzyRegistrableDomainKey(
+  value: unknown,
+  index: number,
+): FuzzyRegistrableDomainKey | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(
+      `Feed at index ${index} has invalid fuzzyRegistrableDomainKey value.`,
+    );
+  }
+
+  if (
+    !ALLOWLISTED_FUZZY_REGISTRABLE_DOMAIN_KEYS.has(
+      value as FuzzyRegistrableDomainKey,
+    )
+  ) {
+    throw new Error(
+      `Feed at index ${index} has unsupported fuzzyRegistrableDomainKey value: ${value}`,
+    );
+  }
+
+  return value as FuzzyRegistrableDomainKey;
 }
 
 function validateAbsoluteHttpUrlField(
@@ -162,6 +196,10 @@ export function validateFeedDefinition(
     feed.fuzzySourceFamilyKey,
     index,
   );
+  const fuzzyRegistrableDomainKey = validateFuzzyRegistrableDomainKey(
+    feed.fuzzyRegistrableDomainKey,
+    index,
+  );
 
   seenIds.add(feed.id as string);
 
@@ -175,6 +213,7 @@ export function validateFeedDefinition(
     shelfIds,
     tags,
     ...(fuzzySourceFamilyKey ? { fuzzySourceFamilyKey } : {}),
+    ...(fuzzyRegistrableDomainKey ? { fuzzyRegistrableDomainKey } : {}),
   };
 }
 

@@ -8,7 +8,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["日本IT", "ニュース", "クラウド"],
-    "fuzzySourceFamilyKey": "itmedia"
+    "fuzzySourceFamilyKey": "itmedia",
+    "fuzzyRegistrableDomainKey": "itmedia.co.jp"
   },
   {
     "id": "publickey",
@@ -69,7 +70,8 @@
     "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["生成AI", "業界動向", "実装事例"],
-    "fuzzySourceFamilyKey": "itmedia"
+    "fuzzySourceFamilyKey": "itmedia",
+    "fuzzyRegistrableDomainKey": "itmedia.co.jp"
   },
   {
     "id": "gigazine",
@@ -90,7 +92,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["日本開発", "実装", "人気記事"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-python",
@@ -101,7 +104,8 @@
     "enabled": true,
     "shelfIds": ["it", "science"],
     "tags": ["Python", "数値計算", "自動化"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-rust",
@@ -112,7 +116,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Rust", "CLI", "実装"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-ai",
@@ -123,7 +128,8 @@
     "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["AI", "実装", "生成AI"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-linux",
@@ -134,7 +140,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Linux", "開発環境", "運用"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-neovim",
@@ -145,7 +152,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Neovim", "エディタ", "開発環境"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-archlinux",
@@ -156,7 +164,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["ArchLinux", "Linux", "開発環境"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "qiita-tag-llm",
@@ -167,7 +176,8 @@
     "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["LLM", "生成AI", "実装"],
-    "fuzzySourceFamilyKey": "qiita"
+    "fuzzySourceFamilyKey": "qiita",
+    "fuzzyRegistrableDomainKey": "qiita.com"
   },
   {
     "id": "zenn-feed",
@@ -178,7 +188,8 @@
     "enabled": false,
     "shelfIds": ["it"],
     "tags": ["日本開発", "個人開発", "実装"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-python",
@@ -189,7 +200,8 @@
     "enabled": true,
     "shelfIds": ["it", "science"],
     "tags": ["Python", "数値計算", "理系開発"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-rust",
@@ -200,7 +212,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Rust", "CLI", "実装"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-ai",
@@ -211,7 +224,8 @@
     "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["AI", "実装", "活用"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-productivityweekly",
@@ -222,7 +236,8 @@
     "enabled": false,
     "shelfIds": ["it"],
     "tags": ["生産性", "開発体験", "週刊まとめ"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-neovim",
@@ -233,7 +248,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Neovim", "エディタ", "個人開発"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-linux",
@@ -244,7 +260,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["Linux", "開発環境", "個人開発"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-archlinux",
@@ -255,7 +272,8 @@
     "enabled": true,
     "shelfIds": ["it"],
     "tags": ["ArchLinux", "Linux", "開発環境"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "zenn-topic-llm",
@@ -266,7 +284,8 @@
     "enabled": true,
     "shelfIds": ["ai"],
     "tags": ["LLM", "生成AI", "活用"],
-    "fuzzySourceFamilyKey": "zenn"
+    "fuzzySourceFamilyKey": "zenn",
+    "fuzzyRegistrableDomainKey": "zenn.dev"
   },
   {
     "id": "developersio",

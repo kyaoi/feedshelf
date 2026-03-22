@@ -1533,7 +1533,7 @@ test('FS-DATA-17 fuzzy dedupe manual-review HTML implementation stays aligned ac
   );
 });
 
-test('FS-DATA-21 fuzzy dedupe hostname allowlist implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, implementation, and tests', () => {
+test('FS-DATA-22 fuzzy dedupe hostname registry implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, data, implementation, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
     'utf8',
@@ -1550,6 +1550,18 @@ test('FS-DATA-21 fuzzy dedupe hostname allowlist implementation stays aligned ac
     path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
     'utf8',
   );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const feedsData = fs.readFileSync(
+    path.resolve(__dirname, '..', 'data/feeds.json'),
+    'utf8',
+  );
+  const loadFeedsSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/loadFeeds.ts'),
+    'utf8',
+  );
   const dedupeSource = fs.readFileSync(
     path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
     'utf8',
@@ -1563,34 +1575,44 @@ test('FS-DATA-21 fuzzy dedupe hostname allowlist implementation stays aligned ac
     'utf8',
   );
 
-  assert.match(plan, /FS-DATA-21/);
-  assert.match(plan, /allowlisted registrable-domain fallback/);
+  assert.match(plan, /FS-DATA-22/);
+  assert.match(plan, /`fuzzyRegistrableDomainKey`/);
   assert.match(
     spec,
-    /10\.5\.25 Post-v1 fuzzy dedupe hostname allowlist implementation/,
+    /10\.5\.27 Post-v1 fuzzy dedupe hostname registry implementation/,
+  );
+  assert.match(spec, /explicit registry field `fuzzyRegistrableDomainKey`/);
+  assert.match(decisions, /D-173/);
+  assert.match(decisions, /hardcoded domain allowlist を廃し/);
+  assert.match(traceability, /FS-187/);
+  assert.match(
+    contracts,
+    /export type FuzzyRegistrableDomainKey =\s*(?:\|\s*)?'itmedia\.co\.jp'\s*(?:\|\s*)?'qiita\.com'\s*(?:\|\s*)?'zenn\.dev';/m,
   );
   assert.match(
-    spec,
-    /allowlisted registrable domain（`itmedia\.co\.jp` \/ `qiita\.com` \/ `zenn\.dev`）/,
+    contracts,
+    /fuzzyRegistrableDomainKey\?: FuzzyRegistrableDomainKey;/,
   );
-  assert.match(decisions, /D-171/);
-  assert.match(decisions, /existing feed metadata から導出/);
-  assert.match(traceability, /FS-185/);
-  assert.match(dedupeSource, /ALLOWLISTED_FUZZY_REGISTRABLE_DOMAINS/);
-  assert.match(dedupeSource, /resolveAllowlistedRegistrableDomain/);
-  assert.match(dedupeSource, /buildFeedIdToFuzzyRegistrableDomain/);
+  assert.match(feedsData, /"fuzzyRegistrableDomainKey": "itmedia\.co\.jp"/);
+  assert.match(feedsData, /"fuzzyRegistrableDomainKey": "qiita\.com"/);
+  assert.match(feedsData, /"fuzzyRegistrableDomainKey": "zenn\.dev"/);
+  assert.match(loadFeedsSource, /ALLOWLISTED_FUZZY_REGISTRABLE_DOMAIN_KEYS/);
+  assert.match(loadFeedsSource, /validateFuzzyRegistrableDomainKey/);
+  assert.match(dedupeSource, /buildFeedIdToFuzzyRegistrableDomainKey/);
+  assert.doesNotMatch(dedupeSource, /resolveAllowlistedRegistrableDomain/);
+  assert.doesNotMatch(dedupeSource, /ALLOWLISTED_FUZZY_REGISTRABLE_DOMAINS/);
   assert.match(dedupeSource, /registrable-domain:/);
+  assert.match(
+    loadFeedsTest,
+    /loadFeeds rejects unsupported fuzzyRegistrableDomainKey values/,
+  );
   assert.match(
     loadFeedsTest,
     /dedupeArticles applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply/,
   );
   assert.match(
     loadFeedsTest,
-    /dedupeArticles falls back to feedUrl for allowlisted registrable-domain fuzzy matching when siteUrl does not resolve/,
-  );
-  assert.match(
-    loadFeedsTest,
-    /dedupeArticles does not fuzzy-merge blanket reddit hostname matches within 72 hours/,
+    /dedupeArticles does not fuzzy-merge allowlisted hostname matches without explicit fuzzyRegistrableDomainKey/,
   );
   assert.match(
     updateWorkflowTest,

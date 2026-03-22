@@ -1,4 +1,8 @@
 export type FuzzySourceFamilyKey = 'itmedia' | 'qiita' | 'zenn';
+export type FuzzyRegistrableDomainKey =
+  | 'itmedia.co.jp'
+  | 'qiita.com'
+  | 'zenn.dev';
 
 export interface FeedDefinition {
   id: string;
@@ -10,6 +14,7 @@ export interface FeedDefinition {
   shelfIds: string[];
   tags?: string[];
   fuzzySourceFamilyKey?: FuzzySourceFamilyKey;
+  fuzzyRegistrableDomainKey?: FuzzyRegistrableDomainKey;
 }
 
 export interface ShelfDefinition {

@@ -1024,6 +1024,12 @@ v1 の生成優先順位は以下とする。
 - 次差分は same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の precedence を維持したまま、registrable-domain fallback の opt-in 定義源だけを registry metadata に寄せることに限定し、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
 - 新しい registry field の値は existing allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）に限定し、generic site-wide hostname grouping、blanket `www.reddit.com` grouping、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
 
+### 10.5.27 Post-v1 fuzzy dedupe hostname registry implementation (`FS-DATA-22`)
+
+- `FS-DATA-22` では `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `data/feeds.json` / `scripts/pipeline/dedupeArticles.ts` / tests に閉じて、allowlisted registrable-domain fallback の opt-in key を `siteUrl` / `feedUrl` から自動導出せず、optional な explicit registry field `fuzzyRegistrableDomainKey` から読む
+- `fuzzyRegistrableDomainKey` の値は existing allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）に限定し、same `sourceName` fuzzy lookup → explicit `fuzzySourceFamilyKey` fallback → explicit registrable-domain fallback の precedence、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
+- explicit registrable-domain fallback でも exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / manual-review HTML artifact の existing bounded contract は維持し、derived metadata fallback、hardcoded domain allowlist、generic site-wide hostname grouping、blanket `www.reddit.com` grouping、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

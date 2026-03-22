@@ -43,13 +43,7 @@ interface FuzzyDuplicateMatch {
 
 const FUZZY_DEDUPE_WINDOW_MS = 72 * 60 * 60 * 1000;
 const FUZZY_TITLE_PUNCTUATION_PATTERN =
-  /[\(\)\[\]\{\}<>"'`“”‘’«»‹›「」『』【】〔〕（）〈〉《》｢｣:：;；,，.。!！?？\/／\\|｜·•・･_—–-]+/gu;
-const ALLOWLISTED_FUZZY_REGISTRABLE_DOMAINS = [
-  'itmedia.co.jp',
-  'qiita.com',
-  'zenn.dev',
-] as const;
-
+  /[()\[\]{}<>"'`“”‘’«»‹›「」『』【】〔〕（）〈〉《》｢｣:：;；,，.。!！?？/／\\|｜·•・･_—–-]+/gu;
 function buildFeedIdToFuzzySourceFamilyKey(
   feeds: FeedDefinition[] = [],
 ): Map<string, string> {
@@ -66,49 +60,17 @@ function buildFeedIdToFuzzySourceFamilyKey(
   return byFeedId;
 }
 
-function resolveAllowlistedRegistrableDomain(url: string): string | null {
-  let hostname: string;
-
-  try {
-    hostname = new URL(url).hostname
-      .toLocaleLowerCase('en-US')
-      .replace(/\.$/, '');
-  } catch {
-    return null;
-  }
-
-  if (hostname === '') {
-    return null;
-  }
-
-  for (const domain of ALLOWLISTED_FUZZY_REGISTRABLE_DOMAINS) {
-    if (hostname === domain || hostname.endsWith(`.${domain}`)) {
-      return domain;
-    }
-  }
-
-  return null;
-}
-
-function resolveFuzzyRegistrableDomain(feed: FeedDefinition): string | null {
-  return (
-    resolveAllowlistedRegistrableDomain(feed.siteUrl) ??
-    resolveAllowlistedRegistrableDomain(feed.feedUrl)
-  );
-}
-
-function buildFeedIdToFuzzyRegistrableDomain(
+function buildFeedIdToFuzzyRegistrableDomainKey(
   feeds: FeedDefinition[] = [],
 ): Map<string, string> {
   const byFeedId = new Map<string, string>();
 
   for (const feed of feeds) {
-    const registrableDomain = resolveFuzzyRegistrableDomain(feed);
-    if (registrableDomain === null) {
+    if (typeof feed.fuzzyRegistrableDomainKey !== 'string') {
       continue;
     }
 
-    byFeedId.set(feed.id, registrableDomain);
+    byFeedId.set(feed.id, feed.fuzzyRegistrableDomainKey);
   }
 
   return byFeedId;
@@ -291,7 +253,7 @@ function appendFuzzyLookupKeys(
 function resolveFuzzyDedupeLookupKeys(
   article: CanonicalArticle,
   feedIdToFuzzySourceFamilyKey: ReadonlyMap<string, string>,
-  feedIdToFuzzyRegistrableDomain: ReadonlyMap<string, string>,
+  feedIdToFuzzyRegistrableDomainKey: ReadonlyMap<string, string>,
 ): FuzzyDedupeLookupKey[] {
   if (typeof article.publishedAt !== 'string') {
     return [];
@@ -325,7 +287,9 @@ function resolveFuzzyDedupeLookupKeys(
     );
   }
 
-  const registrableDomain = feedIdToFuzzyRegistrableDomain.get(article.feedId);
+  const registrableDomain = feedIdToFuzzyRegistrableDomainKey.get(
+    article.feedId,
+  );
   if (typeof registrableDomain === 'string') {
     appendFuzzyLookupKeys(
       lookupKeys,
@@ -473,12 +437,12 @@ function registerFuzzyDedupeKeys(
   article: CanonicalArticle,
   index: number,
   feedIdToFuzzySourceFamilyKey: ReadonlyMap<string, string>,
-  feedIdToFuzzyRegistrableDomain: ReadonlyMap<string, string>,
+  feedIdToFuzzyRegistrableDomainKey: ReadonlyMap<string, string>,
 ): void {
   for (const lookupKey of resolveFuzzyDedupeLookupKeys(
     article,
     feedIdToFuzzySourceFamilyKey,
-    feedIdToFuzzyRegistrableDomain,
+    feedIdToFuzzyRegistrableDomainKey,
   )) {
     const existing = fuzzyKeyToIndexes.get(lookupKey.key);
     if (existing) {
@@ -638,12 +602,12 @@ function findFuzzyDuplicateMatch(
   dedupedArticles: CanonicalArticle[],
   article: CanonicalArticle,
   feedIdToFuzzySourceFamilyKey: ReadonlyMap<string, string>,
-  feedIdToFuzzyRegistrableDomain: ReadonlyMap<string, string>,
+  feedIdToFuzzyRegistrableDomainKey: ReadonlyMap<string, string>,
 ): FuzzyDuplicateMatch | null {
   for (const lookupKey of resolveFuzzyDedupeLookupKeys(
     article,
     feedIdToFuzzySourceFamilyKey,
-    feedIdToFuzzyRegistrableDomain,
+    feedIdToFuzzyRegistrableDomainKey,
   )) {
     const candidateIndexes = fuzzyKeyToIndexes.get(lookupKey.key);
     if (!candidateIndexes) {
@@ -735,9 +699,8 @@ export function dedupeArticlesWithSummary(
   const feedIdToFuzzySourceFamilyKey = buildFeedIdToFuzzySourceFamilyKey(
     options.feeds,
   );
-  const feedIdToFuzzyRegistrableDomain = buildFeedIdToFuzzyRegistrableDomain(
-    options.feeds,
-  );
+  const feedIdToFuzzyRegistrableDomainKey =
+    buildFeedIdToFuzzyRegistrableDomainKey(options.feeds);
   const disableFuzzyDedupe = options.disableFuzzyDedupe === true;
   const fuzzyRejectEntryKeys = buildFuzzyRejectEntrySet(
     options.fuzzyRejectEntries,
@@ -768,7 +731,7 @@ export function dedupeArticlesWithSummary(
             mergedArticle,
             existingIndex,
             feedIdToFuzzySourceFamilyKey,
-            feedIdToFuzzyRegistrableDomain,
+            feedIdToFuzzyRegistrableDomainKey,
           );
         }
         continue;
@@ -781,7 +744,7 @@ export function dedupeArticlesWithSummary(
         dedupedArticles,
         article,
         feedIdToFuzzySourceFamilyKey,
-        feedIdToFuzzyRegistrableDomain,
+        feedIdToFuzzyRegistrableDomainKey,
       );
       if (fuzzyDuplicateMatch !== null) {
         const { index: fuzzyDuplicateIndex, titleCompareKey } =
@@ -798,7 +761,7 @@ export function dedupeArticlesWithSummary(
             article,
             rejectedIndex,
             feedIdToFuzzySourceFamilyKey,
-            feedIdToFuzzyRegistrableDomain,
+            feedIdToFuzzyRegistrableDomainKey,
           );
           continue;
         }
@@ -837,7 +800,7 @@ export function dedupeArticlesWithSummary(
           mergedArticle,
           fuzzyDuplicateIndex,
           feedIdToFuzzySourceFamilyKey,
-          feedIdToFuzzyRegistrableDomain,
+          feedIdToFuzzyRegistrableDomainKey,
         );
         continue;
       }
@@ -852,7 +815,7 @@ export function dedupeArticlesWithSummary(
         article,
         nextIndex,
         feedIdToFuzzySourceFamilyKey,
-        feedIdToFuzzyRegistrableDomain,
+        feedIdToFuzzyRegistrableDomainKey,
       );
     }
   }
