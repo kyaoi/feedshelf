@@ -1030,6 +1030,19 @@ v1 の生成優先順位は以下とする。
 - `fuzzyRegistrableDomainKey` の値は existing allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）に限定し、same `sourceName` fuzzy lookup → explicit `fuzzySourceFamilyKey` fallback → explicit registrable-domain fallback の precedence、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
 - explicit registrable-domain fallback でも exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / manual-review HTML artifact の existing bounded contract は維持し、derived metadata fallback、hardcoded domain allowlist、generic site-wide hostname grouping、blanket `www.reddit.com` grouping、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
 
+
+### 10.5.28 Post-v1 fuzzy dedupe scope observability docs split (`FS-DOCS-42`)
+
+- `FS-DATA-22` までで same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` の widening tier は揃ったが、existing fuzzy audit / handoff / manual-review HTML artifact だけでは、どの tier で candidate 判定に到達したかを operator が読めない
+- 次差分は broader matching や stateful review surface ではなく、internal-only な match-scope surfacing に限定する。first implementation では `FuzzyDedupeAuditRecord` / `FuzzyDedupeHandoffRecord` / `--fuzzy-review-html-file` に optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を追加してよく、`matchedBy='fuzzyTitleDate'` と exact dedupe precedence、winner selection、same `language` + 72 時間 window、existing title compare key sequence は維持する
+- `scopeKind` は current run の fuzzy candidate 判定に実際に使われた widening tier を表す bounded observability field に限定し、accept/reject list の key、dedicated review-state JSON の shape、`update-state.json` mutation、public JSON / route / article card UI、checked-in artifact、broader matching、source registry 変更は同じ task に含めない
+
+### 10.5.29 Post-v1 fuzzy dedupe scope observability implementation (`FS-DATA-23`)
+
+- `FS-DATA-23` では `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests に閉じて、internal fuzzy audit / handoff / manual-review HTML artifact にだけ optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を surfacing してよい
+- `scopeKind` は same `sourceName` fuzzy lookup、explicit `fuzzySourceFamilyKey` fallback、explicit `fuzzyRegistrableDomainKey` fallback のうち current run の candidate 判定に実際に使われた tier を示し、`matchedBy='fuzzyTitleDate'`、accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、exact dedupe precedence、winner selection、same `language` + 72 時間 window、existing title compare key sequence は維持する
+- first implementation は internal observability の bounded surfacing に限定し、public JSON / route / article card UI / checked-in artifact / `update-state.json` mutation / broader matching / source registry 変更は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

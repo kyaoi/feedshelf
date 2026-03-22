@@ -612,6 +612,25 @@ Phase 6 の進め方:
 - `scripts/pipeline/dedupeArticles.ts` は `siteUrl` / `feedUrl` から hostname fallback 参加面を自動導出せず、same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ `feedId -> fuzzyRegistrableDomainKey` を使った registrable-domain fallback を後段で適用する
 - `data/feeds.json` は existing ITmedia / Qiita / Zenn feed にだけ bounded registrable-domain key を付与し、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'`、accept/reject / review-state / audit / handoff / manual-review HTML artifact の既存 bounded surface を維持する
 
+
+### Post-v1 fuzzy dedupe scope observability docs split
+
+- [x] `FS-DOCS-42` fuzzy dedupe の次差分を internal match-scope surfacing に限定し、broader matching / accept-reject key change / public JSON / state mutation と分離する
+
+完了条件:
+- `FS-DATA-23` の first implementation が、`matchedBy='fuzzyTitleDate'` を維持したまま、audit / handoff / `--fuzzy-review-html-file` にだけ optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を追加する task として着手できる
+- accept/reject list と dedicated review-state JSON の key shape は変えず、review-state writeback / `update-state.json` mutation / public JSON / checked-in artifact / public route は同じ task に含めない
+- same `sourceName` → explicit `fuzzySourceFamilyKey` → explicit `fuzzyRegistrableDomainKey` の precedence、same `language` + 72 時間 window、existing title compare key sequence を維持したまま、internal review artifact から widening tier を読める境界が docs で同期している
+
+### Post-v1 fuzzy dedupe scope observability implementation
+
+- [ ] `FS-DATA-23` audit / handoff / review HTML に fuzzy match の `scopeKind` を surfacing する
+
+完了条件:
+- `FuzzyDedupeAuditRecord` / `FuzzyDedupeHandoffRecord` と `--fuzzy-review-html-file` の surfacing にだけ optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を追加し、`matchedBy='fuzzyTitleDate'` と existing accept/reject / review-state key shape は維持する
+- `scopeKind` は current run の fuzzy candidate 判定に実際に使われた widening tier を表し、same `sourceName` 優先・explicit `fuzzySourceFamilyKey` fallback・explicit `fuzzyRegistrableDomainKey` fallback の precedence rewrite は行わない
+- public JSON / route / article card UI / checked-in artifact / `update-state.json` mutation / broader matching / source registry 変更は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -653,6 +672,8 @@ Phase 6 の進め方:
 - `FS-DOCS-40` で generic hostname grouping を blanket rule として開けず、same `sourceName` と explicit `fuzzySourceFamilyKey` の後段にある allowlisted registrable-domain fallback に限定する境界を docs で先に固定した
 - `FS-DATA-21` では same `sourceName` / explicit `fuzzySourceFamilyKey` の両方が未一致のときだけ、existing feed metadata から導出した allowlisted registrable-domain fallback を後段で使い、generic hostname grouping を開けずに bounded な cross-source duplicate を conservative に畳み込めるようにした
 - `FS-DATA-22` で allowlisted registrable-domain fallback の opt-in 定義源を `data/feeds.json` の explicit `fuzzyRegistrableDomainKey` へ移し、`siteUrl` / `feedUrl` 変更だけで参加面が暗黙に広がらないようにした
+- `FS-DOCS-42` では次の最小差分を heuristic の再拡張ではなく internal match-scope surfacing に限定し、same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` のどの tier で candidate になったかを audit / handoff / review HTML から読める境界だけを docs で先に固定した
+- この docs split により、次の実装候補は `FS-DATA-23` として `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）の internal surfacing へ進める一方、`matchedBy='fuzzyTitleDate'`・accept/reject key・public JSON は維持する
 
 ## メモ
 

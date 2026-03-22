@@ -1129,6 +1129,13 @@
 - 理由: `FS-DATA-21` の derived metadata fallback は first implementation としては十分だったが、feed metadata の変更だけで hostname fallback 参加面が暗黙に変わると drift と accidental widening を招きやすい。一方で explicit registry field に寄せれば repo-managed な opt-in を維持しつつ、same `sourceName` / explicit `fuzzySourceFamilyKey` precedence や bounded review surface を崩さずに管理しやすくなるため
 - 影響: 実装対象は `src/shared/contracts.ts` / `data/feeds.json` / `scripts/pipeline/loadFeeds.ts` / `scripts/pipeline/dedupeArticles.ts` / `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。first implementation の `fuzzyRegistrableDomainKey` は `itmedia.co.jp` / `qiita.com` / `zenn.dev` に限定し、same `sourceName` → explicit `fuzzySourceFamilyKey` → registrable-domain fallback の precedence、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'` を維持する。一方で derived metadata fallback / hardcoded domain allowlist / generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
+
+## D-174: fuzzy dedupe の次差分は internal match-scope surfacing に限定する
+
+- 決定: `FS-DATA-22` 後に widening tier の observability を補いたい場合でも、broader matching や review-state mutation ではなく、current run の fuzzy audit / handoff / manual-review HTML artifact にだけ optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を足す docs-first task として切り出す
+- 理由: same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` の 3 tier が揃ったことで、human reviewer からは「fuzzy merge が起きた」だけでなく「どの widening tier で起きたか」を読み分けたい需要が増えた。一方で accept/reject key や public JSON まで広げると scope が急に広がるため、まずは internal artifact の bounded observability に閉じるのが最小差分で安全なため
+- 影響: 後続 implementation は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests を中心に、`matchedBy='fuzzyTitleDate'` と existing `articleIdPair` key を維持したまま audit / handoff / `--fuzzy-review-html-file` に `scopeKind` を surfacing してよい。ただし broader matching、same `sourceName` → explicit `fuzzySourceFamilyKey` → explicit `fuzzyRegistrableDomainKey` の precedence rewrite、accept/reject list の key 変更、dedicated review-state JSON の shape 変更、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
