@@ -1018,6 +1018,12 @@ v1 の生成優先順位は以下とする。
 - first implementation の hostname fallback は repo-managed な allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）にだけ閉じ、subdomain を registrable domain へ畳み込んでよい。ただし generic site-wide hostname grouping や blanket `www.reddit.com` grouping は導入しない
 - hostname fallback でも same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよい。新しい registry field、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
 
+### 10.5.26 Post-v1 fuzzy dedupe hostname registry docs split (`FS-DOCS-41`)
+
+- `FS-DATA-21` までで allowlisted registrable-domain fallback は入ったが、participation を `siteUrl` / `feedUrl` からの自動導出と code 内 allowlist に頼り続けず、`data/feeds.json` 上の explicit bounded registry field（例: `fuzzyRegistrableDomainKey`）へ移す docs-first task として切り出す
+- 次差分は same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の precedence を維持したまま、registrable-domain fallback の opt-in 定義源だけを registry metadata に寄せることに限定し、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
+- 新しい registry field の値は existing allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）に限定し、generic site-wide hostname grouping、blanket `www.reddit.com` grouping、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

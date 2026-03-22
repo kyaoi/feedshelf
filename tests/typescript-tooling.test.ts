@@ -952,6 +952,37 @@ test('FS-DOCS-40 fuzzy dedupe hostname allowlist docs split stays aligned across
   assert.match(traceability, /generic site-wide hostname grouping/);
 });
 
+test('FS-DOCS-41 fuzzy dedupe hostname registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-41/);
+  assert.match(plan, /explicit registrable-domain registry field/);
+  assert.match(
+    spec,
+    /10\.5\.26 Post-v1 fuzzy dedupe hostname registry docs split/,
+  );
+  assert.match(spec, /fuzzyRegistrableDomainKey/);
+  assert.match(decisions, /D-172/);
+  assert.match(decisions, /accidental widening/);
+  assert.match(traceability, /FS-186/);
+  assert.match(traceability, /hardcoded domain allowlist/);
+});
+
 test('FS-DOCS-39 fuzzy dedupe source-family registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

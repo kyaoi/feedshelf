@@ -1117,6 +1117,12 @@
 - 理由: source-family fallback の bounded semantics は維持したまま、publisher 配下の feed variation で family key を追加する前の conservative な取りこぼしだけを減らしたいから。existing feed metadata から導出すれば public contract を増やさずに済み、`www.reddit.com` のような community host を blanket に束ねる generic rule も避けられる
 - 影響: 実装対象は `scripts/pipeline/dedupeArticles.ts` と tests に閉じる。first implementation の allowlist は `itmedia.co.jp` / `qiita.com` / `zenn.dev` に限定し、same `sourceName` → explicit `fuzzySourceFamilyKey` → registrable-domain fallback の precedence、same `language` + 72h gating、existing title compare key sequence、`matchedBy='fuzzyTitleDate'`、accept/reject / review-state / audit / handoff / manual-review HTML artifact の existing bounded surface を維持する。一方で generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は含めない
 
+## D-172: allowlisted registrable-domain fallback の定義源は explicit registry metadata へ寄せる
+
+- 決定: `FS-DATA-21` 後に hostname fallback を維持拡張したい場合でも、`siteUrl` / `feedUrl` からの自動導出と code 内 hardcoded domain allowlist を増やし続けるのではなく、participation の定義源を `data/feeds.json` の explicit bounded registry field（例: `fuzzyRegistrableDomainKey`）へ移す docs-first task として切り出す
+- 理由: existing feed metadata からの導出は first implementation としては十分だが、feed metadata の更新や `siteUrl` 変更だけで hostname fallback 参加面が暗黙に変わると drift と accidental widening を招きやすい。explicit registry field に寄せれば repo-managed な opt-in を維持しつつ、same `sourceName` / explicit `fuzzySourceFamilyKey` precedence や bounded review surface を崩さずに管理しやすくなる
+- 影響: 後続 implementation は `src/shared/contracts.ts` / `scripts/pipeline/loadFeeds.ts` / `data/feeds.json` / `scripts/pipeline/dedupeArticles.ts` / tests に閉じ、existing allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）だけを explicit registry value として許可してよい。一方で generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
