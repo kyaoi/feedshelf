@@ -1031,6 +1031,275 @@ test('dedupeArticles applies allowlisted source-family fuzzy fallback for siblin
   assert.equal(deduped[0].provenance[1].matchedBy, 'fuzzyTitleDate');
 });
 
+test('dedupeArticles applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply', () => {
+  const feeds: FeedDefinition[] = [
+    {
+      id: 'zenn-alpha',
+      name: 'Zenn Alpha',
+      feedUrl: 'https://feeds.example.net/zenn-alpha.xml',
+      siteUrl: 'https://alpha.zenn.dev/',
+      language: 'ja',
+      enabled: true,
+      shelfIds: ['it'],
+    },
+    {
+      id: 'zenn-beta',
+      name: 'Zenn Beta',
+      feedUrl: 'https://feeds.example.net/zenn-beta.xml',
+      siteUrl: 'https://beta.zenn.dev/topics/rust',
+      language: 'ja',
+      enabled: true,
+      shelfIds: ['it', 'science'],
+    },
+  ];
+
+  const deduped = dedupeArticlesWithSummary(
+    [
+      {
+        id: 'article-fuzzy-domain-a',
+        feedId: 'zenn-alpha',
+        sourceName: 'Zenn Alpha',
+        language: 'ja',
+        shelfIds: ['it'],
+        title: 'Zenn shared article',
+        url: 'https://zenn.dev/example/articles/shared-a',
+        summary: 'Short summary.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['Zenn'],
+        entryTags: ['alpha'],
+        sourceItemId: 'zenn-shared-a',
+        provenance: [
+          {
+            feedId: 'zenn-alpha',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'zenn-shared-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['zenn-alpha'],
+      },
+      {
+        id: 'article-fuzzy-domain-b',
+        feedId: 'zenn-beta',
+        sourceName: 'Zenn Beta',
+        language: 'ja',
+        shelfIds: ['it', 'science'],
+        title: '  zenn   shared article  ',
+        url: 'https://zenn.dev/example/articles/shared-b',
+        summary: 'Longer summary with more useful detail.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: 'Zenn Author',
+        imageUrl: 'https://zenn.dev/shared.jpg',
+        sourceTags: ['Zenn'],
+        entryTags: ['beta'],
+        sourceItemId: 'zenn-shared-b',
+        provenance: [
+          {
+            feedId: 'zenn-beta',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'zenn-shared-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['zenn-beta'],
+      },
+    ],
+    { feeds },
+  );
+
+  assert.equal(deduped.articles.length, 1);
+  assert.equal(deduped.fuzzyDuplicatesCollapsed, 1);
+  assert.equal(
+    deduped.fuzzyAuditRecords[0]?.titleCompareKey,
+    'zenn shared article',
+  );
+  assert.deepEqual(deduped.articles[0].seenInFeeds, [
+    'zenn-beta',
+    'zenn-alpha',
+  ]);
+  assert.equal(deduped.articles[0].provenance[1].matchedBy, 'fuzzyTitleDate');
+});
+
+test('dedupeArticles falls back to feedUrl for allowlisted registrable-domain fuzzy matching when siteUrl does not resolve', () => {
+  const feeds: FeedDefinition[] = [
+    {
+      id: 'zenn-feedurl-alpha',
+      name: 'Zenn Feedurl Alpha',
+      feedUrl: 'https://feeds.zenn.dev/alpha.xml',
+      siteUrl: 'https://publisher.example.com/alpha',
+      language: 'ja',
+      enabled: true,
+      shelfIds: ['it'],
+    },
+    {
+      id: 'zenn-feedurl-beta',
+      name: 'Zenn Feedurl Beta',
+      feedUrl: 'https://api.zenn.dev/beta.xml',
+      siteUrl: 'https://publisher.example.com/beta',
+      language: 'ja',
+      enabled: true,
+      shelfIds: ['it'],
+    },
+  ];
+
+  const deduped = dedupeArticles(
+    [
+      {
+        id: 'article-fuzzy-domain-feedurl-a',
+        feedId: 'zenn-feedurl-alpha',
+        sourceName: 'Zenn Feedurl Alpha',
+        language: 'ja',
+        shelfIds: ['it'],
+        title: 'Feedurl based fallback article',
+        url: 'https://zenn.dev/example/articles/feedurl-a',
+        summary: 'First copy.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['Zenn'],
+        entryTags: ['alpha'],
+        sourceItemId: 'feedurl-a',
+        provenance: [
+          {
+            feedId: 'zenn-feedurl-alpha',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'feedurl-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['zenn-feedurl-alpha'],
+      },
+      {
+        id: 'article-fuzzy-domain-feedurl-b',
+        feedId: 'zenn-feedurl-beta',
+        sourceName: 'Zenn Feedurl Beta',
+        language: 'ja',
+        shelfIds: ['it'],
+        title: ' feedurl   based fallback article ',
+        url: 'https://zenn.dev/example/articles/feedurl-b',
+        summary: 'Second copy.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: 'Zenn Author',
+        imageUrl: null,
+        sourceTags: ['Zenn'],
+        entryTags: ['beta'],
+        sourceItemId: 'feedurl-b',
+        provenance: [
+          {
+            feedId: 'zenn-feedurl-beta',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'feedurl-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['zenn-feedurl-beta'],
+      },
+    ],
+    { feeds },
+  );
+
+  assert.equal(deduped.length, 1);
+  assert.deepEqual(deduped[0].seenInFeeds, [
+    'zenn-feedurl-beta',
+    'zenn-feedurl-alpha',
+  ]);
+});
+
+test('dedupeArticles does not fuzzy-merge blanket reddit hostname matches within 72 hours', () => {
+  const feeds: FeedDefinition[] = [
+    {
+      id: 'reddit-programming',
+      name: 'Reddit Programming',
+      feedUrl: 'https://www.reddit.com/r/programming/.rss',
+      siteUrl: 'https://www.reddit.com/r/programming/',
+      language: 'en',
+      enabled: true,
+      shelfIds: ['it'],
+    },
+    {
+      id: 'reddit-python',
+      name: 'Reddit Python',
+      feedUrl: 'https://www.reddit.com/r/python/.rss',
+      siteUrl: 'https://www.reddit.com/r/python/',
+      language: 'en',
+      enabled: true,
+      shelfIds: ['it'],
+    },
+  ];
+
+  const deduped = dedupeArticles(
+    [
+      {
+        id: 'article-fuzzy-reddit-a',
+        feedId: 'reddit-programming',
+        sourceName: 'Reddit Programming',
+        language: 'en',
+        shelfIds: ['it'],
+        title: 'Shared reddit title',
+        url: 'https://www.reddit.com/r/programming/comments/example_a',
+        summary: 'First copy.',
+        publishedAt: '2026-03-08T00:00:00.000Z',
+        fetchedAt: '2026-03-08T06:00:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['Reddit'],
+        entryTags: ['programming'],
+        sourceItemId: 'reddit-a',
+        provenance: [
+          {
+            feedId: 'reddit-programming',
+            firstSeenAt: '2026-03-08T06:00:00.000Z',
+            lastSeenAt: '2026-03-08T06:00:00.000Z',
+            sourceItemId: 'reddit-a',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['reddit-programming'],
+      },
+      {
+        id: 'article-fuzzy-reddit-b',
+        feedId: 'reddit-python',
+        sourceName: 'Reddit Python',
+        language: 'en',
+        shelfIds: ['it'],
+        title: ' shared reddit title ',
+        url: 'https://www.reddit.com/r/python/comments/example_b',
+        summary: 'Second copy.',
+        publishedAt: '2026-03-10T23:59:59.000Z',
+        fetchedAt: '2026-03-10T06:05:00.000Z',
+        author: null,
+        imageUrl: null,
+        sourceTags: ['Reddit'],
+        entryTags: ['python'],
+        sourceItemId: 'reddit-b',
+        provenance: [
+          {
+            feedId: 'reddit-python',
+            firstSeenAt: '2026-03-10T06:05:00.000Z',
+            lastSeenAt: '2026-03-10T06:05:00.000Z',
+            sourceItemId: 'reddit-b',
+            matchedBy: 'primary',
+          },
+        ],
+        seenInFeeds: ['reddit-python'],
+      },
+    ],
+    { feeds },
+  );
+
+  assert.equal(deduped.length, 2);
+});
+
 test('dedupeArticles does not fuzzy-merge non-allowlisted cross-source title matches within 72 hours', () => {
   const deduped = dedupeArticles([
     {
@@ -1735,6 +2004,118 @@ test('runPipeline applies allowlisted source-family fuzzy fallback for sibling f
       winnerFeedId: 'qiita-rust',
       incomingFeedId: 'qiita-rust',
       titleCompareKey: 'qiita shared article',
+      publishedAtDeltaHours: 72,
+      matchedBy: 'fuzzyTitleDate',
+    },
+  ]);
+});
+
+test('runPipeline applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply', async () => {
+  const tempDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-run-fuzzy-domain-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+
+  await fs.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...RSS_FEED,
+        id: 'zenn-alpha',
+        name: 'Zenn Alpha',
+        feedUrl: 'https://feeds.example.net/zenn-alpha.xml',
+        siteUrl: 'https://alpha.zenn.dev/',
+      },
+      {
+        ...RSS_FEED,
+        id: 'zenn-beta',
+        name: 'Zenn Beta',
+        feedUrl: 'https://feeds.example.net/zenn-beta.xml',
+        siteUrl: 'https://beta.zenn.dev/topics/rust',
+      },
+    ]),
+  );
+  await fs.writeFile(shelvesPath, SHELVES_YAML);
+
+  const normalizedArticles = [
+    {
+      id: 'article-fuzzy-domain-run-a',
+      feedId: 'zenn-alpha',
+      sourceName: 'Zenn Alpha',
+      language: 'ja',
+      shelfIds: ['it'],
+      title: 'Zenn runtime shared article',
+      url: 'https://zenn.dev/example/articles/run-a',
+      summary: 'Short summary.',
+      publishedAt: '2026-03-08T00:00:00.000Z',
+      fetchedAt: '2026-03-08T06:00:00.000Z',
+      author: null,
+      imageUrl: null,
+      sourceTags: ['Zenn'],
+      entryTags: ['alpha'],
+      sourceItemId: 'run-a',
+      provenance: [
+        {
+          feedId: 'zenn-alpha',
+          firstSeenAt: '2026-03-08T06:00:00.000Z',
+          lastSeenAt: '2026-03-08T06:00:00.000Z',
+          sourceItemId: 'run-a',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['zenn-alpha'],
+    },
+    {
+      id: 'article-fuzzy-domain-run-b',
+      feedId: 'zenn-beta',
+      sourceName: 'Zenn Beta',
+      language: 'ja',
+      shelfIds: ['it'],
+      title: ' zenn runtime shared article ',
+      url: 'https://zenn.dev/example/articles/run-b',
+      summary: 'Longer summary with more useful detail.',
+      publishedAt: '2026-03-10T23:59:59.000Z',
+      fetchedAt: '2026-03-10T06:05:00.000Z',
+      author: 'Zenn Author',
+      imageUrl: null,
+      sourceTags: ['Zenn'],
+      entryTags: ['beta'],
+      sourceItemId: 'run-b',
+      provenance: [
+        {
+          feedId: 'zenn-beta',
+          firstSeenAt: '2026-03-10T06:05:00.000Z',
+          lastSeenAt: '2026-03-10T06:05:00.000Z',
+          sourceItemId: 'run-b',
+          matchedBy: 'primary',
+        },
+      ],
+      seenInFeeds: ['zenn-beta'],
+    },
+  ];
+
+  const summary = await runPipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir: path.join(tempDir, 'public-data'),
+    dryRun: true,
+    generatedAt: '2026-03-10T06:05:00Z',
+    fuzzyAuditPath,
+    normalizedArticles,
+    logger: { log() {} },
+  });
+
+  assert.equal(summary.dedupedArticles, 1);
+  assert.equal(summary.fuzzyDuplicatesCollapsed, 1);
+  assert.deepEqual(JSON.parse(await fs.readFile(fuzzyAuditPath, 'utf8')), [
+    {
+      winnerArticleId: 'article-fuzzy-domain-run-b',
+      incomingArticleId: 'article-fuzzy-domain-run-b',
+      winnerFeedId: 'zenn-beta',
+      incomingFeedId: 'zenn-beta',
+      titleCompareKey: 'zenn runtime shared article',
       publishedAtDeltaHours: 72,
       matchedBy: 'fuzzyTitleDate',
     },

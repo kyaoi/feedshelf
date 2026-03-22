@@ -400,6 +400,93 @@ test('runUpdatePipeline applies allowlisted source-family fuzzy fallback for sib
   assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
 });
 
+test('runUpdatePipeline applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply', async () => {
+  const tempDir = await fsp.mkdtemp(
+    path.join(os.tmpdir(), 'feedshelf-update-fuzzy-domain-'),
+  );
+  const feedsPath = path.join(tempDir, 'feeds.json');
+  const shelvesPath = path.join(tempDir, 'shelves.yaml');
+  const outputDir = path.join(tempDir, 'public-data');
+  const fuzzyAuditPath = path.join(tempDir, 'reports', 'fuzzy-audit.json');
+
+  await fsp.writeFile(
+    feedsPath,
+    JSON.stringify([
+      {
+        ...ENABLED_FEED,
+        id: 'zenn-alpha',
+        name: 'Zenn Alpha',
+        feedUrl: 'https://example.com/zenn-alpha.xml',
+        siteUrl: 'https://alpha.zenn.dev/',
+      },
+      {
+        ...ENABLED_FEED,
+        id: 'zenn-beta',
+        name: 'Zenn Beta',
+        feedUrl: 'https://example.com/zenn-beta.xml',
+        siteUrl: 'https://beta.zenn.dev/topics/rust',
+      },
+    ]),
+  );
+  await fsp.writeFile(shelvesPath, SHELVES_YAML);
+
+  const firstXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Zenn Alpha</title>
+    <item>
+      <title>Zenn update shared article</title>
+      <link>https://zenn.dev/example/articles/update-a</link>
+      <description><![CDATA[<p>First copy.</p>]]></description>
+      <pubDate>Mon, 09 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>zenn-a</guid>
+    </item>
+  </channel>
+</rss>`;
+  const secondXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Zenn Beta</title>
+    <item>
+      <title> zenn update shared article </title>
+      <link>https://zenn.dev/example/articles/update-b</link>
+      <description><![CDATA[<p>Second copy with more detail.</p>]]></description>
+      <pubDate>Wed, 11 Mar 2026 08:59:59 +0000</pubDate>
+      <guid>zenn-b</guid>
+    </item>
+  </channel>
+</rss>`;
+
+  const summary = await runUpdatePipeline({
+    feedsPath,
+    shelvesPath,
+    outputDir,
+    dryRun: false,
+    generatedAt: '2026-03-11T09:10:11Z',
+    fuzzyAuditPath,
+    logger: { log() {} },
+    fetchImpl: async (url: string) => ({
+      ok: true,
+      status: 200,
+      async text() {
+        return String(url).includes('zenn-beta') ? secondXml : firstXml;
+      },
+    }),
+  });
+
+  assert.equal(summary.duplicatesCollapsed, 1);
+  assert.equal(summary.fuzzyDuplicatesCollapsed, 1);
+  assert.equal(summary.publicArticles, 1);
+
+  const fuzzyAudit = JSON.parse(await fsp.readFile(fuzzyAuditPath, 'utf8'));
+  assert.equal(fuzzyAudit.length, 1);
+  assert.equal(fuzzyAudit[0].winnerFeedId, 'zenn-beta');
+  assert.equal(fuzzyAudit[0].incomingFeedId, 'zenn-beta');
+  assert.equal(fuzzyAudit[0].titleCompareKey, 'zenn update shared article');
+  assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
+  assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+});
+
 test('runUpdatePipeline applies broader punctuation-folded fuzzy fallback for same-source title matches within 72 hours', async () => {
   const tempDir = await fsp.mkdtemp(
     path.join(os.tmpdir(), 'feedshelf-update-fuzzy-punct-'),

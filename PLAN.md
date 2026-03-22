@@ -587,11 +587,12 @@ Phase 6 の進め方:
 ### Post-v1 fuzzy dedupe hostname allowlist docs split
 
 - [x] `FS-DOCS-40` fuzzy dedupe の次差分を allowlisted registrable-domain fallback に限定し、generic site-wide hostname grouping / source-family precedence rewrite / state mutation と分離する
+- [x] `FS-DATA-21` allowlisted registrable-domain fallback を既存 `siteUrl` / `feedUrl` metadata から導出して実装する
 
 完了条件:
-- `FS-DATA-21` の first implementation が、same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ、`siteUrl` を優先し必要なら `feedUrl` を fallback に使って導出した registrable domain による deterministic fallback を試す internal-only task として着手できる
-- hostname fallback は same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持したまま、repo-managed な allowlisted registrable domain にだけ閉じる。`www.reddit.com` のような generic topic/community host を blanket に束ねる rule は含めない
-- explicit `fuzzySourceFamilyKey` による fallback precedence、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持し、cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
+- `scripts/pipeline/dedupeArticles.ts` は same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ、`siteUrl` を優先し必要なら `feedUrl` を fallback に使って導出した registrable domain による deterministic fallback を後段で試す
+- first implementation の hostname fallback は repo-managed な allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）に限定し、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
+- explicit `fuzzySourceFamilyKey` precedence、accept/reject / review-state / audit / handoff / review HTML artifact の既存 bounded surface は維持し、generic site-wide hostname grouping / blanket `www.reddit.com` grouping / cross-language merge / edit distance / body fetch / HTML canonical parse / `update-state.json` mutation / checked-in artifact / public route は同じ task に含めない
 
 ## 直近の次タスク
 

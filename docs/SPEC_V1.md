@@ -1012,6 +1012,12 @@ v1 の生成優先順位は以下とする。
 - 次差分は same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ後段で試す hostname fallback に限定し、same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'` を維持する
 - hostname fallback は repo-managed な allowlisted registrable domain にだけ閉じ、同じ host なら一律に merge 候補化する generic site-wide rule を導入しない。とくに `www.reddit.com` のような topic/community feed が多数ぶら下がる host を blanket に束ねる heuristic、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
 
+### 10.5.25 Post-v1 fuzzy dedupe hostname allowlist implementation (`FS-DATA-21`)
+
+- `FS-DATA-21` では `scripts/pipeline/dedupeArticles.ts` と既存 run / update の `feeds.json` 読み込み結果の再利用に閉じて、same `sourceName` fuzzy lookup と explicit `fuzzySourceFamilyKey` fallback の両方が未一致のときだけ、`siteUrl` を優先し必要なら `feedUrl` を fallback に使って導出した registrable domain による deterministic fallback を後段で試してよい
+- first implementation の hostname fallback は repo-managed な allowlisted registrable domain（`itmedia.co.jp` / `qiita.com` / `zenn.dev`）にだけ閉じ、subdomain を registrable domain へ畳み込んでよい。ただし generic site-wide hostname grouping や blanket `www.reddit.com` grouping は導入しない
+- hostname fallback でも same `language` と既存 72 時間 window、existing title compare key sequence（exact title key → punctuation-folded fallback）、`matchedBy='fuzzyTitleDate'`、exact dedupe precedence、winner selection、accept/reject / review-state / audit / handoff / manual-review HTML artifact の既存 bounded contract を維持してよい。新しい registry field、cross-language merge、edit distance、body fetch、HTML canonical parse、`update-state.json` mutation、checked-in artifact、public route は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

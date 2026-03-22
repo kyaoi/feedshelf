@@ -1502,6 +1502,71 @@ test('FS-DATA-17 fuzzy dedupe manual-review HTML implementation stays aligned ac
   );
 });
 
+test('FS-DATA-21 fuzzy dedupe hostname allowlist implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, implementation, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-21/);
+  assert.match(plan, /allowlisted registrable-domain fallback/);
+  assert.match(
+    spec,
+    /10\.5\.25 Post-v1 fuzzy dedupe hostname allowlist implementation/,
+  );
+  assert.match(
+    spec,
+    /allowlisted registrable domain（`itmedia\.co\.jp` \/ `qiita\.com` \/ `zenn\.dev`）/,
+  );
+  assert.match(decisions, /D-171/);
+  assert.match(decisions, /existing feed metadata から導出/);
+  assert.match(traceability, /FS-185/);
+  assert.match(dedupeSource, /ALLOWLISTED_FUZZY_REGISTRABLE_DOMAINS/);
+  assert.match(dedupeSource, /resolveAllowlistedRegistrableDomain/);
+  assert.match(dedupeSource, /buildFeedIdToFuzzyRegistrableDomain/);
+  assert.match(dedupeSource, /registrable-domain:/);
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticles applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply/,
+  );
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticles falls back to feedUrl for allowlisted registrable-domain fuzzy matching when siteUrl does not resolve/,
+  );
+  assert.match(
+    loadFeedsTest,
+    /dedupeArticles does not fuzzy-merge blanket reddit hostname matches within 72 hours/,
+  );
+  assert.match(
+    updateWorkflowTest,
+    /runUpdatePipeline applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply/,
+  );
+});
+
 test('FS-DATA-20 fuzzy dedupe source-family registry implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, data, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
