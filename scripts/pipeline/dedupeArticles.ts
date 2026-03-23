@@ -4,6 +4,7 @@ import type {
   CanonicalArticle,
   FeedDefinition,
   FuzzyDedupeAcceptEntry,
+  FuzzyDedupeScopeKind,
   FuzzyDedupeAuditRecord,
   FuzzyDedupeHandoffRecord,
   FuzzyDedupeRejectEntry,
@@ -34,11 +35,13 @@ interface DedupeMatch {
 interface FuzzyDedupeLookupKey {
   key: string;
   titleCompareKey: string;
+  scopeKind: FuzzyDedupeScopeKind;
 }
 
 interface FuzzyDuplicateMatch {
   index: number;
   titleCompareKey: string;
+  scopeKind: FuzzyDedupeScopeKind;
 }
 
 const FUZZY_DEDUPE_WINDOW_MS = 72 * 60 * 60 * 1000;
@@ -239,6 +242,7 @@ function buildFuzzyLookupKey(
 function appendFuzzyLookupKeys(
   lookupKeys: FuzzyDedupeLookupKey[],
   scopeKey: string,
+  scopeKind: FuzzyDedupeScopeKind,
   language: string,
   titleCompareKeys: string[],
 ): void {
@@ -246,6 +250,7 @@ function appendFuzzyLookupKeys(
     lookupKeys.push({
       key: buildFuzzyLookupKey(scopeKey, language, titleCompareKey),
       titleCompareKey,
+      scopeKind,
     });
   }
 }
@@ -273,6 +278,7 @@ function resolveFuzzyDedupeLookupKeys(
   appendFuzzyLookupKeys(
     lookupKeys,
     `source:${article.sourceName}`,
+    'source',
     article.language,
     titleCompareKeys,
   );
@@ -282,6 +288,7 @@ function resolveFuzzyDedupeLookupKeys(
     appendFuzzyLookupKeys(
       lookupKeys,
       `source-family:${sourceFamilyKey}`,
+      'sourceFamily',
       article.language,
       titleCompareKeys,
     );
@@ -294,6 +301,7 @@ function resolveFuzzyDedupeLookupKeys(
     appendFuzzyLookupKeys(
       lookupKeys,
       `registrable-domain:${registrableDomain}`,
+      'registrableDomain',
       article.language,
       titleCompareKeys,
     );
@@ -478,6 +486,7 @@ function createFuzzyDedupeAuditRecord(
   existing: CanonicalArticle,
   incoming: CanonicalArticle,
   titleCompareKey: string,
+  scopeKind: FuzzyDedupeScopeKind,
 ): FuzzyDedupeAuditRecord {
   const winner = pickWinner(existing, incoming);
 
@@ -492,6 +501,7 @@ function createFuzzyDedupeAuditRecord(
       incoming.publishedAt,
     ),
     matchedBy: 'fuzzyTitleDate',
+    scopeKind,
   };
 }
 
@@ -499,11 +509,17 @@ function createFuzzyDedupeHandoffRecord(
   existing: CanonicalArticle,
   incoming: CanonicalArticle,
   titleCompareKey: string,
+  scopeKind: FuzzyDedupeScopeKind,
 ): FuzzyDedupeHandoffRecord {
   const winner = pickWinner(existing, incoming);
 
   return {
-    ...createFuzzyDedupeAuditRecord(existing, incoming, titleCompareKey),
+    ...createFuzzyDedupeAuditRecord(
+      existing,
+      incoming,
+      titleCompareKey,
+      scopeKind,
+    ),
     winnerTitle: winner.title,
     incomingTitle: incoming.title,
     winnerUrl: winner.url,
@@ -641,6 +657,7 @@ function findFuzzyDuplicateMatch(
       return {
         index: bestIndex,
         titleCompareKey: lookupKey.titleCompareKey,
+        scopeKind: lookupKey.scopeKind,
       };
     }
   }
@@ -747,8 +764,11 @@ export function dedupeArticlesWithSummary(
         feedIdToFuzzyRegistrableDomainKey,
       );
       if (fuzzyDuplicateMatch !== null) {
-        const { index: fuzzyDuplicateIndex, titleCompareKey } =
-          fuzzyDuplicateMatch;
+        const {
+          index: fuzzyDuplicateIndex,
+          titleCompareKey,
+          scopeKind,
+        } = fuzzyDuplicateMatch;
         const existingArticle = dedupedArticles[fuzzyDuplicateIndex];
         if (
           isFuzzyMergeRejected(fuzzyRejectEntryKeys, existingArticle, article)
@@ -782,6 +802,7 @@ export function dedupeArticlesWithSummary(
               existingArticle,
               article,
               titleCompareKey,
+              scopeKind,
             ),
           );
           fuzzyHandoffRecords.push(
@@ -789,6 +810,7 @@ export function dedupeArticlesWithSummary(
               existingArticle,
               article,
               titleCompareKey,
+              scopeKind,
             ),
           );
         }

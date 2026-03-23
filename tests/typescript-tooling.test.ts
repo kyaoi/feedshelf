@@ -1569,6 +1569,79 @@ test('FS-DATA-17 fuzzy dedupe manual-review HTML implementation stays aligned ac
   );
 });
 
+test('FS-DATA-23 fuzzy dedupe scope observability implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, implementation, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const contracts = fs.readFileSync(
+    path.resolve(__dirname, '..', 'src/shared/contracts.ts'),
+    'utf8',
+  );
+  const dedupeSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/dedupeArticles.ts'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-23/);
+  assert.match(plan, /manual-review HTML/);
+  assert.match(
+    spec,
+    /10\.5\.29 Post-v1 fuzzy dedupe scope observability implementation/,
+  );
+  assert.match(spec, /optional な `scopeKind`/);
+  assert.match(decisions, /D-175/);
+  assert.match(decisions, /current-run artifact にだけ widening tier を出す/);
+  assert.match(traceability, /FS-189/);
+  assert.match(
+    contracts,
+    /export type FuzzyDedupeScopeKind =\s*(?:\|\s*)?'source'\s*(?:\|\s*)?'sourceFamily'\s*(?:\|\s*)?'registrableDomain';/m,
+  );
+  assert.match(contracts, /scopeKind\?: FuzzyDedupeScopeKind;/);
+  assert.match(
+    dedupeSource,
+    /`source:\$\{article\.sourceName\}`,[\s\S]*?'source'/,
+  );
+  assert.match(
+    dedupeSource,
+    /`source-family:\$\{sourceFamilyKey\}`,[\s\S]*?'sourceFamily'/,
+  );
+  assert.match(
+    dedupeSource,
+    /`registrable-domain:\$\{registrableDomain\}`,[\s\S]*?'registrableDomain'/,
+  );
+  assert.match(runSource, /scopeKind=\$\{escapeHtml\(scopeKind\)\}/);
+  assert.match(loadFeedsTest, /scopeKind: 'source'/);
+  assert.match(loadFeedsTest, /scopeKind=source/);
+  assert.match(updateWorkflowTest, /scopeKind, 'sourceFamily'/);
+  assert.match(updateWorkflowTest, /scopeKind, 'registrableDomain'/);
+  assert.match(updateWorkflowTest, /scopeKind, 'source'/);
+});
+
 test('FS-DATA-22 fuzzy dedupe hostname registry implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, data, implementation, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

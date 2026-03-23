@@ -3,6 +3,10 @@ export type FuzzyRegistrableDomainKey =
   | 'itmedia.co.jp'
   | 'qiita.com'
   | 'zenn.dev';
+export type FuzzyDedupeScopeKind =
+  | 'source'
+  | 'sourceFamily'
+  | 'registrableDomain';
 
 export interface FeedDefinition {
   id: string;
@@ -242,6 +246,7 @@ export interface FuzzyDedupeAuditRecord {
   titleCompareKey: string;
   publishedAtDeltaHours: number;
   matchedBy: 'fuzzyTitleDate';
+  scopeKind?: FuzzyDedupeScopeKind;
 }
 
 export interface FuzzyDedupeHandoffRecord extends FuzzyDedupeAuditRecord {

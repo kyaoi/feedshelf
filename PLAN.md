@@ -624,7 +624,7 @@ Phase 6 の進め方:
 
 ### Post-v1 fuzzy dedupe scope observability implementation
 
-- [ ] `FS-DATA-23` audit / handoff / review HTML に fuzzy match の `scopeKind` を surfacing する
+- [x] `FS-DATA-23` audit / handoff / review HTML に fuzzy match の `scopeKind` を surfacing する
 
 完了条件:
 - `FuzzyDedupeAuditRecord` / `FuzzyDedupeHandoffRecord` と `--fuzzy-review-html-file` の surfacing にだけ optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を追加し、`matchedBy='fuzzyTitleDate'` と existing accept/reject / review-state key shape は維持する
@@ -674,6 +674,7 @@ Phase 6 の進め方:
 - `FS-DATA-22` で allowlisted registrable-domain fallback の opt-in 定義源を `data/feeds.json` の explicit `fuzzyRegistrableDomainKey` へ移し、`siteUrl` / `feedUrl` 変更だけで参加面が暗黙に広がらないようにした
 - `FS-DOCS-42` では次の最小差分を heuristic の再拡張ではなく internal match-scope surfacing に限定し、same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` のどの tier で candidate になったかを audit / handoff / review HTML から読める境界だけを docs で先に固定した
 - この docs split により、次の実装候補は `FS-DATA-23` として `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）の internal surfacing へ進める一方、`matchedBy='fuzzyTitleDate'`・accept/reject key・public JSON は維持する
+- `FS-DATA-23` では current run の fuzzy audit / handoff record に optional `scopeKind` を追加し、manual-review HTML でも current-run candidate card に widening tier を表示できるようにした。一方で accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、`update-state.json`、public JSON / route は変更していない
 
 ## メモ
 

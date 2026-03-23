@@ -247,6 +247,12 @@ function renderOptionalLink(url: string, label: string): string {
   return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
 }
 
+function renderOptionalScopeKind(scopeKind: string | undefined): string {
+  return typeof scopeKind === 'string' && scopeKind !== ''
+    ? `<span class="meta-pill">scopeKind=${escapeHtml(scopeKind)}</span>`
+    : '';
+}
+
 function renderArticleIdPair(articleIdPair: [string, string]): string {
   return `${escapeHtml(articleIdPair[0])} ↔ ${escapeHtml(articleIdPair[1])}`;
 }
@@ -327,6 +333,7 @@ function renderFuzzyReviewCurrentRunSection({
                   </div>
                   <div class="meta-pills">
                     <span class="meta-pill">matchedBy=${escapeHtml(record.matchedBy)}</span>
+                    ${renderOptionalScopeKind(record.scopeKind)}
                     <span class="meta-pill">Δ=${escapeHtml(record.publishedAtDeltaHours)}h</span>
                   </div>
                 </div>

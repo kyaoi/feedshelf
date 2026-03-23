@@ -1136,6 +1136,12 @@
 - 理由: same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` の 3 tier が揃ったことで、human reviewer からは「fuzzy merge が起きた」だけでなく「どの widening tier で起きたか」を読み分けたい需要が増えた。一方で accept/reject key や public JSON まで広げると scope が急に広がるため、まずは internal artifact の bounded observability に閉じるのが最小差分で安全なため
 - 影響: 後続 implementation は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / `scripts/pipeline/update.ts` / tests を中心に、`matchedBy='fuzzyTitleDate'` と existing `articleIdPair` key を維持したまま audit / handoff / `--fuzzy-review-html-file` に `scopeKind` を surfacing してよい。ただし broader matching、same `sourceName` → explicit `fuzzySourceFamilyKey` → explicit `fuzzyRegistrableDomainKey` の precedence rewrite、accept/reject list の key 変更、dedicated review-state JSON の shape 変更、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI は同じ task に含めない
 
+## D-175: `FS-DATA-23` は current-run artifact にだけ widening tier を出す
+
+- 決定: `FS-DATA-23` では fuzzy audit / handoff record に optional な `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）を追加し、`--fuzzy-review-html-file` でも current-run candidate card にだけ同じ widening tier を表示する
+- 理由: operator が `matchedBy='fuzzyTitleDate'` の current run candidate を読むとき、same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` のどの tier で candidate 判定に到達したかが分かると review がしやすい。一方で accept/reject key や dedicated review-state JSON まで変えると scope が広がりすぎるため
+- 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / tests に閉じる。`scopeKind` は current run で実際に使われた lookup tier を表し、accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、`update-state.json` mutation、public JSON / route / article card UI は維持する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

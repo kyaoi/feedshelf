@@ -943,6 +943,7 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
     titleCompareKey: 'shared title',
     publishedAtDeltaHours: 72,
     matchedBy: 'fuzzyTitleDate',
+    scopeKind: 'source',
   });
   assert.equal(enabled.fuzzyHandoffRecords.length, 1);
   assert.deepEqual(enabled.fuzzyHandoffRecords[0], {
@@ -959,6 +960,7 @@ test('dedupeArticlesWithSummary reports fuzzy collapse counts and respects disab
     incomingUrl: 'https://example.com/posts/shared-b',
     winnerSourceName: 'Example Source',
     incomingSourceName: 'Example Source',
+    scopeKind: 'source',
   });
 
   const disabled = dedupeArticlesWithSummary(articles, {
@@ -994,7 +996,7 @@ test('dedupeArticles applies allowlisted source-family fuzzy fallback for siblin
     },
   ];
 
-  const deduped = dedupeArticles(
+  const deduped = dedupeArticlesWithSummary(
     [
       {
         id: 'article-fuzzy-family-a',
@@ -1054,9 +1056,14 @@ test('dedupeArticles applies allowlisted source-family fuzzy fallback for siblin
     { feeds },
   );
 
-  assert.equal(deduped.length, 1);
-  assert.deepEqual(deduped[0].seenInFeeds, ['qiita-rust', 'qiita-popular']);
-  assert.equal(deduped[0].provenance[1].matchedBy, 'fuzzyTitleDate');
+  assert.equal(deduped.articles.length, 1);
+  assert.equal(deduped.fuzzyAuditRecords[0]?.scopeKind, 'sourceFamily');
+  assert.equal(deduped.fuzzyHandoffRecords[0]?.scopeKind, 'sourceFamily');
+  assert.deepEqual(deduped.articles[0].seenInFeeds, [
+    'qiita-rust',
+    'qiita-popular',
+  ]);
+  assert.equal(deduped.articles[0].provenance[1].matchedBy, 'fuzzyTitleDate');
 });
 
 test('dedupeArticles applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply', () => {
@@ -1149,6 +1156,8 @@ test('dedupeArticles applies allowlisted registrable-domain fuzzy fallback when 
     deduped.fuzzyAuditRecords[0]?.titleCompareKey,
     'zenn shared article',
   );
+  assert.equal(deduped.fuzzyAuditRecords[0]?.scopeKind, 'registrableDomain');
+  assert.equal(deduped.fuzzyHandoffRecords[0]?.scopeKind, 'registrableDomain');
   assert.deepEqual(deduped.articles[0].seenInFeeds, [
     'zenn-beta',
     'zenn-alpha',
@@ -2032,6 +2041,7 @@ test('runPipeline applies allowlisted source-family fuzzy fallback for sibling f
       titleCompareKey: 'qiita shared article',
       publishedAtDeltaHours: 72,
       matchedBy: 'fuzzyTitleDate',
+      scopeKind: 'sourceFamily',
     },
   ]);
 });
@@ -2146,6 +2156,7 @@ test('runPipeline applies allowlisted registrable-domain fuzzy fallback when sou
       titleCompareKey: 'zenn runtime shared article',
       publishedAtDeltaHours: 72,
       matchedBy: 'fuzzyTitleDate',
+      scopeKind: 'registrableDomain',
     },
   ]);
 });
@@ -2255,6 +2266,7 @@ test('runPipeline applies broader punctuation-folded fuzzy fallback for same-sou
       titleCompareKey: 'shared title update',
       publishedAtDeltaHours: 72,
       matchedBy: 'fuzzyTitleDate',
+      scopeKind: 'source',
     },
   ]);
 });
@@ -2361,6 +2373,7 @@ test('runPipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided', 
       titleCompareKey: 'shared title',
       publishedAtDeltaHours: 72,
       matchedBy: 'fuzzyTitleDate',
+      scopeKind: 'source',
     },
   ]);
 });
@@ -2473,6 +2486,7 @@ test('runPipeline writes fuzzy handoff JSON when --fuzzy-handoff-file is provide
       incomingUrl: 'https://example.com/posts/shared-b',
       winnerSourceName: 'Example Source',
       incomingSourceName: 'Example Source',
+      scopeKind: 'source',
     },
   ]);
 });
@@ -2820,6 +2834,7 @@ test('runPipeline writes fuzzy review HTML when --fuzzy-review-html-file is prov
   assert.match(html, /status-badge--unreviewed/);
   assert.match(html, /status-badge--accepted/);
   assert.match(html, /status-badge--rejected/);
+  assert.match(html, /scopeKind=source/);
   assert.match(html, /reviewed true positive/);
   assert.match(html, /known false positive/);
   assert.doesNotMatch(html, /localStorage/);

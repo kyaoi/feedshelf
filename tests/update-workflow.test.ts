@@ -398,6 +398,7 @@ test('runUpdatePipeline applies allowlisted source-family fuzzy fallback for sib
   assert.equal(fuzzyAudit[0].titleCompareKey, 'qiita shared article');
   assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
   assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+  assert.equal(fuzzyAudit[0].scopeKind, 'sourceFamily');
 });
 
 test('runUpdatePipeline applies allowlisted registrable-domain fuzzy fallback when source and family fallback do not apply', async () => {
@@ -487,6 +488,7 @@ test('runUpdatePipeline applies allowlisted registrable-domain fuzzy fallback wh
   assert.equal(fuzzyAudit[0].titleCompareKey, 'zenn update shared article');
   assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
   assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+  assert.equal(fuzzyAudit[0].scopeKind, 'registrableDomain');
 });
 
 test('runUpdatePipeline applies broader punctuation-folded fuzzy fallback for same-source title matches within 72 hours', async () => {
@@ -572,6 +574,7 @@ test('runUpdatePipeline applies broader punctuation-folded fuzzy fallback for sa
   assert.equal(fuzzyAudit[0].titleCompareKey, 'workflow article update');
   assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
   assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+  assert.equal(fuzzyAudit[0].scopeKind, 'source');
 });
 
 test('runUpdatePipeline writes fuzzy audit JSON when --fuzzy-audit-file is provided', async () => {
@@ -653,6 +656,7 @@ test('runUpdatePipeline writes fuzzy audit JSON when --fuzzy-audit-file is provi
   assert.equal(fuzzyAudit[0].titleCompareKey, 'workflow article');
   assert.equal(fuzzyAudit[0].publishedAtDeltaHours, 48);
   assert.equal(fuzzyAudit[0].matchedBy, 'fuzzyTitleDate');
+  assert.equal(fuzzyAudit[0].scopeKind, 'source');
   assert.equal(typeof fuzzyAudit[0].winnerArticleId, 'string');
   assert.equal(typeof fuzzyAudit[0].incomingArticleId, 'string');
 });
