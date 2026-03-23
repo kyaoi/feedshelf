@@ -649,6 +649,24 @@ Phase 6 の進め方:
 - counts は current run の `fuzzyHandoffRecords[]` と、同一 run で読み込んだ accept / reject review-state から導出し、candidate card の key / ordering / evidence field は維持する
 - audit / handoff / accept / reject / dedicated review-state JSON shape、`matchedBy='fuzzyTitleDate'`、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score / filter UI は同じ task に含めない
 
+### Post-v1 fuzzy dedupe current-run status grouping docs split
+
+- [x] `FS-DOCS-44` fuzzy dedupe の次差分を current-run review HTML の status-grouped surfacing に限定し、interactive filter / persisted ordering / public JSON / state mutation と分離する
+
+完了条件:
+- `FS-DATA-25` の first implementation が、`--fuzzy-review-html-file` の current-run candidate card を read-only な status section（`unreviewed` / `accepted` / `rejected`）へ分けて表示する task として着手できる
+- grouping は same run の `fuzzyHandoffRecords[]` と既に読み込まれた explicit review state から導出する bounded HTML surface に限定し、summary counts・per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）・existing accepted/rejected review-state section は維持する
+- interactive filter / sort toggle / anchor navigation、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score は同じ task に含めない
+
+### Post-v1 fuzzy dedupe current-run status grouping implementation
+
+- [ ] `FS-DATA-25` `--fuzzy-review-html-file` の current-run candidate を status section ごとに surfacing する
+
+完了条件:
+- current-run candidate card は `unreviewed` → `accepted` → `rejected` の read-only section 順で表示され、operator が未レビュー候補を HTML 冒頭近くで優先的に確認できる
+- section grouping は same run の `fuzzyHandoffRecords[]` と review-state lookup から導出し、summary counts・per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）・accepted/rejected review-state section は維持する
+- interactive filter / sort toggle / anchor navigation、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -696,6 +714,8 @@ Phase 6 の進め方:
 - `FS-DOCS-43` では次の最小差分を read-only な internal review summary counts に限定し、manual-review HTML を開いた直後に current-run の accepted / rejected / unreviewed 件数と `scopeKind` ごとの件数を把握できる境界だけを docs で先に固定した
 - この docs split により、次の実装候補は `FS-DATA-24` として `--fuzzy-review-html-file` の HTML 冒頭へ aggregate summary block を足す一方、candidate card の ordering / evidence field、accept-reject key、JSON schema、public surface は維持する
 - `FS-DATA-24` では `--fuzzy-review-html-file` の HTML 冒頭に current-run summary block を追加し、accepted / rejected / unreviewed status counts と `scopeKind` counts（`source` / `sourceFamily` / `registrableDomain`）を read-only に surfacing した。一方で current-run candidate card の ordering / evidence field、accept-reject key、review-state JSON、audit / handoff JSON、public surface は変更していない
+- `FS-DOCS-44` では次の最小差分を current-run review HTML の status-grouped surfacing に限定し、summary counts の次に unreviewed 候補を優先表示できる境界だけを docs で先に固定した
+- この docs split により、次の実装候補は `FS-DATA-25` として current-run candidate card を `unreviewed` / `accepted` / `rejected` の read-only section に分けて surfacing する一方、interactive filter / sort toggle / anchor navigation・JSON schema・public surface は維持する
 
 ## メモ
 

@@ -1154,6 +1154,12 @@
 - 理由: review HTML を開いた時点で current run の未レビュー量と widening tier の偏りを一目で把握したいが、新しい JSON schema や state mutation を足すと運用境界が広がるため、既存 artifact の読み取りだけで閉じる方が安全だから
 - 影響: 実装対象は `scripts/pipeline/run.ts` と `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。summary は read-only surface に留め、candidate card の ordering / evidence field、accept/reject / dedicated review-state JSON、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI は維持する
 
+## D-178: fuzzy dedupe の次差分は current-run candidate の status grouping に限定する
+
+- 決定: `FS-DATA-24` 後に manual-review HTML の triage をさらに軽くしたい場合でも、interactive filter / sort や state mutation ではなく、current run の candidate card を `unreviewed` / `accepted` / `rejected` の read-only status section に分けて surfacing する docs-first task として切り出す
+- 理由: summary counts だけでは未レビュー候補の実体をすぐ開けず、status badge 付き card を 1 枚ずつ追う必要が残る。一方で filter UI や anchor navigation まで同時に入れると HTML artifact の責務が広がるため、まずは static grouping に閉じるのが最小差分で安全なため
+- 影響: 後続 implementation は `scripts/pipeline/run.ts` と review HTML 関連 tests を中心に、same run の `fuzzyHandoffRecords[]` と explicit review state lookup から current-run card を status section へ振り分けてよい。ただし summary counts、per-card evidence、existing accepted / rejected review-state section、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle / anchor navigation は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

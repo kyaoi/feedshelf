@@ -1055,6 +1055,45 @@ test('FS-DOCS-43 fuzzy dedupe review summary docs split stays aligned across PLA
   );
 });
 
+test('FS-DOCS-44 fuzzy dedupe current-run status grouping docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-44/);
+  assert.match(plan, /status-grouped surfacing/);
+  assert.match(plan, /interactive filter \/ sort toggle \/ anchor navigation/);
+  assert.match(
+    spec,
+    /10\.5\.32 Post-v1 fuzzy dedupe current-run status grouping docs split/,
+  );
+  assert.match(
+    spec,
+    /status section（`unreviewed` \/ `accepted` \/ `rejected`）/,
+  );
+  assert.match(spec, /anchor navigation/);
+  assert.match(decisions, /D-178/);
+  assert.match(decisions, /static grouping に閉じる/);
+  assert.match(traceability, /FS-192/);
+  assert.match(
+    traceability,
+    /interactive filter \/ sort toggle \/ anchor navigation・review-state JSON shape・audit \/ handoff JSON・`update-state\.json` mutation/,
+  );
+});
+
 test('FS-DOCS-39 fuzzy dedupe source-family registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
