@@ -1067,6 +1067,19 @@ v1 の生成優先順位は以下とする。
 - section grouping は same run の `fuzzyHandoffRecords[]` と explicit accept / reject review-state lookup から導出し、該当候補がない status も empty-state 付き section として残してよい。summary counts、per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）、existing accepted / rejected review-state section は維持する
 - accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle / anchor navigation は同じ task に含めない
 
+
+### 10.5.34 Post-v1 fuzzy dedupe review section anchor docs split (`FS-DOCS-45`)
+
+- `FS-DATA-25` までで current-run candidate は status section ごとに読めるようになったが、candidate 数や explicit review-state entry が増えると summary から各 section へ移動する導線はまだ弱い
+- 次差分は `--fuzzy-review-html-file` の static anchor navigation に限定する。first implementation では HTML 冒頭または current-run summary 直後に read-only な section anchor block を追加し、少なくとも `Current-run summary`、`Unreviewed current-run candidates`、`Accepted current-run candidates`、`Rejected current-run candidates`、`Accepted review-state entries`、`Rejected review-state entries` へ jump できる stable section id を持たせてよい
+- summary counts、status grouping、per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）、existing accepted / rejected review-state section は維持し、interactive filter / sort toggle、hash-driven state restore、collapse / expand、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score は同じ task に含めない
+
+### 10.5.35 Post-v1 fuzzy dedupe review section anchor implementation (`FS-DATA-26`)
+
+- `FS-DATA-26` では `scripts/pipeline/run.ts` と review HTML 関連 tests に閉じて、`--fuzzy-review-html-file` へ read-only な section anchor navigation block を追加してよい
+- anchor navigation は `#current-run-summary` / `#current-run-unreviewed` / `#current-run-accepted` / `#current-run-rejected` / `#review-state-accepted` / `#review-state-rejected` のような stable section id を使って既存の review HTML section へ jump できる bounded surface に限定し、section ordering・summary counts・status grouping・per-card evidence・accepted/rejected review-state section は維持する
+- interactive filter / sort toggle、hash-driven state restore、collapse / expand、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

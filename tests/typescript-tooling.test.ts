@@ -1094,6 +1094,42 @@ test('FS-DOCS-44 fuzzy dedupe current-run status grouping docs split stays align
   );
 });
 
+test('FS-DOCS-45 fuzzy dedupe review section anchor docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-45/);
+  assert.match(plan, /static anchor navigation/);
+  assert.match(plan, /`#current-run-summary`/);
+  assert.match(
+    spec,
+    /10\.5\.34 Post-v1 fuzzy dedupe review section anchor docs split/,
+  );
+  assert.match(spec, /Accepted review-state entries/);
+  assert.match(spec, /hash-driven state restore/);
+  assert.match(decisions, /D-180/);
+  assert.match(decisions, /read-only な static anchor navigation/);
+  assert.match(traceability, /FS-194/);
+  assert.match(
+    traceability,
+    /interactive filter \/ sort toggle・hash-driven state restore・collapse \/ expand・review-state JSON shape・audit \/ handoff JSON・`update-state\.json` mutation/,
+  );
+});
+
 test('FS-DOCS-39 fuzzy dedupe source-family registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

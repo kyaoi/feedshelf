@@ -668,6 +668,25 @@ Phase 6 の進め方:
 - current-run candidate section は `Unreviewed current-run candidates` → `Accepted current-run candidates` → `Rejected current-run candidates` の順で描画し、該当候補がない status も empty-state 付きの read-only section として明示してよい
 - interactive filter / sort toggle / anchor navigation、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score は同じ task に含めない
 
+
+### Post-v1 fuzzy dedupe review section anchor docs split
+
+- [x] `FS-DOCS-45` fuzzy dedupe の次差分を review HTML の static anchor navigation に限定し、interactive filter / sort / state mutation / public route から分離する
+
+完了条件:
+- `FS-DATA-26` の first implementation が、`--fuzzy-review-html-file` の HTML 冒頭または summary 直後へ read-only な section anchor navigation を追加する task として着手できる
+- anchor target は既存の bounded review surface に限定し、少なくとも `Current-run summary`、`Unreviewed current-run candidates`、`Accepted current-run candidates`、`Rejected current-run candidates`、`Accepted review-state entries`、`Rejected review-state entries` へ jump できる stable section id を docs で追跡できる
+- same run の summary counts・status grouping・per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）・existing accepted/rejected review-state section は維持し、interactive filter / sort toggle・hash-driven state restore・collapse / expand・accept / reject / dedicated review-state JSON shape・audit / handoff JSON・`update-state.json` mutation・checked-in artifact・public JSON / route / article card UI・broader matching / confidence score は同じ task に含めない
+
+### Post-v1 fuzzy dedupe review section anchor implementation
+
+- [ ] `FS-DATA-26` `--fuzzy-review-html-file` に static section anchor navigation を追加する
+
+完了条件:
+- `--fuzzy-review-html-file` は HTML 冒頭または current-run summary 直後に read-only な anchor navigation block を表示し、`#current-run-summary` / `#current-run-unreviewed` / `#current-run-accepted` / `#current-run-rejected` / `#review-state-accepted` / `#review-state-rejected` のような stable id で既存 section へ jump できる
+- anchor navigation は existing section ordering・summary counts・status grouping・per-card evidence・accepted/rejected review-state section を維持したまま追加され、該当 section が empty-state の場合も anchor target 自体は残してよい
+- interactive filter / sort toggle・hash-driven state restore・collapse / expand・accept / reject / dedicated review-state JSON shape・audit / handoff JSON・`update-state.json` mutation・checked-in artifact・public JSON / route / article card UI・broader matching / confidence score は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した

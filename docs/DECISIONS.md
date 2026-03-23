@@ -1166,6 +1166,12 @@
 - 理由: current-run summary counts の直後に未レビュー候補を優先配置できると operator の triage が速くなる一方、accepted / rejected section も同じ HTML 内で静的に残しておけば status badge を追い回さずに current run の状態を把握できる。empty-state section まで残せば filter UI や anchor navigation を増やさなくても HTML の構造が安定するため
 - 影響: 実装対象は `scripts/pipeline/run.ts` と `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。section grouping は same run の `fuzzyHandoffRecords[]` と explicit review state lookup から導出し、summary counts、per-card evidence、existing accepted / rejected review-state section は維持する。一方で accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle / anchor navigation は同じ task に含めない
 
+## D-180: fuzzy dedupe の次差分は review HTML の static anchor navigation に限定する
+
+- 決定: `FS-DATA-25` 後に review 導線をもう一段だけ改善したい場合でも、interactive filter や state mutation ではなく、`--fuzzy-review-html-file` の既存 section へ jump する read-only な static anchor navigation を docs-first task として切り出す
+- 理由: current-run summary counts と status grouping は揃ったため、次の最小価値は operator が HTML 冒頭から目的の section へ即座に移動できることにある。一方で filter / sort や hash-based state を入れると UI state surface が増え、manual review artifact の bounded contract を崩しやすいため
+- 影響: 後続 implementation は `scripts/pipeline/run.ts` と review HTML 関連 tests を中心に、`Current-run summary` / `Unreviewed current-run candidates` / `Accepted current-run candidates` / `Rejected current-run candidates` / `Accepted review-state entries` / `Rejected review-state entries` へ jump できる stable anchor id と read-only navigation block を追加してよい。ただし summary counts、status grouping、per-card evidence、accepted/rejected review-state section、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle、hash-driven state restore、collapse / expand は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける
