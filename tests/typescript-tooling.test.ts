@@ -1678,6 +1678,55 @@ test('FS-DATA-23 fuzzy dedupe scope observability implementation stays aligned a
   assert.match(updateWorkflowTest, /scopeKind, 'source'/);
 });
 
+test('FS-DATA-24 fuzzy dedupe review summary implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, implementation, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-24/);
+  assert.match(plan, /current-run summary counts/);
+  assert.match(
+    spec,
+    /10\.5\.31 Post-v1 fuzzy dedupe review summary implementation/,
+  );
+  assert.match(spec, /current-run aggregate summary block/);
+  assert.match(decisions, /D-177/);
+  assert.match(decisions, /current-run handoff と review-state から導出する/);
+  assert.match(traceability, /FS-191/);
+  assert.match(runSource, /buildFuzzyReviewSummaryCounts/);
+  assert.match(runSource, /Current-run summary/);
+  assert.match(runSource, /Current-run accepted/);
+  assert.match(runSource, /scopeKind=sourceFamily/);
+  assert.match(runSource, /scopeKind=registrableDomain/);
+  assert.match(loadFeedsTest, /Current-run accepted/);
+  assert.match(updateWorkflowTest, /Current-run summary/);
+});
+
 test('FS-DATA-22 fuzzy dedupe hostname registry implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, data, implementation, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

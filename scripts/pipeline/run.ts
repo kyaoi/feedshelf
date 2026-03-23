@@ -296,6 +296,96 @@ function resolveFuzzyReviewStatus({
   return 'unreviewed';
 }
 
+type FuzzyReviewSummaryCounts = {
+  currentRunStatusCounts: Record<FuzzyReviewStatus, number>;
+  currentRunScopeCounts: Record<
+    'source' | 'sourceFamily' | 'registrableDomain',
+    number
+  >;
+};
+
+function buildFuzzyReviewSummaryCounts({
+  handoffRecords,
+  acceptedKeys,
+  rejectedKeys,
+}: {
+  handoffRecords: FuzzyDedupeHandoffRecord[];
+  acceptedKeys: Set<string>;
+  rejectedKeys: Set<string>;
+}): FuzzyReviewSummaryCounts {
+  const currentRunStatusCounts: Record<FuzzyReviewStatus, number> = {
+    accepted: 0,
+    rejected: 0,
+    unreviewed: 0,
+  };
+  const currentRunScopeCounts: Record<
+    'source' | 'sourceFamily' | 'registrableDomain',
+    number
+  > = {
+    source: 0,
+    sourceFamily: 0,
+    registrableDomain: 0,
+  };
+
+  for (const record of handoffRecords) {
+    const status = resolveFuzzyReviewStatus({
+      record,
+      acceptedKeys,
+      rejectedKeys,
+    });
+    currentRunStatusCounts[status] += 1;
+
+    if (
+      record.scopeKind === 'source' ||
+      record.scopeKind === 'sourceFamily' ||
+      record.scopeKind === 'registrableDomain'
+    ) {
+      currentRunScopeCounts[record.scopeKind] += 1;
+    }
+  }
+
+  return {
+    currentRunStatusCounts,
+    currentRunScopeCounts,
+  };
+}
+
+function renderFuzzyReviewCurrentRunSummarySection({
+  currentRunStatusCounts,
+  currentRunScopeCounts,
+}: FuzzyReviewSummaryCounts): string {
+  return `
+    <section>
+      <h2>Current-run summary</h2>
+      <div class="summary-grid">
+        <article class="summary-card">
+          <strong>${escapeHtml(currentRunStatusCounts.accepted)}</strong>
+          <span>Current-run accepted</span>
+        </article>
+        <article class="summary-card">
+          <strong>${escapeHtml(currentRunStatusCounts.rejected)}</strong>
+          <span>Current-run rejected</span>
+        </article>
+        <article class="summary-card">
+          <strong>${escapeHtml(currentRunStatusCounts.unreviewed)}</strong>
+          <span>Current-run unreviewed</span>
+        </article>
+        <article class="summary-card">
+          <strong>${escapeHtml(currentRunScopeCounts.source)}</strong>
+          <span>scopeKind=source</span>
+        </article>
+        <article class="summary-card">
+          <strong>${escapeHtml(currentRunScopeCounts.sourceFamily)}</strong>
+          <span>scopeKind=sourceFamily</span>
+        </article>
+        <article class="summary-card">
+          <strong>${escapeHtml(currentRunScopeCounts.registrableDomain)}</strong>
+          <span>scopeKind=registrableDomain</span>
+        </article>
+      </div>
+    </section>`;
+}
+
 function renderFuzzyReviewCurrentRunSection({
   handoffRecords,
   acceptedKeys,
@@ -425,6 +515,11 @@ function buildFuzzyReviewHtml({
 }): string {
   const acceptedKeys = buildFuzzyReviewStatusLookup(reviewState.accepted);
   const rejectedKeys = buildFuzzyReviewStatusLookup(reviewState.rejected);
+  const fuzzyReviewSummaryCounts = buildFuzzyReviewSummaryCounts({
+    handoffRecords,
+    acceptedKeys,
+    rejectedKeys,
+  });
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -566,6 +661,7 @@ function buildFuzzyReviewHtml({
           </article>
         </div>
       </section>
+      ${renderFuzzyReviewCurrentRunSummarySection(fuzzyReviewSummaryCounts)}
       ${renderFuzzyReviewCurrentRunSection({
         handoffRecords,
         acceptedKeys,

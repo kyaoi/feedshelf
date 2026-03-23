@@ -1049,6 +1049,12 @@ v1 の生成優先順位は以下とする。
 - 次差分は current-run candidate の read-only aggregate summary counts に限定する。first implementation では `--fuzzy-review-html-file` の HTML 冒頭に status count（`accepted` / `rejected` / `unreviewed`）と current-run `scopeKind` count（`source` / `sourceFamily` / `registrableDomain`）を出してよく、per-record evidence、`matchedBy='fuzzyTitleDate'`、candidate ordering、`articleIdPair` key、accept / reject / dedicated review-state JSON、audit / handoff JSON は変えない
 - counts は current run の `fuzzyHandoffRecords[]` と同一 run で既に読み込まれた explicit review state から導出する bounded aggregate に限定し、confidence score、sort / filter controls、scope ごとの自動 accept / reject suggestion、checked-in artifact、public JSON / route / article card UI、`update-state.json` mutation、broader matching は同じ task に含めない
 
+### 10.5.31 Post-v1 fuzzy dedupe review summary implementation (`FS-DATA-24`)
+
+- `FS-DATA-24` では `scripts/pipeline/run.ts` と review HTML 関連 tests に閉じて、`--fuzzy-review-html-file` の HTML 冒頭に current-run aggregate summary block を追加してよい
+- summary block は same run の `fuzzyHandoffRecords[]` と explicit accept / reject review-state から status count（`accepted` / `rejected` / `unreviewed`）および current-run `scopeKind` count（`source` / `sourceFamily` / `registrableDomain`）を導出する read-only surface に限定し、candidate card の per-record evidence / ordering / `articleIdPair` key / `matchedBy='fuzzyTitleDate'` は維持する
+- audit / handoff / accept / reject / dedicated review-state JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

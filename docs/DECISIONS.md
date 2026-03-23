@@ -1148,6 +1148,12 @@
 - 理由: `scopeKind` が各カードで読めても、current run 全体の未レビュー量や widening tier の偏りは一覧を目で追わないと分からない。一方で JSON schema や review-state key まで広げると運用境界が崩れるため、まずは read-only aggregate surface に閉じる
 - 影響: 後続実装は `scripts/pipeline/run.ts` と review HTML 関連 tests を中心に current-run summary block を追加してよい。ただし `matchedBy='fuzzyTitleDate'`、candidate card の ordering / evidence field、accept/reject list と dedicated review-state JSON の shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score / interactive filter は同じ task に含めない
 
+## D-177: fuzzy review summary counts は current-run handoff と review-state から導出する
+
+- 決定: `FS-DATA-24` の current-run summary block は、same run の `fuzzyHandoffRecords[]` とその時点で読み込んだ accept / reject review-state から `accepted` / `rejected` / `unreviewed` status counts と `scopeKind` counts（`source` / `sourceFamily` / `registrableDomain`）を導出する
+- 理由: review HTML を開いた時点で current run の未レビュー量と widening tier の偏りを一目で把握したいが、新しい JSON schema や state mutation を足すと運用境界が広がるため、既存 artifact の読み取りだけで閉じる方が安全だから
+- 影響: 実装対象は `scripts/pipeline/run.ts` と `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。summary は read-only surface に留め、candidate card の ordering / evidence field、accept/reject / dedicated review-state JSON、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI は維持する
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

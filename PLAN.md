@@ -640,6 +640,15 @@ Phase 6 の進め方:
 - summary は read-only かつ bounded な count surface に限定し、少なくとも accepted / rejected / unreviewed status counts と current-run `scopeKind` ごとの件数（`source` / `sourceFamily` / `registrableDomain`）を operator が HTML 冒頭で読める
 - audit / handoff / accept / reject / dedicated review-state JSON shape、current-run candidate card の key / ordering、`update-state.json` mutation、public JSON / route / article card UI、checked-in artifact、broader matching / confidence score / filter UI は同じ task に含めない
 
+### Post-v1 fuzzy dedupe review summary implementation
+
+- [x] `FS-DATA-24` `--fuzzy-review-html-file` に current-run summary counts を surfacing する
+
+完了条件:
+- review HTML 冒頭に read-only な current-run aggregate summary block を追加し、accepted / rejected / unreviewed status counts と `scopeKind` counts（`source` / `sourceFamily` / `registrableDomain`）を operator が開いてすぐ読める
+- counts は current run の `fuzzyHandoffRecords[]` と、同一 run で読み込んだ accept / reject review-state から導出し、candidate card の key / ordering / evidence field は維持する
+- audit / handoff / accept / reject / dedicated review-state JSON shape、`matchedBy='fuzzyTitleDate'`、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score / filter UI は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -686,6 +695,7 @@ Phase 6 の進め方:
 - `FS-DATA-23` では current run の fuzzy audit / handoff record に optional `scopeKind` を追加し、manual-review HTML でも current-run candidate card に widening tier を表示できるようにした。一方で accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、`update-state.json`、public JSON / route は変更していない
 - `FS-DOCS-43` では次の最小差分を read-only な internal review summary counts に限定し、manual-review HTML を開いた直後に current-run の accepted / rejected / unreviewed 件数と `scopeKind` ごとの件数を把握できる境界だけを docs で先に固定した
 - この docs split により、次の実装候補は `FS-DATA-24` として `--fuzzy-review-html-file` の HTML 冒頭へ aggregate summary block を足す一方、candidate card の ordering / evidence field、accept-reject key、JSON schema、public surface は維持する
+- `FS-DATA-24` では `--fuzzy-review-html-file` の HTML 冒頭に current-run summary block を追加し、accepted / rejected / unreviewed status counts と `scopeKind` counts（`source` / `sourceFamily` / `registrableDomain`）を read-only に surfacing した。一方で current-run candidate card の ordering / evidence field、accept-reject key、review-state JSON、audit / handoff JSON、public surface は変更していない
 
 ## メモ
 

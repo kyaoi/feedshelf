@@ -2826,6 +2826,28 @@ test('runPipeline writes fuzzy review HTML when --fuzzy-review-html-file is prov
 
   assert.match(html, /<!doctype html>/i);
   assert.match(html, /<title>FeedShelf fuzzy review<\/title>/);
+  assert.match(html, /Current-run summary/);
+  assert.match(
+    html,
+    /<strong>0<\/strong>\s*<span>Current-run accepted<\/span>/,
+  );
+  assert.match(
+    html,
+    /<strong>0<\/strong>\s*<span>Current-run rejected<\/span>/,
+  );
+  assert.match(
+    html,
+    /<strong>1<\/strong>\s*<span>Current-run unreviewed<\/span>/,
+  );
+  assert.match(html, /<strong>1<\/strong>\s*<span>scopeKind=source<\/span>/);
+  assert.match(
+    html,
+    /<strong>0<\/strong>\s*<span>scopeKind=sourceFamily<\/span>/,
+  );
+  assert.match(
+    html,
+    /<strong>0<\/strong>\s*<span>scopeKind=registrableDomain<\/span>/,
+  );
   assert.match(html, /Current-run fuzzy candidates/);
   assert.match(html, /Accepted review-state entries/);
   assert.match(html, /Rejected review-state entries/);
