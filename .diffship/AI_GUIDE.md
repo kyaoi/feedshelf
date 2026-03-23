@@ -7,7 +7,7 @@
 - Repository: `feedshelf`
 - Current branch: `develop`
 - Preferred promote target: `develop`
-- Current HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
+- Current HEAD: `291311a982a401f6b60a47247f261e7984dbd950`
 - Detected stack:
   - Just task runner
   - Node.js package
@@ -318,7 +318,7 @@ Required contract details:
 - `base_commit` must be the real target repo SHA supplied by the user or otherwise known from the environment; never use placeholders such as `REPLACE_WITH_REPO_HEAD`
 - if the exact `base_commit` is not known, do **not** fabricate it and do **not** emit an ops-compatible patch bundle
 - patch files must be repo-relative and deterministic
-- do not touch `.git/` or `.diffship/`
+- do not touch `.git/` or non-allowlisted `.diffship/` paths
 - respect any repository-local `[ops.forbid]` patterns the user provides (for example lockfiles such as `pnpm-lock.yaml`) in addition to the built-in forbidden paths
 - do not include secrets
 - do not include binary patches, rename/copy metadata, file mode metadata for existing files (`old mode`, `new mode`), or submodule changes
@@ -509,6 +509,6 @@ Return `MODE: ANALYSIS_ONLY` with findings, file references, and the smallest ne
 - Repository name: `feedshelf`
 - Current branch: `develop`
 - Preferred promote target: `develop`
-- Repository HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
+- Repository HEAD: `291311a982a401f6b60a47247f261e7984dbd950`
 - Active `[ops.forbid]` patterns:
   - `pnpm-lock.yaml`

@@ -9,10 +9,10 @@ Paste this into an external AI workspace or project-rules UI when you need the s
 - If behavior changes, update docs/tests/traceability in the same change.
 - Use `diffship loop` only with a valid `OPS_PATCH_BUNDLE`.
 - If `base_commit` is missing or uncertain, ask for `git rev-parse HEAD` or return `MODE: ANALYSIS_ONLY`.
-- Respect built-in forbidden paths and any local `[ops.forbid]` patterns.
+- Respect built-in forbidden paths. Only touch repo-allowlisted generated files under `.diffship/`, and still honor local `[ops.forbid]` patterns.
 - Preferred promotion target: `develop`
 - Current branch: `develop`
-- Current HEAD: `7bda15bebeb2fba7ea58b1086c9bad9ef547c162`
+- Current HEAD: `291311a982a401f6b60a47247f261e7984dbd950`
 - Active `[ops.forbid]`: `pnpm-lock.yaml`
 
 Starter commands:
