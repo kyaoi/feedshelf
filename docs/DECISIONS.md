@@ -1142,6 +1142,12 @@
 - 理由: operator が `matchedBy='fuzzyTitleDate'` の current run candidate を読むとき、same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` のどの tier で candidate 判定に到達したかが分かると review がしやすい。一方で accept/reject key や dedicated review-state JSON まで変えると scope が広がりすぎるため
 - 影響: 実装対象は `src/shared/contracts.ts` / `scripts/pipeline/dedupeArticles.ts` / `scripts/pipeline/run.ts` / tests に閉じる。`scopeKind` は current run で実際に使われた lookup tier を表し、accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、`update-state.json` mutation、public JSON / route / article card UI は維持する
 
+## D-176: fuzzy dedupe の次差分は internal review summary counts に限定する
+
+- 決定: `FS-DATA-24` では `--fuzzy-review-html-file` にだけ current-run candidate の aggregate summary counts を追加し、少なくとも status（`accepted` / `rejected` / `unreviewed`）と current-run `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）の件数を HTML 冒頭で読めるようにしてよい
+- 理由: `scopeKind` が各カードで読めても、current run 全体の未レビュー量や widening tier の偏りは一覧を目で追わないと分からない。一方で JSON schema や review-state key まで広げると運用境界が崩れるため、まずは read-only aggregate surface に閉じる
+- 影響: 後続実装は `scripts/pipeline/run.ts` と review HTML 関連 tests を中心に current-run summary block を追加してよい。ただし `matchedBy='fuzzyTitleDate'`、candidate card の ordering / evidence field、accept/reject list と dedicated review-state JSON の shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score / interactive filter は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

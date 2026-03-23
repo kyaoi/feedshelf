@@ -1043,6 +1043,12 @@ v1 の生成優先順位は以下とする。
 - `scopeKind` は same `sourceName` fuzzy lookup、explicit `fuzzySourceFamilyKey` fallback、explicit `fuzzyRegistrableDomainKey` fallback のうち current run の candidate 判定に実際に使われた tier を示し、`matchedBy='fuzzyTitleDate'`、accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、exact dedupe precedence、winner selection、same `language` + 72 時間 window、existing title compare key sequence は維持する
 - first implementation は internal observability の bounded surfacing に限定し、public JSON / route / article card UI / checked-in artifact / `update-state.json` mutation / broader matching / source registry 変更は同じ task に含めない
 
+### 10.5.30 Post-v1 fuzzy dedupe review summary docs split (`FS-DOCS-43`)
+
+- `FS-DATA-23` までで current-run candidate card ごとの `scopeKind` は読めるが、operator が `--fuzzy-review-html-file` を開いた時点で未レビュー件数や widening tier の偏りを一目で把握する surface はまだない
+- 次差分は current-run candidate の read-only aggregate summary counts に限定する。first implementation では `--fuzzy-review-html-file` の HTML 冒頭に status count（`accepted` / `rejected` / `unreviewed`）と current-run `scopeKind` count（`source` / `sourceFamily` / `registrableDomain`）を出してよく、per-record evidence、`matchedBy='fuzzyTitleDate'`、candidate ordering、`articleIdPair` key、accept / reject / dedicated review-state JSON、audit / handoff JSON は変えない
+- counts は current run の `fuzzyHandoffRecords[]` と同一 run で既に読み込まれた explicit review state から導出する bounded aggregate に限定し、confidence score、sort / filter controls、scope ごとの自動 accept / reject suggestion、checked-in artifact、public JSON / route / article card UI、`update-state.json` mutation、broader matching は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

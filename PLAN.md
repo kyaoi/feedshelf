@@ -631,6 +631,15 @@ Phase 6 の進め方:
 - `scopeKind` は current run の fuzzy candidate 判定に実際に使われた widening tier を表し、same `sourceName` 優先・explicit `fuzzySourceFamilyKey` fallback・explicit `fuzzyRegistrableDomainKey` fallback の precedence rewrite は行わない
 - public JSON / route / article card UI / checked-in artifact / `update-state.json` mutation / broader matching / source registry 変更は同じ task に含めない
 
+### Post-v1 fuzzy dedupe review summary docs split
+
+- [x] `FS-DOCS-43` fuzzy dedupe の次差分を internal review summary counts に限定し、candidate ordering / review-state key / public JSON / state mutation と分離する
+
+完了条件:
+- `FS-DATA-24` の first implementation が、`--fuzzy-review-html-file` にだけ current-run candidate の aggregate summary counts を追加する task として着手できる
+- summary は read-only かつ bounded な count surface に限定し、少なくとも accepted / rejected / unreviewed status counts と current-run `scopeKind` ごとの件数（`source` / `sourceFamily` / `registrableDomain`）を operator が HTML 冒頭で読める
+- audit / handoff / accept / reject / dedicated review-state JSON shape、current-run candidate card の key / ordering、`update-state.json` mutation、public JSON / route / article card UI、checked-in artifact、broader matching / confidence score / filter UI は同じ task に含めない
+
 ## 直近の次タスク
 
 - post-v1 curated source audit は、official evidence がある Zenn / Reddit の profile-aligned topic feed を cautious default の範囲で有効化し、broad community feed / hard-science source は引き続き `enabled=false` に保つところまで完了した
@@ -675,6 +684,8 @@ Phase 6 の進め方:
 - `FS-DOCS-42` では次の最小差分を heuristic の再拡張ではなく internal match-scope surfacing に限定し、same `sourceName` / explicit `fuzzySourceFamilyKey` / explicit `fuzzyRegistrableDomainKey` のどの tier で candidate になったかを audit / handoff / review HTML から読める境界だけを docs で先に固定した
 - この docs split により、次の実装候補は `FS-DATA-23` として `scopeKind`（`source` / `sourceFamily` / `registrableDomain`）の internal surfacing へ進める一方、`matchedBy='fuzzyTitleDate'`・accept/reject key・public JSON は維持する
 - `FS-DATA-23` では current run の fuzzy audit / handoff record に optional `scopeKind` を追加し、manual-review HTML でも current-run candidate card に widening tier を表示できるようにした。一方で accept/reject list の order-insensitive `articleIdPair` key、dedicated review-state JSON、`update-state.json`、public JSON / route は変更していない
+- `FS-DOCS-43` では次の最小差分を read-only な internal review summary counts に限定し、manual-review HTML を開いた直後に current-run の accepted / rejected / unreviewed 件数と `scopeKind` ごとの件数を把握できる境界だけを docs で先に固定した
+- この docs split により、次の実装候補は `FS-DATA-24` として `--fuzzy-review-html-file` の HTML 冒頭へ aggregate summary block を足す一方、candidate card の ordering / evidence field、accept-reject key、JSON schema、public surface は維持する
 
 ## メモ
 

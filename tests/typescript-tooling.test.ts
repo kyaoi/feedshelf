@@ -1019,6 +1019,42 @@ test('FS-DOCS-42 fuzzy dedupe scope observability docs split stays aligned acros
   );
 });
 
+test('FS-DOCS-43 fuzzy dedupe review summary docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DOCS-43/);
+  assert.match(plan, /internal review summary counts/);
+  assert.match(plan, /accepted \/ rejected \/ unreviewed status counts/);
+  assert.match(
+    spec,
+    /10\.5\.30 Post-v1 fuzzy dedupe review summary docs split/,
+  );
+  assert.match(spec, /scopeKind` count/);
+  assert.match(spec, /sort \/ filter controls/);
+  assert.match(decisions, /D-176/);
+  assert.match(decisions, /read-only aggregate surface/);
+  assert.match(traceability, /FS-190/);
+  assert.match(
+    traceability,
+    /candidate ordering \/ review-state key \/ public JSON \/ state mutation/,
+  );
+});
+
 test('FS-DOCS-39 fuzzy dedupe source-family registry docs split stays aligned across PLAN, SPEC, DECISIONS, and TRACEABILITY', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),
