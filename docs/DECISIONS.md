@@ -1160,6 +1160,12 @@
 - 理由: summary counts だけでは未レビュー候補の実体をすぐ開けず、status badge 付き card を 1 枚ずつ追う必要が残る。一方で filter UI や anchor navigation まで同時に入れると HTML artifact の責務が広がるため、まずは static grouping に閉じるのが最小差分で安全なため
 - 影響: 後続 implementation は `scripts/pipeline/run.ts` と review HTML 関連 tests を中心に、same run の `fuzzyHandoffRecords[]` と explicit review state lookup から current-run card を status section へ振り分けてよい。ただし summary counts、per-card evidence、existing accepted / rejected review-state section、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle / anchor navigation は同じ task に含めない
 
+## D-179: `FS-DATA-25` は current-run fuzzy candidates を static status section に固定配置する
+
+- 決定: `FS-DATA-25` では `--fuzzy-review-html-file` の current-run candidate card を `Unreviewed current-run candidates` → `Accepted current-run candidates` → `Rejected current-run candidates` の read-only section 順へ固定配置し、該当候補がない status も empty-state 付き section として残す
+- 理由: current-run summary counts の直後に未レビュー候補を優先配置できると operator の triage が速くなる一方、accepted / rejected section も同じ HTML 内で静的に残しておけば status badge を追い回さずに current run の状態を把握できる。empty-state section まで残せば filter UI や anchor navigation を増やさなくても HTML の構造が安定するため
+- 影響: 実装対象は `scripts/pipeline/run.ts` と `tests/load-feeds.test.ts` / `tests/update-workflow.test.ts` / `tests/typescript-tooling.test.ts` に閉じる。section grouping は same run の `fuzzyHandoffRecords[]` と explicit review state lookup から導出し、summary counts、per-card evidence、existing accepted / rejected review-state section は維持する。一方で accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle / anchor navigation は同じ task に含めない
+
 ## D-128: public `summary` は cautious redistribution のため短い excerpt に丸める
 
 - 決定: `summary` は表示用の正規化済み文字列として保持しつつ、公開 JSON では短い excerpt に丸め、raw HTML 全文や長文再配信を避ける

@@ -1766,6 +1766,58 @@ test('FS-DATA-24 fuzzy dedupe review summary implementation stays aligned across
   assert.match(updateWorkflowTest, /Current-run summary/);
 });
 
+test('FS-DATA-25 fuzzy dedupe current-run status grouping implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, implementation, and tests', () => {
+  const plan = fs.readFileSync(
+    path.resolve(__dirname, '..', 'PLAN.md'),
+    'utf8',
+  );
+  const spec = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/SPEC_V1.md'),
+    'utf8',
+  );
+  const decisions = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/DECISIONS.md'),
+    'utf8',
+  );
+  const traceability = fs.readFileSync(
+    path.resolve(__dirname, '..', 'docs/TRACEABILITY.md'),
+    'utf8',
+  );
+  const runSource = fs.readFileSync(
+    path.resolve(__dirname, '..', 'scripts/pipeline/run.ts'),
+    'utf8',
+  );
+  const loadFeedsTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/load-feeds.test.ts'),
+    'utf8',
+  );
+  const updateWorkflowTest = fs.readFileSync(
+    path.resolve(__dirname, '..', 'tests/update-workflow.test.ts'),
+    'utf8',
+  );
+
+  assert.match(plan, /FS-DATA-25/);
+  assert.match(plan, /status section ごとに surfacing/);
+  assert.match(plan, /`Unreviewed current-run candidates`/);
+  assert.match(
+    spec,
+    /10\.5\.33 Post-v1 fuzzy dedupe current-run status grouping implementation/,
+  );
+  assert.match(spec, /empty-state 付き section/);
+  assert.match(decisions, /D-179/);
+  assert.match(decisions, /static status section に固定配置する/);
+  assert.match(traceability, /FS-193/);
+  assert.match(traceability, /Unreviewed current-run candidates/);
+  assert.match(runSource, /renderFuzzyReviewCurrentRunStatusSection/);
+  assert.match(runSource, /Unreviewed current-run candidates/);
+  assert.match(runSource, /Accepted current-run candidates/);
+  assert.match(runSource, /Rejected current-run candidates/);
+  assert.match(loadFeedsTest, /Unreviewed current-run candidates/);
+  assert.match(loadFeedsTest, /No accepted current-run fuzzy candidates/);
+  assert.match(updateWorkflowTest, /Rejected current-run candidates/);
+  assert.match(updateWorkflowTest, /No rejected current-run fuzzy candidates/);
+});
+
 test('FS-DATA-22 fuzzy dedupe hostname registry implementation stays aligned across PLAN, SPEC, DECISIONS, TRACEABILITY, data, implementation, and tests', () => {
   const plan = fs.readFileSync(
     path.resolve(__dirname, '..', 'PLAN.md'),

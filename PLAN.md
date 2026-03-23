@@ -660,11 +660,12 @@ Phase 6 の進め方:
 
 ### Post-v1 fuzzy dedupe current-run status grouping implementation
 
-- [ ] `FS-DATA-25` `--fuzzy-review-html-file` の current-run candidate を status section ごとに surfacing する
+- [x] `FS-DATA-25` `--fuzzy-review-html-file` の current-run candidate を status section ごとに surfacing する
 
 完了条件:
 - current-run candidate card は `unreviewed` → `accepted` → `rejected` の read-only section 順で表示され、operator が未レビュー候補を HTML 冒頭近くで優先的に確認できる
 - section grouping は same run の `fuzzyHandoffRecords[]` と review-state lookup から導出し、summary counts・per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）・accepted/rejected review-state section は維持する
+- current-run candidate section は `Unreviewed current-run candidates` → `Accepted current-run candidates` → `Rejected current-run candidates` の順で描画し、該当候補がない status も empty-state 付きの read-only section として明示してよい
 - interactive filter / sort toggle / anchor navigation、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching / confidence score は同じ task に含めない
 
 ## 直近の次タスク
@@ -716,6 +717,7 @@ Phase 6 の進め方:
 - `FS-DATA-24` では `--fuzzy-review-html-file` の HTML 冒頭に current-run summary block を追加し、accepted / rejected / unreviewed status counts と `scopeKind` counts（`source` / `sourceFamily` / `registrableDomain`）を read-only に surfacing した。一方で current-run candidate card の ordering / evidence field、accept-reject key、review-state JSON、audit / handoff JSON、public surface は変更していない
 - `FS-DOCS-44` では次の最小差分を current-run review HTML の status-grouped surfacing に限定し、summary counts の次に unreviewed 候補を優先表示できる境界だけを docs で先に固定した
 - この docs split により、次の実装候補は `FS-DATA-25` として current-run candidate card を `unreviewed` / `accepted` / `rejected` の read-only section に分けて surfacing する一方、interactive filter / sort toggle / anchor navigation・JSON schema・public surface は維持する
+- `FS-DATA-25` では `--fuzzy-review-html-file` の current-run fuzzy candidates を `Unreviewed` / `Accepted` / `Rejected` section に分け、summary counts と per-card evidence を保ったまま未レビュー候補を HTML 冒頭近くで優先確認できるようにした。一方で accept/reject key、review-state JSON、audit / handoff JSON、public surface、interactive filter / sort は変更していない
 
 ## メモ
 

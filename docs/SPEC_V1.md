@@ -1061,6 +1061,12 @@ v1 の生成優先順位は以下とする。
 - 次差分は `--fuzzy-review-html-file` の current-run candidate を read-only な status section（`unreviewed` / `accepted` / `rejected`）へ分けて surfacing する task に限定する。same run の `fuzzyHandoffRecords[]` と既に読み込まれた explicit review state から grouping を導出してよく、summary counts、per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）、existing accepted / rejected review-state section は維持する
 - interactive filter / sort toggle / anchor navigation、accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score は同じ task に含めない
 
+### 10.5.33 Post-v1 fuzzy dedupe current-run status grouping implementation (`FS-DATA-25`)
+
+- `FS-DATA-25` では `scripts/pipeline/run.ts` と review HTML 関連 tests に閉じて、`--fuzzy-review-html-file` の current-run candidate card を `Unreviewed current-run candidates` → `Accepted current-run candidates` → `Rejected current-run candidates` の read-only status section 順へ並べてよい
+- section grouping は same run の `fuzzyHandoffRecords[]` と explicit accept / reject review-state lookup から導出し、該当候補がない status も empty-state 付き section として残してよい。summary counts、per-card evidence（`articleIdPair` / `matchedBy='fuzzyTitleDate'` / `scopeKind` / `publishedAtDeltaHours` / winner-incoming link）、existing accepted / rejected review-state section は維持する
+- accept / reject / dedicated review-state JSON shape、audit / handoff JSON、`update-state.json` mutation、checked-in artifact、public JSON / route / article card UI、broader matching、confidence score、interactive filter / sort toggle / anchor navigation は同じ task に含めない
+
 ### 10.6 v1 の provenance
 
 - v1 では full provenance object は持たず、`seenInFeeds` に `feedId` の集合だけを保持する

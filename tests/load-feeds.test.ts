@@ -2849,6 +2849,25 @@ test('runPipeline writes fuzzy review HTML when --fuzzy-review-html-file is prov
     /<strong>0<\/strong>\s*<span>scopeKind=registrableDomain<\/span>/,
   );
   assert.match(html, /Current-run fuzzy candidates/);
+  assert.match(html, /Unreviewed current-run candidates/);
+  assert.match(html, /Accepted current-run candidates/);
+  assert.match(html, /Rejected current-run candidates/);
+  assert.match(
+    html,
+    /Unreviewed current-run candidates[\s\S]*shared title ↔ shared title/,
+  );
+  assert.match(
+    html,
+    /Accepted current-run candidates[\s\S]*No accepted current-run fuzzy candidates\./,
+  );
+  assert.match(
+    html,
+    /Rejected current-run candidates[\s\S]*No rejected current-run fuzzy candidates\./,
+  );
+  assert.match(
+    html,
+    /Unreviewed current-run candidates[\s\S]*Accepted current-run candidates[\s\S]*Rejected current-run candidates/,
+  );
   assert.match(html, /Accepted review-state entries/);
   assert.match(html, /Rejected review-state entries/);
   assert.match(html, /https:\/\/example\.com\/posts\/shared-b/);

@@ -386,6 +386,80 @@ function renderFuzzyReviewCurrentRunSummarySection({
     </section>`;
 }
 
+function renderFuzzyReviewCurrentRunCard({
+  record,
+  status,
+}: {
+  record: FuzzyDedupeHandoffRecord;
+  status: FuzzyReviewStatus;
+}): string {
+  return `
+    <article class="review-card">
+      <div class="review-card__header">
+        <div>
+          <h4>${renderFuzzyReviewStatusBadge(status)} ${escapeHtml(record.winnerTitle)} ↔ ${escapeHtml(record.incomingTitle)}</h4>
+          <p class="muted">${renderArticleIdPair([record.winnerArticleId, record.incomingArticleId])}</p>
+        </div>
+        <div class="meta-pills">
+          <span class="meta-pill">matchedBy=${escapeHtml(record.matchedBy)}</span>
+          ${renderOptionalScopeKind(record.scopeKind)}
+          <span class="meta-pill">Δ=${escapeHtml(record.publishedAtDeltaHours)}h</span>
+        </div>
+      </div>
+      <dl class="detail-list">
+        <div>
+          <dt>Winner</dt>
+          <dd>${renderOptionalLink(record.winnerUrl, record.winnerTitle)}</dd>
+        </div>
+        <div>
+          <dt>Incoming</dt>
+          <dd>${renderOptionalLink(record.incomingUrl, record.incomingTitle)}</dd>
+        </div>
+        <div>
+          <dt>Winner source</dt>
+          <dd>${escapeHtml(record.winnerSourceName)}</dd>
+        </div>
+        <div>
+          <dt>Incoming source</dt>
+          <dd>${escapeHtml(record.incomingSourceName)}</dd>
+        </div>
+      </dl>
+    </article>`;
+}
+
+function renderFuzzyReviewCurrentRunStatusSection({
+  title,
+  status,
+  records,
+}: {
+  title: string;
+  status: FuzzyReviewStatus;
+  records: FuzzyDedupeHandoffRecord[];
+}): string {
+  if (records.length === 0) {
+    return `
+      <section class="status-group">
+        <h3>${escapeHtml(title)}</h3>
+        <p class="empty-state">No ${escapeHtml(status)} current-run fuzzy candidates.</p>
+      </section>`;
+  }
+
+  return `
+    <section class="status-group">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="card-grid">
+        ${records
+          .map((record) =>
+            renderFuzzyReviewCurrentRunCard({
+              record,
+              status,
+            }),
+          )
+          .join('')}
+      </div>
+    </section>`;
+}
+
 function renderFuzzyReviewCurrentRunSection({
   handoffRecords,
   acceptedKeys,
@@ -403,52 +477,40 @@ function renderFuzzyReviewCurrentRunSection({
       </section>`;
   }
 
+  const recordsByStatus: Record<FuzzyReviewStatus, FuzzyDedupeHandoffRecord[]> =
+    {
+      accepted: [],
+      rejected: [],
+      unreviewed: [],
+    };
+
+  for (const record of handoffRecords) {
+    const status = resolveFuzzyReviewStatus({
+      record,
+      acceptedKeys,
+      rejectedKeys,
+    });
+    recordsByStatus[status].push(record);
+  }
+
   return `
     <section>
       <h2>Current-run fuzzy candidates</h2>
-      <div class="card-grid">
-        ${handoffRecords
-          .map((record) => {
-            const status = resolveFuzzyReviewStatus({
-              record,
-              acceptedKeys,
-              rejectedKeys,
-            });
-            return `
-              <article class="review-card">
-                <div class="review-card__header">
-                  <div>
-                    <h3>${renderFuzzyReviewStatusBadge(status)} ${escapeHtml(record.winnerTitle)} ↔ ${escapeHtml(record.incomingTitle)}</h3>
-                    <p class="muted">${renderArticleIdPair([record.winnerArticleId, record.incomingArticleId])}</p>
-                  </div>
-                  <div class="meta-pills">
-                    <span class="meta-pill">matchedBy=${escapeHtml(record.matchedBy)}</span>
-                    ${renderOptionalScopeKind(record.scopeKind)}
-                    <span class="meta-pill">Δ=${escapeHtml(record.publishedAtDeltaHours)}h</span>
-                  </div>
-                </div>
-                <dl class="detail-list">
-                  <div>
-                    <dt>Winner</dt>
-                    <dd>${renderOptionalLink(record.winnerUrl, record.winnerTitle)}</dd>
-                  </div>
-                  <div>
-                    <dt>Incoming</dt>
-                    <dd>${renderOptionalLink(record.incomingUrl, record.incomingTitle)}</dd>
-                  </div>
-                  <div>
-                    <dt>Winner source</dt>
-                    <dd>${escapeHtml(record.winnerSourceName)}</dd>
-                  </div>
-                  <div>
-                    <dt>Incoming source</dt>
-                    <dd>${escapeHtml(record.incomingSourceName)}</dd>
-                  </div>
-                </dl>
-              </article>`;
-          })
-          .join('')}
-      </div>
+      ${renderFuzzyReviewCurrentRunStatusSection({
+        title: 'Unreviewed current-run candidates',
+        status: 'unreviewed',
+        records: recordsByStatus.unreviewed,
+      })}
+      ${renderFuzzyReviewCurrentRunStatusSection({
+        title: 'Accepted current-run candidates',
+        status: 'accepted',
+        records: recordsByStatus.accepted,
+      })}
+      ${renderFuzzyReviewCurrentRunStatusSection({
+        title: 'Rejected current-run candidates',
+        status: 'rejected',
+        records: recordsByStatus.rejected,
+      })}
     </section>`;
 }
 
@@ -627,6 +689,9 @@ function buildFuzzyReviewHtml({
       }
       section + section {
         margin-top: 28px;
+      }
+      .status-group + .status-group {
+        margin-top: 20px;
       }
       @media (max-width: 640px) {
         main {

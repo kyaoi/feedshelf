@@ -1080,6 +1080,25 @@ test('runUpdatePipeline writes fuzzy review HTML when --fuzzy-review-html-file i
   assert.match(html, /Current-run accepted/);
   assert.match(html, /Current-run rejected/);
   assert.match(html, /Current-run unreviewed/);
+  assert.match(html, /Unreviewed current-run candidates/);
+  assert.match(html, /Accepted current-run candidates/);
+  assert.match(html, /Rejected current-run candidates/);
+  assert.match(
+    html,
+    /Unreviewed current-run candidates[\s\S]*Workflow article ↔ workflow article/,
+  );
+  assert.match(
+    html,
+    /Accepted current-run candidates[\s\S]*No accepted current-run fuzzy candidates\./,
+  );
+  assert.match(
+    html,
+    /Rejected current-run candidates[\s\S]*No rejected current-run fuzzy candidates\./,
+  );
+  assert.match(
+    html,
+    /Unreviewed current-run candidates[\s\S]*Accepted current-run candidates[\s\S]*Rejected current-run candidates/,
+  );
   assert.match(html, /scopeKind=source/);
   assert.match(html, /scopeKind=sourceFamily/);
   assert.match(html, /scopeKind=registrableDomain/);
